@@ -1,0 +1,23 @@
+fr:
+  TabulatorData:
+    loading: "Loading"
+    error: "Error"
+  TabulatorGroups:
+    item: "item"
+    items: "items"
+  TabulatorHeaderFilters:
+    default: "filter column..."
+  TabulatorPagination:
+    first: "Premier"
+    first_title: "Première Page"
+    last: "Dernier"
+    last_title: "Dernière Page"
+    prev: "Précédent"
+    prev_title: "Page Précédente"
+    next: "Suivant"
+    next_title: "Page Suivante"
+    all: "Toute"
+    counter_showing: "Showing"
+    counter_of: "of"
+    counter_rows: "rows"
+    counter_pages: "pages"

@@ -1,0 +1,13 @@
+{
+  "name": "lekoala-silverstripe-tabulator",
+  "description": "Silverstripe Tabulator Field",
+  "scripts": {
+    "build": "php bin/download-cdn-files.php"
+  },
+  "author": "LeKoala",
+  "license": "MIT",
+  "dependencies": {
+    "tabulator-tables": "^5.1.8"
+  },
+  "keywords": []
+}
