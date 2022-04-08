@@ -3,15 +3,18 @@
 namespace LeKoala\Tabulator;
 
 use Exception;
+use BadMethodCallException;
+use SilverStripe\Control\Controller;
+use SilverStripe\i18n\i18n;
+use SilverStripe\Core\Convert;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FormField;
 use SilverStripe\View\Requirements;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
-use SilverStripe\Core\Convert;
-use SilverStripe\i18n\i18n;
 use SilverStripe\Security\SecurityToken;
+use SilverStripe\Core\Manifest\ModuleResourceLoader;
 
 /**
  * @link http://www.tabulator.info/
@@ -105,6 +108,21 @@ class TabulatorGrid extends FormField
     ];
 
     /**
+     * @config
+     */
+    private static bool $use_pagination_icons = true;
+
+    /**
+     * @config
+     */
+    private static array $custom_pagination_icons = [
+        'first' => '<l-i name="first_page"></l-i>',
+        'last' => '<l-i name="last_page"></l-i>',
+        'next' => '<l-i name="navigate_next"></l-i>',
+        'prev' => '<l-i name="navigate_before"></l-i>',
+    ];
+
+    /**
      * @link http://www.tabulator.info/docs/5.1/columns
      */
     protected array $columns = [];
@@ -127,9 +145,6 @@ class TabulatorGrid extends FormField
     protected bool $columnsFilterable = false;
 
     protected int $pageSize = 10;
-
-    protected bool $usePaginationIcons = true;
-    protected array $customPaginationIcons = [];
 
     public function __construct($name, $title = null, $value = null)
     {
@@ -169,9 +184,6 @@ class TabulatorGrid extends FormField
             }
         }
 
-        // Extension support
-
-
         // Allow customizing our columns based on record
         if ($singl->hasMethod('tabulatorFields')) {
             foreach ($singl->tabulatorFields() as $key => $columnOptions) {
@@ -185,23 +197,34 @@ class TabulatorGrid extends FormField
         foreach ($columns as $col) {
             $this->addColumn($col['field'], $col['title'], $col);
         }
+
+        // Actions
     }
 
     public static function requirements(): void
     {
+        $use_cdn = self::config()->use_cdn;
         $theme = self::config()->theme; // simple, midnight, modern or framework
         $version = self::config()->version;
         $luxon_version = self::config()->luxon_version;
         $enable_luxon = self::config()->enable_luxon;
 
+        if ($use_cdn) {
+            $baseDir = "https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist";
+        } else {
+            $asset = ModuleResourceLoader::resourceURL('lekoala/silverstripe-tabulator:client/cdn/tabulator.min.js');
+            $baseDir = dirname($asset);
+        }
+
         if ($luxon_version && $enable_luxon) {
             Requirements::javascript("https://cdn.jsdelivr.net/npm/luxon@$luxon_version/build/global/luxon.min.js");
         }
-        Requirements::javascript("https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist/js/tabulator.min.js");
-        Requirements::css("https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist/css/tabulator.min.css");
+        Requirements::javascript("$baseDir/js/tabulator.min.js");
+        Requirements::css("$baseDir/css/tabulator.min.css");
         if ($theme) {
-            Requirements::css("https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist/css/tabulator_$theme.min.css");
+            Requirements::css("$baseDir/css/tabulator_$theme.min.css");
         }
+        Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
     }
 
     public function Field($properties = [])
@@ -258,11 +281,12 @@ class TabulatorGrid extends FormField
             "next_title" =>  _t("TabulatorPagination.next_title", "Next Page"),
             "all" =>  _t("TabulatorPagination.all", "All"),
         ];
-        if ($this->usePaginationIcons) {
-            $paginationTranslations['first'] = $this->customPaginationIcons['first'] ?? "<<";
-            $paginationTranslations['last'] = $this->customPaginationIcons['last'] ?? ">>";
-            $paginationTranslations['prev'] = $this->customPaginationIcons['prev'] ?? "<";
-            $paginationTranslations['next'] = $this->customPaginationIcons['next'] ?? ">";
+        if (self::config()->use_pagination_icons) {
+            $customIcons = self::config()->custom_pagination_icons;
+            $paginationTranslations['first'] = $customIcons['first'] ?? "<<";
+            $paginationTranslations['last'] = $customIcons['last'] ?? ">>";
+            $paginationTranslations['prev'] = $customIcons['prev'] ?? "<";
+            $paginationTranslations['next'] = $customIcons['next'] ?? ">";
         }
         $dataTranslations = [
             "loading" => _t("TabulatorData.loading", "Loading"),
@@ -286,7 +310,12 @@ class TabulatorGrid extends FormField
             $locale => $translations
         ];
 
-        return json_encode($opts);
+        $json = json_encode($opts);
+
+        // Escape functions
+        $json = preg_replace('/"(SSTabulator\.[a-zA-Z]*)"/', "$1", $json);
+
+        return $json;
     }
 
     public function getAttributes()
@@ -333,6 +362,109 @@ class TabulatorGrid extends FormField
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.1/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.1/filter#ajax-filter
         return $this;
+    }
+
+    public function getComponents()
+    {
+        return [];
+    }
+
+    /**
+     * Custom request handler that will check component handlers before proceeding to the default
+     * implementation.
+     *
+     * @todo copy less code from RequestHandler.
+     *
+     * @param HTTPRequest $request
+     * @return array|RequestHandler|HTTPResponse|string
+     * @throws HTTPResponse_Exception
+     */
+    public function handleRequest(HTTPRequest $request)
+    {
+        if ($this->brokenOnConstruct) {
+            $handlerClass = static::class;
+            throw new BadMethodCallException(
+                "parent::__construct() needs to be called on {$handlerClass}::__construct()"
+            );
+        }
+
+        $this->setRequest($request);
+        $fieldData = $this->getRequest()->requestVar($this->getName());
+
+        foreach ($this->getComponents() as $component) {
+            if ($component instanceof GridField_URLHandler && $urlHandlers = $component->getURLHandlers($this)) {
+                foreach ($urlHandlers as $rule => $action) {
+                    if ($params = $request->match($rule, true)) {
+                        // Actions can reference URL parameters.
+                        // e.g. '$Action/$ID/$OtherID' → '$Action'
+
+                        if ($action[0] == '$') {
+                            $action = $params[substr($action, 1)];
+                        }
+
+                        if (!method_exists($component, 'checkAccessAction') || $component->checkAccessAction($action)) {
+                            if (!$action) {
+                                $action = "index";
+                            }
+
+                            if (!is_string($action)) {
+                                throw new LogicException(sprintf(
+                                    'Non-string method name: %s',
+                                    var_export($action, true)
+                                ));
+                            }
+
+                            try {
+                                $this->extend('beforeCallActionURLHandler', $request, $action);
+
+                                $result = $component->$action($this, $request);
+
+                                $this->extend('afterCallActionURLHandler', $request, $action, $result);
+                            } catch (HTTPResponse_Exception $responseException) {
+                                $result = $responseException->getResponse();
+                            }
+
+                            if ($result instanceof HTTPResponse && $result->isError()) {
+                                return $result;
+                            }
+
+                            if (
+                                $this !== $result &&
+                                !$request->isEmptyPattern($rule) &&
+                                ($result instanceof RequestHandler || $result instanceof HasRequestHandler)
+                            ) {
+                                if ($result instanceof HasRequestHandler) {
+                                    $result = $result->getRequestHandler();
+                                }
+                                $returnValue = $result->handleRequest($request);
+
+                                if (is_array($returnValue)) {
+                                    throw new LogicException(
+                                        'GridField_URLHandler handlers can\'t return arrays'
+                                    );
+                                }
+
+                                return $returnValue;
+                            }
+
+                            if ($request->allParsed()) {
+                                return $result;
+                            }
+
+                            return $this->httpError(
+                                404,
+                                sprintf(
+                                    'I can\'t handle sub-URLs of a %s object.',
+                                    get_class($result)
+                                )
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        return parent::handleRequest($request);
     }
 
     /**
@@ -471,7 +603,7 @@ class TabulatorGrid extends FormField
             ];
             $nested = [];
             foreach ($this->columns as $col) {
-                $field = $col['field'];
+                $field = $col['field'] ?? null; // actions don't have field
                 if (strpos($field, '.') !== false) {
                     $parts = explode('.', $field);
                     if ($singleton->getRelationClass($parts[0])) {
@@ -498,6 +630,34 @@ class TabulatorGrid extends FormField
         ]));
         $response->addHeader('Content-Type', 'application/json');
         return $response;
+    }
+
+    public function addButton(string $action, string $icon, string $title): self
+    {
+        $controller = $this->form ? $this->form->getController() : Controller::curr();
+        $baseOpts = [
+            "tooltip" => $title,
+            "formatter" => "SSTabulator.buttonFormatter",
+            "formatterParams" => [
+                "icon" => $icon,
+                "url" => $controller->Link($action),
+            ],
+            "cellClick" => "SSTabulator.buttonHandler",
+            "width" => 70,
+            "hozAlign" => "center",
+            "headerSort" => false,
+        ];
+
+        $this->columns["action_$action"] = $baseOpts;
+        return $this;
+    }
+
+    public function removeButton(string $action): self
+    {
+        if (isset($this->columns["action_$action"])) {
+            unset($this->columns["action_$action"]);
+        }
+        return $this;
     }
 
     /**
@@ -631,44 +791,6 @@ class TabulatorGrid extends FormField
     public function setPageSize(int $pageSize): self
     {
         $this->pageSize = $pageSize;
-        return $this;
-    }
-
-    /**
-     * Get the value of usePaginationIcons
-     */
-    public function getUsePaginationIcons(): bool
-    {
-        return $this->usePaginationIcons;
-    }
-
-    /**
-     * Set the value of usePaginationIcons
-     *
-     * @param bool usePaginationIcons
-     */
-    public function setUsePaginationIcons(bool $usePaginationIcons): self
-    {
-        $this->usePaginationIcons = $usePaginationIcons;
-        return $this;
-    }
-
-    /**
-     * Get the value of customPaginationIcons
-     */
-    public function getCustomPaginationIcons(): array
-    {
-        return $this->customPaginationIcons;
-    }
-
-    /**
-     * Set the value of customPaginationIcons
-     *
-     * @param array $customPaginationIcons
-     */
-    public function setCustomPaginationIcons(array $customPaginationIcons): self
-    {
-        $this->customPaginationIcons = $customPaginationIcons;
         return $this;
     }
 }
