@@ -80,6 +80,11 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
+    private static bool $use_cdn = true;
+
+    /**
+     * @config
+     */
     private static bool $enable_luxon = false;
 
     /**
