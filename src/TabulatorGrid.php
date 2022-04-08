@@ -4,6 +4,7 @@ namespace LeKoala\Tabulator;
 
 use Exception;
 use BadMethodCallException;
+use RuntimeException;
 use SilverStripe\Control\Controller;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Core\Convert;
@@ -59,6 +60,12 @@ class TabulatorGrid extends FormField
      */
     private static array $allowed_actions = [
         'load',
+        'customAction',
+        'editForm',
+    ];
+
+    private static $url_handlers = [
+        '$Action//$CustomAction/$ID' => '$Action',
     ];
 
     private static array $casting = [
@@ -146,14 +153,23 @@ class TabulatorGrid extends FormField
 
     protected int $pageSize = 10;
 
+    protected string $modelClass = '';
+
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
         $this->options = self::config()->default_options ?? [];
     }
 
-    public function configureFromDataObject(string $className): void
+    public function configureFromDataObject($className = null): void
     {
+        if (!$className) {
+            $className = $this->getModelClass();
+        }
+        if (!$className) {
+            throw new RuntimeException("Could not find the model class");
+        }
+
         /** @var DataObject $singl */
         $singl = singleton($className);
 
@@ -186,7 +202,11 @@ class TabulatorGrid extends FormField
 
         // Allow customizing our columns based on record
         if ($singl->hasMethod('tabulatorFields')) {
-            foreach ($singl->tabulatorFields() as $key => $columnOptions) {
+            $fields = $singl->tabulatorFields();
+            if (!is_array($fields)) {
+                throw new RuntimeException("tabulatorFields must return an array");
+            }
+            foreach ($fields as $key => $columnOptions) {
                 $baseOptions = $columns[$key] ?? [];
                 $columns[$key] = array_merge($baseOptions, $columnOptions);
             }
@@ -199,6 +219,18 @@ class TabulatorGrid extends FormField
         }
 
         // Actions
+        if ($singl->hasMethod('tabulatorRowActions')) {
+            $rowActions = $singl->tabulatorRowActions();
+            if (!is_array($rowActions)) {
+                throw new RuntimeException("tabulatorRowActions must return an array");
+            }
+            foreach ($rowActions as $key => $actionConfig) {
+                $url = $this->Link('customAction') . '/' . $actionConfig['action'] . '/{ID}';
+                $icon = $actionConfig['icon'] ?? "star";
+                $title = $actionConfig['title'] ?? "";
+                $this->addButton($url, $icon, $title);
+            }
+        }
     }
 
     public static function requirements(): void
@@ -364,107 +396,46 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    public function getComponents()
-    {
-        return [];
-    }
-
     /**
-     * Custom request handler that will check component handlers before proceeding to the default
-     * implementation.
-     *
-     * @todo copy less code from RequestHandler.
-     *
+     * This is responsible to forward actions to the model if necessary
      * @param HTTPRequest $request
-     * @return array|RequestHandler|HTTPResponse|string
-     * @throws HTTPResponse_Exception
+     * @return HTTPResponse
      */
-    public function handleRequest(HTTPRequest $request)
+    public function customAction(HTTPRequest $request)
     {
-        if ($this->brokenOnConstruct) {
-            $handlerClass = static::class;
-            throw new BadMethodCallException(
-                "parent::__construct() needs to be called on {$handlerClass}::__construct()"
-            );
+        // This gets populated thanks to our updated URL handler
+        $params = $request->params();
+        $customAction = $params['CustomAction'] ?? null;
+        $ID = $params['ID'] ?? 0;
+
+        $dataClass = $this->getModelClass();
+        $record = DataObject::get_by_id($dataClass, $ID);
+        $validActions = array_column($record->tabulatorRowActions(), 'action');
+        if (!$customAction || !in_array($customAction, $validActions)) {
+            return $this->httpError(404, "Invalid action");
         }
 
-        $this->setRequest($request);
-        $fieldData = $this->getRequest()->requestVar($this->getName());
-
-        foreach ($this->getComponents() as $component) {
-            if ($component instanceof GridField_URLHandler && $urlHandlers = $component->getURLHandlers($this)) {
-                foreach ($urlHandlers as $rule => $action) {
-                    if ($params = $request->match($rule, true)) {
-                        // Actions can reference URL parameters.
-                        // e.g. '$Action/$ID/$OtherID' → '$Action'
-
-                        if ($action[0] == '$') {
-                            $action = $params[substr($action, 1)];
-                        }
-
-                        if (!method_exists($component, 'checkAccessAction') || $component->checkAccessAction($action)) {
-                            if (!$action) {
-                                $action = "index";
-                            }
-
-                            if (!is_string($action)) {
-                                throw new LogicException(sprintf(
-                                    'Non-string method name: %s',
-                                    var_export($action, true)
-                                ));
-                            }
-
-                            try {
-                                $this->extend('beforeCallActionURLHandler', $request, $action);
-
-                                $result = $component->$action($this, $request);
-
-                                $this->extend('afterCallActionURLHandler', $request, $action, $result);
-                            } catch (HTTPResponse_Exception $responseException) {
-                                $result = $responseException->getResponse();
-                            }
-
-                            if ($result instanceof HTTPResponse && $result->isError()) {
-                                return $result;
-                            }
-
-                            if (
-                                $this !== $result &&
-                                !$request->isEmptyPattern($rule) &&
-                                ($result instanceof RequestHandler || $result instanceof HasRequestHandler)
-                            ) {
-                                if ($result instanceof HasRequestHandler) {
-                                    $result = $result->getRequestHandler();
-                                }
-                                $returnValue = $result->handleRequest($request);
-
-                                if (is_array($returnValue)) {
-                                    throw new LogicException(
-                                        'GridField_URLHandler handlers can\'t return arrays'
-                                    );
-                                }
-
-                                return $returnValue;
-                            }
-
-                            if ($request->allParsed()) {
-                                return $result;
-                            }
-
-                            return $this->httpError(
-                                404,
-                                sprintf(
-                                    'I can\'t handle sub-URLs of a %s object.',
-                                    get_class($result)
-                                )
-                            );
-                        }
-                    }
-                }
-            }
+        $error = false;
+        try {
+            $result = $record->$customAction();
+        } catch (Exception $e) {
+            $error = true;
+            $result = $e->getMessage();
         }
 
-        return parent::handleRequest($request);
+        if ($result && $result instanceof HTTPResponse) {
+            return $result;
+        }
+
+        // Show message on controller or in form
+        $controller = $this->form->getController();
+        $target = $this->form;
+        if ($controller->hasMethod('sessionMessage')) {
+            $target = $controller;
+        }
+        $target->sessionMessage($result, $error ? "bad" : "good");
+
+        return $controller->redirectBack();
     }
 
     /**
@@ -477,12 +448,12 @@ class TabulatorGrid extends FormField
         /** @var DataList $dataList */
         $dataList = $this->value;
         if (!$dataList instanceof DataList) {
-            throw new Exception("Invalid datalist");
+            return $this->httpError(404, "Invalid datalist");
         }
 
         $SecurityID = $request->getVar('SecurityID');
         if (!SecurityToken::inst()->check($SecurityID)) {
-            throw new Exception("Invalid SecurityID");
+            return $this->httpError(404, "Invalid SecurityID");
         }
 
         $page = (int) $request->getVar('page');
@@ -632,15 +603,37 @@ class TabulatorGrid extends FormField
         return $response;
     }
 
+    public function getModelClass(): ?string
+    {
+        if ($this->modelClass) {
+            return $this->modelClass;
+        }
+        if ($this->value && $this->value instanceof DataList) {
+            return $this->value->dataClass();
+        }
+        return null;
+    }
+
+    public function setModelClass(string $modelClass): self
+    {
+        $this->modelClass = $modelClass;
+        return $this;
+    }
+
     public function addButton(string $action, string $icon, string $title): self
     {
-        $controller = $this->form ? $this->form->getController() : Controller::curr();
+        $url = $action;
+        if (strpos($url, $this->Link()) === false) {
+            $controller = $this->form ? $this->form->getController() : Controller::curr();
+            $url = $controller->Link($action);
+        }
+
         $baseOpts = [
             "tooltip" => $title,
             "formatter" => "SSTabulator.buttonFormatter",
             "formatterParams" => [
                 "icon" => $icon,
-                "url" => $controller->Link($action),
+                "url" => $url,
             ],
             "cellClick" => "SSTabulator.buttonHandler",
             "width" => 70,
