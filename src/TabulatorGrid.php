@@ -16,6 +16,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
+use SilverStripe\ORM\ArrayLib;
 
 /**
  * @link http://www.tabulator.info/
@@ -620,7 +621,7 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    public function addButton(string $action, string $icon, string $title): self
+    public function addButton(string $action, string $icon, string $title, string $before = null): self
     {
         $url = $action;
         if (strpos($url, $this->Link()) === false) {
@@ -641,8 +642,33 @@ class TabulatorGrid extends FormField
             "headerSort" => false,
         ];
 
-        $this->columns["action_$action"] = $baseOpts;
+        if ($before) {
+            if (array_key_exists($before, $this->columns)) {
+                $new = [];
+                foreach ($this->columns as $k => $value) {
+                    if ($k === $before) {
+                        $new["action_$action"] = $baseOpts;
+                    }
+                    $new[$k] = $value;
+                }
+                $this->columns = $new;
+            }
+        } else {
+            $this->columns["action_$action"] = $baseOpts;
+        }
+
         return $this;
+    }
+
+    public function shiftButton(string $action, string $icon, string $title): self
+    {
+        // Find first action
+        foreach ($this->columns as $name => $options) {
+            if (strpos($name, 'action_') === 0) {
+                return $this->addButton($action, $icon, $title, $name);
+            }
+        }
+        return $this->addButton($action, $icon, $title);
     }
 
     public function removeButton(string $action): self
