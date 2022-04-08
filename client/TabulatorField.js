@@ -1,14 +1,19 @@
 (function () {
+    var interpolate = function (str, data) {
+        return str.replace(/\{([^\}]+)?\}/g, function ($1, $2) {
+            return data[$2];
+        });
+    };
+
     var buttonFormatter = function (cell, formatterParams, onRendered) {
         var iconName = formatterParams.icon;
         var url = formatterParams.url;
+        url = interpolate(url, cell._cell.row.data);
 
-        if (cell._cell.row.data.ID) {
-            url += "/" + cell._cell.row.data.ID;
-        }
+        var classes = "btn btn-primary";
         var icon = '<l-i name="' + iconName + '"></l-i>';
         var link =
-            '<a href="' + url + '" class="btn btn-primary">' + icon + "</a>";
+            '<a href="' + url + '" class="' + classes + '">' + icon + "</a>";
         return link;
     };
     var buttonHandler = function (e, cell) {
@@ -17,8 +22,8 @@
     var init = function (id, options) {
         var table = new Tabulator(id, options);
         table.on("rowClick", function (e, row) {
-            var firstBtn = row._row.element.querySelector('.btn');
-            if(firstBtn) {
+            var firstBtn = row._row.element.querySelector(".btn");
+            if (firstBtn) {
                 firstBtn.click();
             }
         });
