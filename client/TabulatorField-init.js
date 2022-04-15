@@ -1,0 +1,1 @@
+SSTabulator.init("#$ID", $JsonOptions);

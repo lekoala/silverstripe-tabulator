@@ -35,6 +35,10 @@ public function tabulatorRowActions()
 
 This will call the method `doTabulatorAction` on your record.
 
+## Additionnal formaters
+
+- SSTabulator.flagFormatter: format a two char country code to a svg flag using Last Icon
+
 ## Dependencies
 
 - [Last Icon](https://github.com/lekoala/last-icon): for nice icons

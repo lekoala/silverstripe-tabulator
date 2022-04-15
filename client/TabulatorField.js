@@ -4,7 +4,14 @@
             return data[$2];
         });
     };
-
+    var flagFormatter = function (cell, formatterParams, onRendered) {
+        var iconName = cell.getValue().toLowerCase();
+        if (typeof LastIcon == "undefined") {
+            return iconName;
+        }
+        var icon = '<l-i name="' + iconName + '" set="fl"></l-i>';
+        return icon;
+    };
     var buttonFormatter = function (cell, formatterParams, onRendered) {
         var iconName = formatterParams.icon;
         var url = formatterParams.url;
@@ -12,6 +19,9 @@
 
         var classes = "btn btn-primary";
         var icon = '<l-i name="' + iconName + '"></l-i>';
+        if (typeof LastIcon == "undefined") {
+            icon = '<span class="font-icon-' + iconName + '"></span>';
+        }
         var link =
             '<a href="' + url + '" class="' + classes + '">' + icon + "</a>";
         return link;
@@ -20,6 +30,15 @@
         console.log("button", e, cell._cell.row.data);
     };
     var init = function (id, options) {
+        // Enable last icon pagination
+        if (typeof LastIcon != "undefined") {
+            options.langs.pagination.first = '<l-i name="first_page"></l-i>';
+            options.langs.pagination.last = '<l-i name="last_page"></l-i>';
+            options.langs.pagination.next = '<l-i name="navigate_next"></l-i>';
+            options.langs.pagination.prev =
+                '<l-i name="navigate_before"></l-i>';
+        }
+
         var table = new Tabulator(id, options);
         table.on("rowClick", function (e, row) {
             var firstBtn = row._row.element.querySelector(".btn");
@@ -38,6 +57,7 @@
 
     // Public api
     window.SSTabulator = {
+        flagFormatter: flagFormatter,
         buttonFormatter: buttonFormatter,
         buttonHandler: buttonHandler,
         init: init,

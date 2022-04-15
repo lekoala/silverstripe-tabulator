@@ -3,20 +3,32 @@
 namespace LeKoala\Tabulator;
 
 use Exception;
-use BadMethodCallException;
 use RuntimeException;
-use SilverStripe\Control\Controller;
+use BadMethodCallException;
 use SilverStripe\i18n\i18n;
+use SilverStripe\Forms\Form;
 use SilverStripe\Core\Convert;
+use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\View\ArrayData;
+use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormField;
+use SilverStripe\ORM\HasManyList;
+use SilverStripe\Forms\FormAction;
+use SilverStripe\ORM\ManyManyList;
+use SilverStripe\ORM\RelationList;
+use SilverStripe\Admin\LeftAndMain;
 use SilverStripe\View\Requirements;
+use SilverStripe\Control\Controller;
+use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Forms\CompositeField;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
-use SilverStripe\ORM\ArrayLib;
+use SilverStripe\Versioned\VersionedGridFieldItemRequest;
+use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 
 /**
  * @link http://www.tabulator.info/
@@ -62,10 +74,11 @@ class TabulatorGrid extends FormField
     private static array $allowed_actions = [
         'load',
         'customAction',
-        'editForm',
+        'item',
     ];
 
     private static $url_handlers = [
+        'item/$ID' => 'handleItem',
         '$Action//$CustomAction/$ID' => '$Action',
     ];
 
@@ -91,12 +104,22 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
+    private static string $last_icon_version = '1.3.3';
+
+    /**
+     * @config
+     */
     private static bool $use_cdn = true;
 
     /**
      * @config
      */
     private static bool $enable_luxon = false;
+
+    /**
+     * @config
+     */
+    private static bool $enable_last_icon = false;
 
     /**
      * @config
@@ -123,12 +146,7 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
-    private static array $custom_pagination_icons = [
-        'first' => '<l-i name="first_page"></l-i>',
-        'last' => '<l-i name="last_page"></l-i>',
-        'next' => '<l-i name="navigate_next"></l-i>',
-        'prev' => '<l-i name="navigate_before"></l-i>',
-    ];
+    private static array $custom_pagination_icons = [];
 
     /**
      * @link http://www.tabulator.info/docs/5.1/columns
@@ -162,8 +180,10 @@ class TabulatorGrid extends FormField
         $this->options = self::config()->default_options ?? [];
     }
 
-    public function configureFromDataObject($className = null): void
+    public function configureFromDataObject($className = null, bool $clear = true): void
     {
+        $this->columns = [];
+
         if (!$className) {
             $className = $this->getModelClass();
         }
@@ -220,13 +240,24 @@ class TabulatorGrid extends FormField
         }
 
         // Actions
+        // We use a pseudo link, because maybe we cannot call Link() yet if it's not linked to a form
+
+        // - Core actions
+        $itemUrl = 'link:item/{ID}';
+        if ($singl->canEdit()) {
+            $this->addButton($itemUrl, "edit", "Edit");
+        } elseif ($singl->canView()) {
+            $this->addButton($itemUrl, "visibility", "View");
+        }
+
+        // - Custom actions
         if ($singl->hasMethod('tabulatorRowActions')) {
             $rowActions = $singl->tabulatorRowActions();
             if (!is_array($rowActions)) {
                 throw new RuntimeException("tabulatorRowActions must return an array");
             }
             foreach ($rowActions as $key => $actionConfig) {
-                $url = $this->Link('customAction') . '/' . $actionConfig['action'] . '/{ID}';
+                $url = 'link:customAction' . '/' . $actionConfig['action'] . '/{ID}';
                 $icon = $actionConfig['icon'] ?? "star";
                 $title = $actionConfig['title'] ?? "";
                 $this->addButton($url, $icon, $title);
@@ -241,6 +272,8 @@ class TabulatorGrid extends FormField
         $version = self::config()->version;
         $luxon_version = self::config()->luxon_version;
         $enable_luxon = self::config()->enable_luxon;
+        $last_icon_version = self::config()->last_icon_version;
+        $enable_last_icon = self::config()->enable_last_icon;
 
         if ($use_cdn) {
             $baseDir = "https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist";
@@ -252,12 +285,24 @@ class TabulatorGrid extends FormField
         if ($luxon_version && $enable_luxon) {
             Requirements::javascript("https://cdn.jsdelivr.net/npm/luxon@$luxon_version/build/global/luxon.min.js");
         }
+        if ($last_icon_version && $enable_last_icon) {
+            Requirements::css("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.css");
+            Requirements::javascript("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.js");
+        }
         Requirements::javascript("$baseDir/js/tabulator.min.js");
         Requirements::css("$baseDir/css/tabulator.min.css");
         if ($theme) {
             Requirements::css("$baseDir/css/tabulator_$theme.min.css");
         }
         Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
+    }
+
+    public function setValue($value, $data = null)
+    {
+        if ($value instanceof DataList) {
+            $this->configureFromDataObject($value->dataClass());
+        }
+        return parent::setValue($value, $data);
     }
 
     public function Field($properties = [])
@@ -271,6 +316,8 @@ class TabulatorGrid extends FormField
 
     public function JsonOptions(): string
     {
+        $this->processButtonActions();
+
         $data = $this->value ?? [];
         if ($data instanceof DataList) {
             $data = null;
@@ -398,6 +445,237 @@ class TabulatorGrid extends FormField
     }
 
     /**
+     * Builds an item edit form
+     *
+     * @return Form|HTTPResponse
+     */
+    public function ItemEditForm()
+    {
+        $list = $this->getDataList();
+        $controller = $this->getToplevelController();
+
+        try {
+            $record = $this->getRecord();
+        } catch (Exception $e) {
+            $url = $controller->getRequest()->getURL();
+            $noActionURL = $controller->removeAction($url);
+            //clear the existing redirect
+            $controller->getResponse()->removeHeader('Location');
+            return $controller->redirect($noActionURL, 302);
+        }
+
+        // If we are creating a new record in a has-many list, then
+        // pre-populate the record's foreign key.
+        if ($list instanceof HasManyList && !$this->record->isInDB()) {
+            $key = $list->getForeignKey();
+            $id = $list->getForeignID();
+            $record->$key = $id;
+        }
+
+        if (!$record->canView()) {
+            return $controller->httpError(403, _t(
+                __CLASS__ . '.ViewPermissionsFailure',
+                'It seems you don\'t have the necessary permissions to view "{ObjectTitle}"',
+                ['ObjectTitle' => $this->record->singular_name()]
+            ));
+        }
+
+        $fields = $record->getCMSFields();
+
+        // If we are creating a new record in a has-many list, then
+        // Disable the form field as it has no effect.
+        if ($list instanceof HasManyList && !$this->record->isInDB()) {
+            $key = $list->getForeignKey();
+
+            if ($field = $fields->dataFieldByName($key)) {
+                $fields->makeFieldReadonly($field);
+            }
+        }
+
+        $actions = $this->getFormActions();
+        $validator = null;
+
+        $form = new Form(
+            $this,
+            'ItemEditForm',
+            $fields,
+            $actions,
+            $validator
+        );
+
+        $form->loadDataFrom($record, $record->ID == 0 ? Form::MERGE_IGNORE_FALSEISH : Form::MERGE_DEFAULT);
+
+        if ($record->ID && !$record->canEdit()) {
+            // Restrict editing of existing records
+            $form->makeReadonly();
+            // Hack to re-enable delete button if user can delete
+            if ($record->canDelete()) {
+                $form->Actions()->fieldByName('action_doDelete')->setReadonly(false);
+            }
+        }
+        $cannotCreate = !$record->ID && !$record->canCreate(null, $this->getCreateContext());
+        if ($cannotCreate) {
+            // Restrict creation of new records
+            $form->makeReadonly();
+        }
+
+        // Load many_many extraData for record.
+        // Fields with the correct 'ManyMany' namespace need to be added manually through getCMSFields().
+        if ($list instanceof ManyManyList) {
+            $extraData = $list->getExtraData('', $this->record->ID);
+            $form->loadDataFrom(['ManyMany' => $extraData]);
+        }
+
+        // Copied from GridFieldDetailForm_ItemRequest::ItemEditForm
+        if ($controller instanceof LeftAndMain) {
+            // Always show with base template (full width, no other panels),
+            // regardless of overloaded CMS controller templates.
+            $form->setTemplate([
+                'type' => 'Includes',
+                'SilverStripe\\Admin\\LeftAndMain_EditForm',
+            ]);
+            $form->addExtraClass('cms-content cms-edit-form center fill-height flexbox-area-grow');
+            $form->setAttribute('data-pjax-fragment', 'CurrentForm Content');
+            if ($form->Fields()->hasTabSet()) {
+                $form->Fields()->findOrMakeTab('Root')->setTemplate('SilverStripe\\Forms\\CMSTabSet');
+                $form->addExtraClass('cms-tabset');
+            }
+
+            $form->Backlink = $this->getBackLink();
+        }
+
+        $this->extend("updateItemEditForm", $form);
+
+        return $form;
+    }
+
+    /**
+     * Build the set of form field actions for this DataObject
+     *
+     * @return FieldList
+     */
+    protected function getFormActions()
+    {
+        $actions = FieldList::create();
+        $majorActions = CompositeField::create()->setName('MajorActions');
+        $majorActions->setFieldHolderTemplate(get_class($majorActions) . '_holder_buttongroup');
+        $actions->push($majorActions);
+
+        if ($this->record->ID !== 0) { // existing record
+            if ($this->record->canEdit()) {
+                $noChangesClasses = 'btn-outline-primary font-icon-tick';
+                $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Save', 'Save'))
+                    ->addExtraClass($noChangesClasses)
+                    ->setAttribute('data-btn-alternate-add', 'btn-primary font-icon-save')
+                    ->setAttribute('data-btn-alternate-remove', $noChangesClasses)
+                    ->setUseButtonTag(true)
+                    ->setAttribute('data-text-alternate', _t('SilverStripe\\CMS\\Controllers\\CMSMain.SAVEDRAFT', 'Save')));
+            }
+
+            if ($this->record->canDelete()) {
+                $actions->insertAfter('MajorActions', FormAction::create('doDelete', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Delete', 'Delete'))
+                    ->setUseButtonTag(true)
+                    ->addExtraClass('btn-outline-danger btn-hide-outline font-icon-trash-bin action--delete'));
+            }
+        } else { // adding new record
+            //Change the Save label to 'Create'
+            $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Create', 'Create'))
+                ->setUseButtonTag(true)
+                ->addExtraClass('btn-primary font-icon-plus-thin'));
+
+            // Add a Cancel link which is a button-like link and link back to one level up.
+            $crumbs = $this->Breadcrumbs();
+            if ($crumbs && $crumbs->count() >= 2) {
+                $oneLevelUp = $crumbs->offsetGet($crumbs->count() - 2);
+                $text = sprintf(
+                    "<a class=\"%s\" href=\"%s\">%s</a>",
+                    "crumb btn btn-secondary cms-panel-link", // CSS classes
+                    $oneLevelUp->Link, // url
+                    _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.CancelBtn', 'Cancel') // label
+                );
+                $actions->insertAfter('MajorActions', new LiteralField('cancelbutton', $text));
+            }
+        }
+
+        $this->extend('updateFormActions', $actions);
+
+        return $actions;
+    }
+
+    /**
+     * Build context for verifying canCreate
+     *
+     * @return array
+     */
+    protected function getCreateContext()
+    {
+        $gridField = $this->gridField;
+        $context = [];
+        if ($gridField->getList() instanceof RelationList) {
+            $record = $gridField->getForm()->getRecord();
+            if ($record && $record instanceof DataObject) {
+                $context['Parent'] = $record;
+            }
+        }
+        return $context;
+    }
+
+    /**
+     * This is responsible to display an edit form, like GridFieldDetailForm, but much simpler
+     *
+     * @return mixed
+     */
+    public function edit(HTTPRequest $request)
+    {
+        $controller = $this->getToplevelController();
+        $form = $this->ItemEditForm();
+
+        $data = $this->customise([
+            'Backlink' => $controller->hasMethod('Backlink') ? $controller->Backlink() : $controller->Link(),
+            'ItemEditForm' => $form,
+        ]);
+        $return = $data->renderWith('LeKoala\\Tabulator\\TabulatorGrid_ItemEditForm');
+
+        if ($request->isAjax()) {
+            return $return;
+        }
+        // If not requested by ajax, we need to render it within the controller context+template
+        return $controller->customise([
+            'Content' => $return,
+        ]);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function view(HTTPRequest $request)
+    {
+        if (!$this->record->canView()) {
+            $this->httpError(403, _t(
+                __CLASS__ . '.ViewPermissionsFailure',
+                'It seems you don\'t have the necessary permissions to view "{ObjectTitle}"',
+                ['ObjectTitle' => $this->record->singular_name()]
+            ));
+        }
+
+        $controller = $this->getToplevelController();
+
+        $form = $this->ItemEditForm();
+        $form->makeReadonly();
+
+        $data = new ArrayData([
+            'Backlink'     => $controller->Link(),
+            'ItemEditForm' => $form
+        ]);
+        $return = $data->renderWith('LeKoala\\Tabulator\\TabulatorGrid_ItemEditForm');
+
+        if ($request->isAjax()) {
+            return $return;
+        }
+        return $controller->customise(['Content' => $return]);
+    }
+
+    /**
      * This is responsible to forward actions to the model if necessary
      * @param HTTPRequest $request
      * @return HTTPResponse
@@ -429,7 +707,7 @@ class TabulatorGrid extends FormField
         }
 
         // Show message on controller or in form
-        $controller = $this->form->getController();
+        $controller = $this->getToplevelController();
         $target = $this->form;
         if ($controller->hasMethod('sessionMessage')) {
             $target = $controller;
@@ -437,6 +715,47 @@ class TabulatorGrid extends FormField
         $target->sessionMessage($result, $error ? "bad" : "good");
 
         return $controller->redirectBack();
+    }
+
+    /**
+     * @param GridField $gridField
+     * @param HTTPRequest $request
+     * @return HTTPResponse
+     */
+    public function handleItem($gridField, $request)
+    {
+        d($gridField, $request);
+        // Our getController could either give us a true Controller, if this is the top-level GridField.
+        // It could also give us a RequestHandler in the form of GridFieldDetailForm_ItemRequest if this is a
+        // nested GridField.
+        $requestHandler = $gridField->getForm()->getController();
+        $record = $this->getRecordFromRequest($gridField, $request);
+        if (!$record) {
+            // Look for the record elsewhere in the CMS
+            $redirectDest = $this->getLostRecordRedirection($gridField, $request);
+            // Don't allow infinite redirections
+            if ($redirectDest) {
+                // Mark the remainder of the URL as parsed to trigger an immediate redirection
+                while (!$request->allParsed()) {
+                    $request->shift();
+                }
+                return (new HTTPResponse())->redirect($redirectDest);
+            }
+
+            return $requestHandler->httpError(404, 'That record was not found');
+        }
+        $handler = $this->getItemRequestHandler($gridField, $record, $requestHandler);
+        $manager = $this->getStateManager();
+        if ($gridStateStr = $manager->getStateFromRequest($gridField, $request)) {
+            $gridField->getState(false)->setValue($gridStateStr);
+        }
+
+        // if no validator has been set on the GridField then use the Validators from the record.
+        if (!$this->getValidator()) {
+            $this->setValidator($record->getCMSCompositeValidator());
+        }
+
+        return $handler->handleRequest($request);
     }
 
     /**
@@ -604,6 +923,62 @@ class TabulatorGrid extends FormField
         return $response;
     }
 
+    /**
+     */
+    public function getToplevelController(): Controller
+    {
+        if ($this->form) {
+            $c = $this->form->getController();
+        } else {
+            $c = Controller::curr();
+        }
+        // Maybe our Tabulator field is included in a GridField ?
+        while ($c && $c instanceof GridFieldDetailForm_ItemRequest) {
+            $c = $c->getController();
+        }
+        return $c;
+    }
+
+    protected function getBackLink(): string
+    {
+        $backlink = '';
+        $toplevelController = $this->getToplevelController();
+        if ($toplevelController && $toplevelController instanceof LeftAndMain) {
+            if ($toplevelController->hasMethod('Backlink')) {
+                $backlink = $toplevelController->Backlink();
+            }
+        }
+        if (!$backlink) {
+            $backlink = $toplevelController->Link();
+        }
+
+        return $backlink;
+    }
+
+    public function getRecord(): DataObject
+    {
+        $controller = $this->getToplevelController();
+        $request = $controller->getRequest();
+
+        $modelClass = $this->getModelClass();
+        $ID = (int)$request->param("ID");
+        if (!$ID && is_numeric($request->param("CustomAction"))) {
+            $ID = (int) $request->param("CustomAction");
+        }
+        if (!$ID || !$modelClass) {
+            throw new RuntimeException("ID or modelClass missing");
+        }
+        return DataObject::get_by_id($modelClass, $ID);
+    }
+
+    public function getDataList(): DataList
+    {
+        if (!$this->value instanceof DataList) {
+            throw new RuntimeException("Value is not a DataList, it is a: " . gettype($this->value));
+        }
+        return $this->value;
+    }
+
     public function getModelClass(): ?string
     {
         if ($this->modelClass) {
@@ -621,20 +996,42 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+    protected function processButtonActions()
+    {
+        $controller = $this->form ? $this->form->getController() : Controller::curr();
+        $link = $this->Link();
+        foreach ($this->columns as $name => $params) {
+            if (isset($params['formatterParams']['url'])) {
+                $url = $params['formatterParams']['url'];
+                // It's already processed
+                if (strpos($url, $link) !== false) {
+                    continue;
+                }
+                if (strpos($url, 'link:') === 0) {
+                    $url = str_replace('link:', rtrim($link, '/') . '/', $url);
+                } else {
+                    $url = $controller->Link($url);
+                }
+                $this->columns[$name]['formatterParams']['url'] = $url;
+            }
+        }
+    }
+
+    /**
+     * @param string $action Action on the controller. Parameters between {} will be interpolated by row values.
+     * @param string $icon
+     * @param string $title
+     * @param string|null $before
+     * @return self
+     */
     public function addButton(string $action, string $icon, string $title, string $before = null): self
     {
-        $url = $action;
-        if (strpos($url, $this->Link()) === false) {
-            $controller = $this->form ? $this->form->getController() : Controller::curr();
-            $url = $controller->Link($action);
-        }
-
         $baseOpts = [
             "tooltip" => $title,
             "formatter" => "SSTabulator.buttonFormatter",
             "formatterParams" => [
                 "icon" => $icon,
-                "url" => $url,
+                "url" => $action, // This needs to be processed later on to make sur the field is linked to a controller
             ],
             "cellClick" => "SSTabulator.buttonHandler",
             "width" => 70,

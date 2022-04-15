@@ -3,5 +3,4 @@
         <h2 id="title-$ID">$Title</h2>
     <% end_if %>
     $Field
-    </div>
 </div>
