@@ -1,0 +1,27 @@
+@keyframes tabulatorShow {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.tabulator-tooltip {
+    background: #fff;
+}
+
+/* Only show alert after a 0.5s delay */
+/* .tabulator .tabulator-alert {
+    opacity: 0;
+    animation-name: tabulatorShow;
+    animation-timing-function: ease-in;
+    animation-duration: 0.2s;
+    animation-delay: 0.5s;
+    animation-fill-mode: forwards;
+} */
+
+.tabulator .tabulator-alert .tabulator-alert-msg.tabulator-alert-state-msg {
+    border: 0;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}

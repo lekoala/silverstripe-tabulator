@@ -35,7 +35,7 @@ use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
  */
 class TabulatorGrid extends FormField
 {
-    // @link http://www.tabulator.info/examples/5.1?#fittodata
+    // @link http://www.tabulator.info/examples/5.2?#fittodata
     const LAYOUT_FIT_DATA = "fitData";
     const LAYOUT_FIT_DATA_FILL = "fitDataFill";
     const LAYOUT_FIT_DATA_STRETCH = "fitDataStretch";
@@ -45,7 +45,7 @@ class TabulatorGrid extends FormField
     const RESPONSIVE_LAYOUT_HIDE = "hide";
     const RESPONSIVE_LAYOUT_COLLAPSE = "collapse";
 
-    // @link http://www.tabulator.info/docs/5.1/format
+    // @link http://www.tabulator.info/docs/5.2/format
     const FORMATTER_PLAINTEXT = 'plaintext';
     const FORMATTER_TEXTAREA = 'textarea';
     const FORMATTER_HTML = 'html';
@@ -64,7 +64,7 @@ class TabulatorGrid extends FormField
     const FORMATTER_BUTTON_CROSS = 'buttonCross';
     const FORMATTER_ROWNUM = 'rownum';
     const FORMATTER_HANDLE = 'handle';
-    // @link http://www.tabulator.info/docs/5.1/format#format-module
+    // @link http://www.tabulator.info/docs/5.2/format#format-module
     const FORMATTER_ROW_SELECTION = 'rowSelection';
     const FORMATTER_RESPONSIVE_COLLAPSE = 'responsiveCollapse';
 
@@ -127,15 +127,15 @@ class TabulatorGrid extends FormField
     private static bool $enable_requirements = true;
 
     /**
-     * @link http://www.tabulator.info/docs/5.1/options
+     * @link http://www.tabulator.info/docs/5.2/options
      * @config
      */
     private static array $default_options = [
-        'index' => "ID", // http://tabulator.info/docs/5.1/data#row-index
-        'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.1/layout#layout
-        'height' => '100%', // http://www.tabulator.info/docs/5.1/layout#height-fixed
+        'index' => "ID", // http://tabulator.info/docs/5.2/data#row-index
+        'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.2/layout#layout
+        'height' => '100%', // http://www.tabulator.info/docs/5.2/layout#height-fixed
         'maxHeight' => "100%",
-        'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.1/layout#responsive
+        'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.2/layout#responsive
     ];
 
     /**
@@ -149,26 +149,28 @@ class TabulatorGrid extends FormField
     private static array $custom_pagination_icons = [];
 
     /**
-     * @link http://www.tabulator.info/docs/5.1/columns
+     * @link http://www.tabulator.info/docs/5.2/columns
      */
     protected array $columns = [];
 
     /**
-     * @link http://www.tabulator.info/docs/5.1/options
+     * @link http://www.tabulator.info/docs/5.2/options
      */
     protected array $options = [];
 
     /**
      * Make all columns editable
-     * @link http://www.tabulator.info/docs/5.1/edit
+     * @link http://www.tabulator.info/docs/5.2/edit
      */
     protected bool $columnsEditable = false;
 
     /**
      * Make all columns filterable
-     * @link http://www.tabulator.info/docs/5.1/filter#header
+     * @link http://www.tabulator.info/docs/5.2/filter#header
      */
     protected bool $columnsFilterable = false;
+
+    protected bool $autoloadDataList = true;
 
     protected int $pageSize = 10;
 
@@ -294,6 +296,9 @@ class TabulatorGrid extends FormField
         if ($theme) {
             Requirements::css("$baseDir/css/tabulator_$theme.min.css");
         }
+        if ($theme && $theme == "bootstrap5") {
+            Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
+        }
         Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
     }
 
@@ -319,11 +324,13 @@ class TabulatorGrid extends FormField
         $this->processButtonActions();
 
         $data = $this->value ?? [];
-        if ($data instanceof DataList) {
+        if ($this->autoloadDataList && $data instanceof DataList) {
+            $this->wizardRemotePagination();
+        }
+
+        // If remote pagination is enabled, don't load data
+        if ($this->getOption('ajaxURL')) {
             $data = null;
-            $this->setRemotePagination($this->Link("load"), [
-                'SecurityID' => SecurityToken::getSecurityID()
-            ]);
         }
 
         $opts = $this->options;
@@ -344,7 +351,10 @@ class TabulatorGrid extends FormField
             }
         }
 
-        if ($data) {
+        if ($data && is_iterable($data)) {
+            if (is_iterable($data) && !is_array($data)) {
+                $data = iterator_to_array($data);
+            }
             $opts['data'] = $data;
         }
 
@@ -361,6 +371,7 @@ class TabulatorGrid extends FormField
             "next_title" =>  _t("TabulatorPagination.next_title", "Next Page"),
             "all" =>  _t("TabulatorPagination.all", "All"),
         ];
+        // This will always default to last icon if present
         if (self::config()->use_pagination_icons) {
             $customIcons = self::config()->custom_pagination_icons;
             $paginationTranslations['first'] = $customIcons['first'] ?? "<<";
@@ -406,7 +417,7 @@ class TabulatorGrid extends FormField
         return $attrs;
     }
 
-    public function getOption(string $k): mixed
+    public function getOption(string $k)
     {
         return $this->options[$k] ?? null;
     }
@@ -418,7 +429,7 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.1/page#remote
+     * @link http://www.tabulator.info/docs/5.2/page#remote
      * @param string $url
      * @param array $params
      * @param integer $pageSize
@@ -437,11 +448,46 @@ class TabulatorGrid extends FormField
         }
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);
-        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.1/page#counter
-
-        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.1/sort#ajax-sort
-        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.1/filter#ajax-filter
+        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.2/page#counter
         return $this;
+    }
+
+    public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $extraParams = [])
+    {
+        $params = array_merge([
+            'SecurityID' => SecurityToken::getSecurityID()
+        ], $extraParams);
+        $this->setRemotePagination($this->Link('load'), $params, $pageSize, $initialPage);
+        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
+        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
+    }
+
+    public function setProgressiveLoad(string $url, array $params = [], int $pageSize = 0, int $initialPage = 1, string $mode = 'scroll', int $scrollMargin = 0)
+    {
+        $this->setOption("ajaxURL", $url);
+        if (!empty($params)) {
+            $this->setOption("ajaxParams", $params);
+        }
+        $this->setOption("progressiveLoad", $mode);
+        if ($scrollMargin > 0) {
+            $this->setOption("progressiveLoadScrollMargin", $scrollMargin);
+        }
+        if (!$pageSize) {
+            $pageSize = $this->pageSize;
+        }
+        $this->setOption("paginationSize", $pageSize);
+        $this->setOption("paginationInitialPage", $initialPage);
+        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.2/page#counter
+    }
+
+    public function wizardProgressiveLoad(int $pageSize = 0, int $initialPage = 1, string $mode = 'scroll', int $scrollMargin = 0, array $extraParams = [])
+    {
+        $params = array_merge([
+            'SecurityID' => SecurityToken::getSecurityID()
+        ], $extraParams);
+        $this->setProgressiveLoad($this->Link('load'), $params, $pageSize, $initialPage, $mode, $scrollMargin);
+        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
+        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
     }
 
     /**
@@ -759,7 +805,7 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.1/page#remote-response
+     * @link http://www.tabulator.info/docs/5.2/page#remote-response
      * @param HTTPRequest $request
      * @return HTTPResponse
      */
@@ -1077,7 +1123,7 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.1/columns#definition
+     * @link http://www.tabulator.info/docs/5.2/columns#definition
      * @param string $field (Required) this is the key for this column in the data array
      * @param string $title (Required) This is the title that will be displayed in the header for this column
      * @param array $opts Other options to merge in
@@ -1207,6 +1253,25 @@ class TabulatorGrid extends FormField
     public function setPageSize(int $pageSize): self
     {
         $this->pageSize = $pageSize;
+        return $this;
+    }
+
+    /**
+     * Get the value of autoloadDataList
+     */
+    public function getAutoloadDataList(): bool
+    {
+        return $this->autoloadDataList;
+    }
+
+    /**
+     * Set the value of autoloadDataList
+     *
+     * @param bool $autoloadDataList
+     */
+    public function setAutoloadDataList(bool $autoloadDataList): self
+    {
+        $this->autoloadDataList = $autoloadDataList;
         return $this;
     }
 }

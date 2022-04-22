@@ -5,6 +5,9 @@
         });
     };
     var flagFormatter = function (cell, formatterParams, onRendered) {
+        if(!cell.getValue()) {
+            return;
+        }
         var iconName = cell.getValue().toLowerCase();
         if (typeof LastIcon == "undefined") {
             return iconName;
@@ -40,8 +43,8 @@
                 '<l-i name="navigate_before"></l-i>';
         }
 
-        var table = new Tabulator(id, options);
-        table.on("rowClick", function (e, row) {
+        var tabulator = new Tabulator(id, options);
+        tabulator.on("rowClick", function (e, row) {
             var firstBtn = row._row.element.querySelector(".btn");
             if (firstBtn) {
                 firstBtn.click();
