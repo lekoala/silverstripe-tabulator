@@ -8,6 +8,7 @@ $files = [];
 $files[] = "https://cdn.jsdelivr.net/gh/olifolkerd/tabulator/dist/js/tabulator.min.js";
 $files[] = "https://cdn.jsdelivr.net/gh/olifolkerd/tabulator/dist/css/tabulator.min.css";
 $files[] = "https://cdn.jsdelivr.net/gh/olifolkerd/tabulator/dist/css/tabulator_bootstrap4.min.css";
+$files[] = "https://cdn.jsdelivr.net/gh/olifolkerd/tabulator/dist/css/tabulator_bootstrap5.min.css";
 
 // $bundleCss = '';
 // $bundleJs = '';

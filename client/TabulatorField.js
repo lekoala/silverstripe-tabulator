@@ -32,10 +32,11 @@
     var init = function (id, options) {
         // Enable last icon pagination
         if (typeof LastIcon != "undefined") {
-            options.langs.pagination.first = '<l-i name="first_page"></l-i>';
-            options.langs.pagination.last = '<l-i name="last_page"></l-i>';
-            options.langs.pagination.next = '<l-i name="navigate_next"></l-i>';
-            options.langs.pagination.prev =
+            options.langs[options.locale].pagination = options.langs[options.locale].pagination || {};
+            options.langs[options.locale].pagination.first = '<l-i name="first_page"></l-i>';
+            options.langs[options.locale].pagination.last = '<l-i name="last_page"></l-i>';
+            options.langs[options.locale].pagination.next = '<l-i name="navigate_next"></l-i>';
+            options.langs[options.locale].pagination.prev =
                 '<l-i name="navigate_before"></l-i>';
         }
 

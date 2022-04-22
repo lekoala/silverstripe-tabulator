@@ -89,12 +89,12 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
-    private static string $theme = 'bootstrap4';
+    private static string $theme = 'bootstrap5';
 
     /**
      * @config
      */
-    private static string $version = '5.1.8';
+    private static string $version = '5.2.1';
 
     /**
      * @config

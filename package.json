@@ -7,7 +7,7 @@
   "author": "LeKoala",
   "license": "MIT",
   "dependencies": {
-    "tabulator-tables": "^5.1.8"
+    "tabulator-tables": "^5.2.1"
   },
   "keywords": []
 }
