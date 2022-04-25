@@ -1,11 +1,22 @@
 (function () {
+    function getInteractiveElement(e) {
+        let src = e;
+        while (
+            !["A", "INPUT", "TD"].includes(src.tagName) &&
+            src.parentElement
+        ) {
+            src = src.parentElement;
+        }
+        return src;
+    }
+
     var interpolate = function (str, data) {
         return str.replace(/\{([^\}]+)?\}/g, function ($1, $2) {
             return data[$2];
         });
     };
     var flagFormatter = function (cell, formatterParams, onRendered) {
-        if(!cell.getValue()) {
+        if (!cell.getValue()) {
             return;
         }
         var iconName = cell.getValue().toLowerCase();
@@ -32,19 +43,39 @@
     var buttonHandler = function (e, cell) {
         console.log("button", e, cell._cell.row.data);
     };
-    var init = function (id, options) {
-        // Enable last icon pagination
+    var init = function (selector, options) {
+        const el = document.querySelector(selector);
+        if (el.classList.contains("lazy-loadable")) {
+            el.addEventListener("lazyloaded", (e) => {
+                createTabulator(selector, options);
+            });
+        } else {
+            createTabulator(selector, options);
+        }
+    };
+    var createTabulator = function (selector, options) {
+        // Enable last icon pagination (material icons)
         if (typeof LastIcon != "undefined") {
-            options.langs[options.locale].pagination = options.langs[options.locale].pagination || {};
-            options.langs[options.locale].pagination.first = '<l-i name="first_page"></l-i>';
-            options.langs[options.locale].pagination.last = '<l-i name="last_page"></l-i>';
-            options.langs[options.locale].pagination.next = '<l-i name="navigate_next"></l-i>';
+            options.langs[options.locale].pagination =
+                options.langs[options.locale].pagination || {};
+            options.langs[options.locale].pagination.first =
+                '<l-i name="first_page"></l-i>';
+            options.langs[options.locale].pagination.last =
+                '<l-i name="last_page"></l-i>';
+            options.langs[options.locale].pagination.next =
+                '<l-i name="navigate_next"></l-i>';
             options.langs[options.locale].pagination.prev =
                 '<l-i name="navigate_before"></l-i>';
         }
 
-        var tabulator = new Tabulator(id, options);
+        var tabulator = new Tabulator(selector, options);
+
+        // Trigger first action on row click if present
         tabulator.on("rowClick", function (e, row) {
+            let target = getInteractiveElement(e.target);
+            if (["A", "INPUT"].includes(target.tagName)) {
+                return;
+            }
             var firstBtn = row._row.element.querySelector(".btn");
             if (firstBtn) {
                 firstBtn.click();
@@ -52,7 +83,7 @@
         });
 
         // Mitigate issue https://github.com/olifolkerd/tabulator/issues/3692
-        document.querySelector(id).addEventListener("keydown", function (e) {
+        document.querySelector(selector).addEventListener("keydown", function (e) {
             if (e.keyCode == 13) {
                 e.preventDefault();
             }

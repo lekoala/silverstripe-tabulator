@@ -7,21 +7,32 @@
     }
 }
 
+.tabulator .tabulator-header {
+    border-top: 0;
+}
+
 .tabulator-tooltip {
     background: #fff;
 }
 
 /* Only show alert after a 0.5s delay */
-/* .tabulator .tabulator-alert {
+.tabulator .tabulator-alert {
     opacity: 0;
+    background: rgba(255, 255, 255, 0.6);
     animation-name: tabulatorShow;
     animation-timing-function: ease-in;
-    animation-duration: 0.2s;
-    animation-delay: 0.5s;
     animation-fill-mode: forwards;
-} */
+    animation-duration: 0.25s;
+
+}
 
 .tabulator .tabulator-alert .tabulator-alert-msg.tabulator-alert-state-msg {
     border: 0;
+    opacity: 0;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    animation-name: tabulatorShow;
+    animation-timing-function: ease-in;
+    animation-fill-mode: forwards;
+    animation-duration: 0.25s;
+    animation-delay: 0.25s;
 }

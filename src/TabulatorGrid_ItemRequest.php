@@ -191,10 +191,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         }
         $target->sessionMessage($result, $error ? "bad" : "good");
 
-        if ($controller->getBackURL()) {
-            return $controller->redirectBack();
-        }
-        return $controller->redirect($this->Link());
+        $url = $this->getBackURL()
+            ?: $this->getReturnReferer()
+            ?: $this->Link();
+
+        return $controller->redirect($url);
     }
 
     /**
@@ -233,7 +234,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ));
         }
 
-        $fields = $record->getCMSFields();
+        if ($record->hasMethod("tabulatorCMSFields")) {
+            $fields = $record->tabulatorCMSFields();
+        } else {
+            $fields = $record->getCMSFields();
+        }
 
         // If we are creating a new record in a has-many list, then
         // Disable the form field as it has no effect.
@@ -279,6 +284,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $form->loadDataFrom(['ManyMany' => $extraData]);
         }
 
+        // Coupling with CMS
         // Copied from GridFieldDetailForm_ItemRequest::ItemEditForm
         if ($controller instanceof \SilverStripe\Admin\LeftAndMain) {
             // Always show with base template (full width, no other panels),

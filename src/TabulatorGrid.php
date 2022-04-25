@@ -8,6 +8,7 @@ use SilverStripe\i18n\i18n;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Core\Convert;
 use SilverStripe\ORM\DataList;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FormField;
@@ -18,6 +19,7 @@ use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
+use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
 
 /**
@@ -57,6 +59,10 @@ class TabulatorGrid extends FormField
     // @link http://www.tabulator.info/docs/5.2/format#format-module
     const FORMATTER_ROW_SELECTION = 'rowSelection';
     const FORMATTER_RESPONSIVE_COLLAPSE = 'responsiveCollapse';
+
+    // our built in functions
+    const JS_FLAGFORMATTER = 'SSTabulator.flagFormatter';
+    const JS_BUTTONFORMATTER = 'SSTabulator.buttonFormatter';
 
     /**
      * @config
@@ -137,6 +143,11 @@ class TabulatorGrid extends FormField
     private static array $custom_pagination_icons = [];
 
     /**
+     * Data source.
+     */
+    protected ?SS_List $list;
+
+    /**
      * @link http://www.tabulator.info/docs/5.2/columns
      */
     protected array $columns = [];
@@ -166,10 +177,26 @@ class TabulatorGrid extends FormField
 
     protected string $modelClass = '';
 
+    protected bool $lazyInit = false;
+
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
         $this->options = self::config()->default_options ?? [];
+
+        // We don't want regular setValue for this since it would break with loadFrom logic
+        if ($value) {
+            $this->setList($value);
+        }
+    }
+
+    /**
+     * This helps if some third party code expects the TabulatorGrid to be a GridField
+     * Only works to a really basic extent
+     */
+    public function getConfig(): GridFieldConfig
+    {
+        return new GridFieldConfig;
     }
 
     public function configureFromDataObject($className = null, bool $clear = true): void
@@ -205,8 +232,8 @@ class TabulatorGrid extends FormField
             }
             $columns[$key]['headerFilter'] = true;
             // $columns[$key]['headerFilterPlaceholder'] = $searchOptions['title'];
+            //TODO: implement filter mapping
             switch ($searchOptions['filter']) {
-                    //TODO: implement filter mapping
                 default:
                     $columns[$key]['headerFilterFunc'] =  "like";
                     break;
@@ -214,10 +241,10 @@ class TabulatorGrid extends FormField
         }
 
         // Allow customizing our columns based on record
-        if ($singl->hasMethod('tabulatorFields')) {
-            $fields = $singl->tabulatorFields();
+        if ($singl->hasMethod('tabulatorColumns')) {
+            $fields = $singl->tabulatorColumns();
             if (!is_array($fields)) {
-                throw new RuntimeException("tabulatorFields must return an array");
+                throw new RuntimeException("tabulatorColumns must return an array");
             }
             foreach ($fields as $key => $columnOptions) {
                 $baseOptions = $columns[$key] ?? [];
@@ -290,6 +317,7 @@ class TabulatorGrid extends FormField
             Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
         }
         Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
+        // Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField-init.js?t=' . time());
     }
 
     public function setValue($value, $data = null)
@@ -303,6 +331,9 @@ class TabulatorGrid extends FormField
     public function Field($properties = [])
     {
         $this->addExtraClass(self::config()->theme);
+        if ($this->lazyInit) {
+            $this->addExtraClass("lazy-loadable");
+        }
         if (self::config()->enable_requirements) {
             self::requirements();
         }
@@ -313,13 +344,9 @@ class TabulatorGrid extends FormField
     {
         $this->processButtonActions();
 
-        $data = $this->value ?? [];
+        $data = $this->list ?? [];
         if ($this->autoloadDataList && $data instanceof DataList) {
             $this->wizardRemotePagination();
-        }
-
-        // If remote pagination is enabled, don't load data
-        if ($this->getOption('ajaxURL')) {
             $data = null;
         }
 
@@ -342,8 +369,12 @@ class TabulatorGrid extends FormField
         }
 
         if ($data && is_iterable($data)) {
-            if (is_iterable($data) && !is_array($data)) {
-                $data = iterator_to_array($data);
+            if ($data instanceof ArrayList) {
+                $data = $data->toArray();
+            } else {
+                if (is_iterable($data) && !is_array($data)) {
+                    $data = iterator_to_array($data);
+                }
             }
             $opts['data'] = $data;
         }
@@ -393,7 +424,7 @@ class TabulatorGrid extends FormField
 
         $json = json_encode($opts);
 
-        // Escape functions
+        // Escape functions (see TabulatorField.js)
         $json = preg_replace('/"(SSTabulator\.[a-zA-Z]*)"/', "$1", $json);
 
         return $json;
@@ -542,7 +573,7 @@ class TabulatorGrid extends FormField
     public function load(HTTPRequest $request)
     {
         /** @var DataList $dataList */
-        $dataList = $this->value;
+        $dataList = $this->list;
         if (!$dataList instanceof DataList) {
             return $this->httpError(404, "Invalid datalist");
         }
@@ -719,18 +750,21 @@ class TabulatorGrid extends FormField
 
     public function getList(): SS_List
     {
-        if (!$this->value instanceof SS_List) {
-            throw new RuntimeException("Value is not a SS_List, it is a: " . gettype($this->value));
-        }
-        return $this->value;
+        return $this->list;
+    }
+
+    public function setList(SS_List $list): self
+    {
+        $this->list = $list;
+        return $this;
     }
 
     public function getDataList(): DataList
     {
-        if (!$this->value instanceof DataList) {
-            throw new RuntimeException("Value is not a DataList, it is a: " . gettype($this->value));
+        if (!$this->list instanceof DataList) {
+            throw new RuntimeException("Value is not a DataList, it is a: " . gettype($this->list));
         }
-        return $this->value;
+        return $this->list;
     }
 
     public function getModelClass(): ?string
@@ -738,8 +772,8 @@ class TabulatorGrid extends FormField
         if ($this->modelClass) {
             return $this->modelClass;
         }
-        if ($this->value && $this->value instanceof DataList) {
-            return $this->value->dataClass();
+        if ($this->list && $this->list instanceof DataList) {
+            return $this->list->dataClass();
         }
         return null;
     }
@@ -991,6 +1025,25 @@ class TabulatorGrid extends FormField
     public function setItemRequestClass(string $itemRequestClass): self
     {
         $this->itemRequestClass = $itemRequestClass;
+        return $this;
+    }
+
+    /**
+     * Get the value of lazyInit
+     */
+    public function getLazyInit(): bool
+    {
+        return $this->lazyInit;
+    }
+
+    /**
+     * Set the value of lazyInit
+     *
+     * @param bool $lazyInit
+     */
+    public function setLazyInit(bool $lazyInit): self
+    {
+        $this->lazyInit = $lazyInit;
         return $this;
     }
 }
