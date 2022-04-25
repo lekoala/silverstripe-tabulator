@@ -46,9 +46,13 @@
     var init = function (selector, options) {
         const el = document.querySelector(selector);
         if (el.classList.contains("lazy-loadable")) {
-            el.addEventListener("lazyloaded", (e) => {
-                createTabulator(selector, options);
-            });
+            el.addEventListener(
+                "lazyloaded",
+                (e) => {
+                    createTabulator(selector, options);
+                },
+                { once: true }
+            );
         } else {
             createTabulator(selector, options);
         }
@@ -83,11 +87,13 @@
         });
 
         // Mitigate issue https://github.com/olifolkerd/tabulator/issues/3692
-        document.querySelector(selector).addEventListener("keydown", function (e) {
-            if (e.keyCode == 13) {
-                e.preventDefault();
-            }
-        });
+        document
+            .querySelector(selector)
+            .addEventListener("keydown", function (e) {
+                if (e.keyCode == 13) {
+                    e.preventDefault();
+                }
+            });
     };
 
     // Public api
