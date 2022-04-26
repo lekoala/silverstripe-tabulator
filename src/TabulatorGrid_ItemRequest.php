@@ -380,10 +380,10 @@ class TabulatorGrid_ItemRequest extends RequestHandler
      */
     protected function getCreateContext()
     {
-        $gridField = $this->gridField;
+        $grid = $this->tabulatorGrid;
         $context = [];
-        if ($gridField->getList() instanceof RelationList) {
-            $record = $gridField->getForm()->getRecord();
+        if ($grid->getList() instanceof RelationList) {
+            $record = $grid->getForm()->getRecord();
             if ($record && $record instanceof DataObject) {
                 $context['Parent'] = $record;
             }
@@ -477,6 +477,12 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     {
         $backlink = '';
         $toplevelController = $this->getToplevelController();
+        if ($this->popupController->hasMethod('Breadcrumbs')) {
+            $parents = $this->popupController->Breadcrumbs(false);
+            if ($parents && $parents = $parents->items) {
+                $backlink = array_pop($parents)->Link;
+            }
+        }
         if ($toplevelController && $toplevelController->hasMethod('Backlink')) {
             $backlink = $toplevelController->Backlink();
         }

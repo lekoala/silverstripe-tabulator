@@ -3,6 +3,7 @@
 namespace LeKoala\Tabulator;
 
 use Exception;
+use InvalidArgumentException;
 use RuntimeException;
 use SilverStripe\i18n\i18n;
 use SilverStripe\ORM\SS_List;
@@ -27,6 +28,9 @@ use SilverStripe\Core\Manifest\ModuleResourceLoader;
  */
 class TabulatorGrid extends FormField
 {
+    const POS_START = 'start';
+    const POS_END = 'end';
+
     // @link http://www.tabulator.info/examples/5.2?#fittodata
     const LAYOUT_FIT_DATA = "fitData";
     const LAYOUT_FIT_DATA_FILL = "fitDataFill";
@@ -169,6 +173,8 @@ class TabulatorGrid extends FormField
      */
     protected bool $columnsFilterable = false;
 
+    protected bool $columnsResizable = false;
+
     protected bool $autoloadDataList = true;
 
     protected int $pageSize = 10;
@@ -178,6 +184,8 @@ class TabulatorGrid extends FormField
     protected string $modelClass = '';
 
     protected bool $lazyInit = false;
+
+    protected array $tools = [];
 
     public function __construct($name, $title = null, $value = null)
     {
@@ -269,6 +277,10 @@ class TabulatorGrid extends FormField
             $this->addButton($itemUrl, "visibility", "View");
         }
 
+        if ($singl->canCreate()) {
+            $this->addTool(self::POS_START, new TabulatorAddNewButton());
+        }
+
         // - Custom actions
         if ($singl->hasMethod('tabulatorRowActions')) {
             $rowActions = $singl->tabulatorRowActions();
@@ -340,6 +352,17 @@ class TabulatorGrid extends FormField
         return parent::Field($properties);
     }
 
+    public function ShowTools($pos): ArrayList
+    {
+        $list = new ArrayList();
+        foreach ($this->tools as $tool) {
+            if ($tool['position'] == $pos) {
+                $list->push($tool['tool']);
+            }
+        }
+        return $list;
+    }
+
     public function JsonOptions(): string
     {
         $this->processButtonActions();
@@ -364,6 +387,11 @@ class TabulatorGrid extends FormField
                 }
                 if ($this->columnsFilterable && !isset($colOptions['headerFilter'])) {
                     $opts['columns'][$colIdx]['headerFilter'] = true;
+                }
+                if ($this->columnsResizable && !isset($colOptions['resizable'])) {
+                    $opts['columns'][$colIdx]['resizable'] = true;
+                } elseif (!isset($colOptions['resizable'])) {
+                    $opts['columns'][$colIdx]['resizable'] = false;
                 }
             }
         }
@@ -934,13 +962,36 @@ class TabulatorGrid extends FormField
 
     /**
      * Set the value of columns
-     *
-     * @param array $columns
      */
     public function setColumns(array $columns): self
     {
         $this->columns = $columns;
         return $this;
+    }
+
+    public function addTool(string $pos, AbstractTabulatorTool $tool)
+    {
+        $tool->setTabulatorGrid($this);
+
+        $this->tools[] = [
+            'position' => $pos,
+            'tool' => $tool,
+        ];
+    }
+
+    public function removeTool($tool)
+    {
+        if (is_object($tool)) {
+            $tool = get_class($tool);
+        }
+        if (!is_string($tool)) {
+            throw new InvalidArgumentException('Tool must be an object or a class name');
+        }
+        foreach ($this->tools as $idx => $tool) {
+            if ($tool['tool'] instanceof $tool) {
+                unset($this->tools[$idx]);
+            }
+        }
     }
 
     /**
@@ -970,8 +1021,6 @@ class TabulatorGrid extends FormField
 
     /**
      * Set make all columns filterable
-     *
-     * @param bool $columnsFilterable Make all columns filterable
      */
     public function setColumnsFilterable(bool $columnsFilterable): self
     {
@@ -1019,8 +1068,6 @@ class TabulatorGrid extends FormField
 
     /**
      * Set the value of itemRequestClass
-     *
-     * @param string $itemRequestClass
      */
     public function setItemRequestClass(string $itemRequestClass): self
     {
@@ -1038,12 +1085,27 @@ class TabulatorGrid extends FormField
 
     /**
      * Set the value of lazyInit
-     *
-     * @param bool $lazyInit
      */
     public function setLazyInit(bool $lazyInit): self
     {
         $this->lazyInit = $lazyInit;
+        return $this;
+    }
+
+    /**
+     * Get the value of columnsResizable
+     */
+    public function getColumnsResizable(): bool
+    {
+        return $this->columnsResizable;
+    }
+
+    /**
+     * Set the value of columnsResizable
+     */
+    public function setColumnsResizable(bool $columnsResizable): self
+    {
+        $this->columnsResizable = $columnsResizable;
         return $this;
     }
 }
