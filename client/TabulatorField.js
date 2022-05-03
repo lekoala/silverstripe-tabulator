@@ -1,4 +1,4 @@
-(function () {
+(() => {
     function getInteractiveElement(e) {
         let src = e;
         while (
@@ -10,7 +10,7 @@
         return src;
     }
 
-    var interpolate = function (str, data) {
+    var interpolate = (str, data) => {
         return str.replace(/\{([^\}]+)?\}/g, function ($1, $2) {
             return data[$2];
         });
@@ -28,14 +28,22 @@
     };
     var buttonFormatter = function (cell, formatterParams, onRendered) {
         var iconName = formatterParams.icon;
+        var iconTitle = formatterParams.title;
+        var btnClasses = formatterPamras.classes;
         var url = formatterParams.url;
         url = interpolate(url, cell._cell.row.data);
 
-        var classes = "btn btn-primary";
-        var icon = '<l-i name="' + iconName + '"></l-i>';
-        if (typeof LastIcon == "undefined") {
-            icon = '<span class="font-icon-' + iconName + '"></span>';
+        var classes = btnClasses || "btn btn-primary";
+        // It can be an url
+        if (iconName[0] === "/") {
+            var icon = '<img src="' + iconName + '" alt="' + iconTitle + '"/>';
+        } else {
+            var icon = '<l-i name="' + iconName + '"></l-i>';
+            if (typeof LastIcon == "undefined") {
+                icon = '<span class="font-icon-' + iconName + '"></span>';
+            }
         }
+
         var link =
             '<a href="' + url + '" class="' + classes + '">' + icon + "</a>";
         return link;
@@ -56,6 +64,12 @@
         } else {
             createTabulator(selector, options);
         }
+    };
+    var dataAjaxResponse = function (url, params, response) {
+        if (!response.data) {
+            console.error("Response does not contain a data key");
+        }
+        return response.data;
     };
     var createTabulator = function (selector, options) {
         // Enable last icon pagination (material icons)
@@ -102,5 +116,6 @@
         buttonFormatter: buttonFormatter,
         buttonHandler: buttonHandler,
         init: init,
+        dataAjaxResponse: dataAjaxResponse,
     };
 })();

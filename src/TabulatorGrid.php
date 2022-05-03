@@ -22,6 +22,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
+use SilverStripe\Forms\Form;
 
 /**
  * @link http://www.tabulator.info/
@@ -65,8 +66,9 @@ class TabulatorGrid extends FormField
     const FORMATTER_RESPONSIVE_COLLAPSE = 'responsiveCollapse';
 
     // our built in functions
-    const JS_FLAGFORMATTER = 'SSTabulator.flagFormatter';
-    const JS_BUTTONFORMATTER = 'SSTabulator.buttonFormatter';
+    const JS_FLAG_FORMATTER = 'SSTabulator.flagFormatter';
+    const JS_BUTTON_FORMATTER = 'SSTabulator.buttonFormatter';
+    const JS_DATA_AJAX_RESPONSE = 'SSTabulator.dataAjaxResponse';
 
     /**
      * @config
@@ -349,6 +351,12 @@ class TabulatorGrid extends FormField
         if (self::config()->enable_requirements) {
             self::requirements();
         }
+
+        // Make sure we can use a standalone version of the field without a form
+        if (!$this->form) {
+            $this->form = new Form(Controller::curr());
+        }
+
         return parent::Field($properties);
     }
 
@@ -477,6 +485,20 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+    public function setRemoteSource(string $url, array $extraParams = [], bool $dataResponse = false): self
+    {
+        $this->setOption("ajaxURL", $url); //set url for ajax request
+        $params = array_merge([
+            'SecurityID' => SecurityToken::getSecurityID()
+        ], $extraParams);
+        $this->setOption("ajaxParams", $params);
+        // Accept response where data is nested under the data key
+        if ($dataResponse) {
+            $this->setOption("ajaxResponse", self::JS_DATA_AJAX_RESPONSE);
+        }
+        return $this;
+    }
+
     /**
      * @link http://www.tabulator.info/docs/5.2/page#remote
      * @param string $url
@@ -488,10 +510,7 @@ class TabulatorGrid extends FormField
     {
         $this->setOption("pagination", true); //enable pagination
         $this->setOption("paginationMode", 'remote'); //enable remote pagination
-        $this->setOption("ajaxURL", $url); //set url for ajax request
-        if (!empty($params)) {
-            $this->setOption("ajaxParams", $params);
-        }
+        $this->setRemoteSource($url, $params);
         if (!$pageSize) {
             $pageSize = $this->pageSize;
         }
@@ -501,11 +520,8 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $extraParams = [])
+    public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $params = [])
     {
-        $params = array_merge([
-            'SecurityID' => SecurityToken::getSecurityID()
-        ], $extraParams);
         $this->setRemotePagination($this->Link('load'), $params, $pageSize, $initialPage);
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
@@ -833,6 +849,44 @@ class TabulatorGrid extends FormField
         }
     }
 
+    public function makeButton(string $action, string $icon, string $title): array
+    {
+        $opts = [
+            "tooltip" => $title,
+            "formatter" => "SSTabulator.buttonFormatter",
+            "formatterParams" => [
+                "icon" => $icon,
+                "title" => $title,
+                "url" => $action, // This needs to be processed later on to make sur the field is linked to a controller
+            ],
+            "cellClick" => "SSTabulator.buttonHandler",
+            "width" => 70,
+            "hozAlign" => "center",
+            "headerSort" => false,
+        ];
+        return $opts;
+    }
+
+    public function addButtonFromArray(string $action, array $opts = [], string $before = null): self
+    {
+        // Insert before given column
+        if ($before) {
+            if (array_key_exists($before, $this->columns)) {
+                $new = [];
+                foreach ($this->columns as $k => $value) {
+                    if ($k === $before) {
+                        $new["action_$action"] = $opts;
+                    }
+                    $new[$k] = $value;
+                }
+                $this->columns = $new;
+            }
+        } else {
+            $this->columns["action_$action"] = $opts;
+        }
+        return $this;
+    }
+
     /**
      * @param string $action Action on the controller. Parameters between {} will be interpolated by row values.
      * @param string $icon
@@ -842,34 +896,9 @@ class TabulatorGrid extends FormField
      */
     public function addButton(string $action, string $icon, string $title, string $before = null): self
     {
-        $baseOpts = [
-            "tooltip" => $title,
-            "formatter" => "SSTabulator.buttonFormatter",
-            "formatterParams" => [
-                "icon" => $icon,
-                "url" => $action, // This needs to be processed later on to make sur the field is linked to a controller
-            ],
-            "cellClick" => "SSTabulator.buttonHandler",
-            "width" => 70,
-            "hozAlign" => "center",
-            "headerSort" => false,
-        ];
+        $opts = $this->makeButton($action, $icon, $title);
 
-        if ($before) {
-            if (array_key_exists($before, $this->columns)) {
-                $new = [];
-                foreach ($this->columns as $k => $value) {
-                    if ($k === $before) {
-                        $new["action_$action"] = $baseOpts;
-                    }
-                    $new[$k] = $value;
-                }
-                $this->columns = $new;
-            }
-        } else {
-            $this->columns["action_$action"] = $baseOpts;
-        }
-
+        $this->addButtonFromArray($action, $opts, $before);
         return $this;
     }
 
