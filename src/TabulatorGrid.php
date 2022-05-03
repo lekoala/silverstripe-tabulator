@@ -92,7 +92,7 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
-    private static string $version = '5.2.1';
+    private static string $version = '5.2.3';
 
     /**
      * @config
