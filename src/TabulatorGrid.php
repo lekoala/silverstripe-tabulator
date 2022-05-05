@@ -68,6 +68,7 @@ class TabulatorGrid extends FormField
     // our built in functions
     const JS_FLAG_FORMATTER = 'SSTabulator.flagFormatter';
     const JS_BUTTON_FORMATTER = 'SSTabulator.buttonFormatter';
+    const JS_CUSTOM_TICK_CROSS_FORMATTER = 'SSTabulator.customTickCrossFormatter';
     const JS_DATA_AJAX_RESPONSE = 'SSTabulator.dataAjaxResponse';
 
     /**
@@ -133,7 +134,7 @@ class TabulatorGrid extends FormField
     private static array $default_options = [
         'index' => "ID", // http://tabulator.info/docs/5.2/data#row-index
         'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.2/layout#layout
-        'height' => '100%', // http://www.tabulator.info/docs/5.2/layout#height-fixed
+        // 'height' => '100%', // http://www.tabulator.info/docs/5.2/layout#height-fixed
         'maxHeight' => "100%",
         'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.2/layout#responsive
     ];
@@ -272,7 +273,7 @@ class TabulatorGrid extends FormField
         // We use a pseudo link, because maybe we cannot call Link() yet if it's not linked to a form
 
         // - Core actions
-        $itemUrl = 'link:item/{ID}';
+        $itemUrl = 'item/{ID}';
         if ($singl->canEdit()) {
             $this->addButton($itemUrl, "edit", "Edit");
         } elseif ($singl->canView()) {
@@ -290,7 +291,7 @@ class TabulatorGrid extends FormField
                 throw new RuntimeException("tabulatorRowActions must return an array");
             }
             foreach ($rowActions as $key => $actionConfig) {
-                $url = 'link:item/{ID}/customAction/' . $actionConfig['action'];
+                $url = 'item/{ID}/customAction/' . $actionConfig['action'];
                 $icon = $actionConfig['icon'] ?? "star";
                 $title = $actionConfig['title'] ?? "";
                 $this->addButton($url, $icon, $title);
@@ -354,7 +355,7 @@ class TabulatorGrid extends FormField
 
         // Make sure we can use a standalone version of the field without a form
         if (!$this->form) {
-            $this->form = new Form(Controller::curr());
+            $this->form = new Form(Controller::curr(), 'TabulatorForm');
         }
 
         return parent::Field($properties);
@@ -839,11 +840,11 @@ class TabulatorGrid extends FormField
                 if (strpos($url, $link) !== false) {
                     continue;
                 }
-                if (strpos($url, 'link:') === 0) {
-                    $url = str_replace('link:', rtrim($link, '/') . '/', $url);
-                } else {
-                    $url = $controller->Link($url);
+                // It's a custom protocol
+                if (strpos($url, ':') !== false) {
+                    continue;
                 }
+                $url = $controller->Link($url);
                 $this->columns[$name]['formatterParams']['url'] = $url;
             }
         }
@@ -857,7 +858,7 @@ class TabulatorGrid extends FormField
             "formatterParams" => [
                 "icon" => $icon,
                 "title" => $title,
-                "url" => $action, // This needs to be processed later on to make sur the field is linked to a controller
+                "url" => $action, // This needs to be processed later on to make sure the field is linked to a controller
             ],
             "cellClick" => "SSTabulator.buttonHandler",
             "width" => 70,

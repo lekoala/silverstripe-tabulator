@@ -69,6 +69,11 @@
     border-radius: 0;
 }
 
+.tabulator .tabulator-footer .tabulator-page svg {
+    width: 1em;
+    height: 1em;
+}
+
 .tabulator .tabulator-footer .tabulator-page.active {
     background-color: var(--bs-primary, #0d6efd);
     border-color: var(--bs-primary, #0d6efd);
