@@ -556,6 +556,19 @@ class TabulatorGrid extends FormField
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
     }
 
+    public function wizardResponsiveCollapse($startOpen = false)
+    {
+        $this->setOption("responsiveLayout", "collapse");
+        $this->setOption("responsiveLayoutCollapseStartOpen", $startOpen);
+        $this->columns = array_merge([
+            'ui_responsive_collapse' => [
+                'formatter' => 'responsiveCollapse',
+                'headerSort' => false,
+                'width' => 50,
+            ]
+        ], $this->columns);
+    }
+
     /**
      * @param HTTPRequest $request
      * @return HTTPResponse

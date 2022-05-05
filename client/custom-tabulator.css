@@ -28,6 +28,29 @@
     animation-delay: 0.25s;
 }
 
+/* Nice scrollbars */
+.tabulator-tableholder {
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+    /* Don't scroll the body https://caniuse.com/css-scroll-behavior */
+    overscroll-behavior: contain;
+    scrollbar-color: #c1c1c1 transparent;
+    scrollbar-width: thin;
+}
+.tabulator-tableholder::-webkit-scrollbar {
+    /* More or less the equivalent of "thin" for FireFox */
+    width: 8px;
+}
+.tabulator-tableholder::-webkit-scrollbar-track {
+    background: transparent;
+}
+.tabulator-tableholder::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+}
+.tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
 /* SilverStripe improvements over BS5 theme */
 
 .tabulator-tooltip {
@@ -72,6 +95,16 @@
 .tabulator .tabulator-footer .tabulator-page svg {
     width: 1em;
     height: 1em;
+}
+
+.tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle {
+    color: #fff;
+    cursor: pointer;
+    height: 20px;
+    width: 20px;
+}
+.tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle > span {
+    margin-top: -0.2em;
 }
 
 .tabulator .tabulator-footer .tabulator-page.active {
