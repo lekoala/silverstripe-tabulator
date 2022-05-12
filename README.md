@@ -7,6 +7,7 @@
 ## Intro
 
 Integrating [Tabulator](http://www.tabulator.info/) into SilverStripe. Because GridField doesn't always cut it.
+This works in the front end and in the cms.
 
 ## Configuring detail fields
 
@@ -39,6 +40,9 @@ For more advanced usage, please define a `tabulatorColumns` method that returns 
 ## Configuring row actions
 
 To define custom actions, you can either use the `addButton` method that will trigger an action on the current controller.
+You can also use `makeButton` and `addButtonFromArray` for finer control.
+
+### Actions in the CMS
 
 In order to forward actions to a record (the preferred way), add a `tabulatorRowActions` on your record.
 
@@ -57,9 +61,27 @@ public function tabulatorRowActions()
 
 This will call the method `doTabulatorAction` on your record.
 
-## Additionnal formaters
+## Using wizards
+
+The class contain a couple of "wizard" functions that will set a group of options in a consistent manner.
+Please check the source code for more informations.
+
+## Theming
+
+The class use by default the Bootstrap 5 theme with a few custom improvements to make it more "silverstripy".
+
+You can choose your theme with the `theme` config option or set it to null to include your own theme.
+Disabling the bootstrap5 theme also disables the custom css.
+
+## Additionnal formaters and helpers
 
 - SSTabulator.flagFormatter: format a two char country code to a svg flag using Last Icon
+- SSTabulator.buttonFormatter: format buttons
+  - Allow showing alternative icons using `showAlt` and `showAltClause`
+- SSTabulator.customTickCross: nice alternative to the default tick cross formatter
+- SSTabulator.boolGroupHeader: useful to group by boolean values
+- SSTabulator.simpleRowFormatter: apply class or colors if the row contains `TabulatorRowColor` or `TabulatorRowClass`
+- SSTabulator.expandTooltip: show content in a tooltip if truncated
 
 ## Dependencies
 

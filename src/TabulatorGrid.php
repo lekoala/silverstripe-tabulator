@@ -3,9 +3,10 @@
 namespace LeKoala\Tabulator;
 
 use Exception;
-use InvalidArgumentException;
 use RuntimeException;
 use SilverStripe\i18n\i18n;
+use SilverStripe\Forms\Form;
+use InvalidArgumentException;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Core\Convert;
 use SilverStripe\ORM\DataList;
@@ -13,6 +14,7 @@ use SilverStripe\ORM\ArrayList;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FormField;
+use SilverStripe\Control\Director;
 use SilverStripe\View\Requirements;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
@@ -22,7 +24,6 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
-use SilverStripe\Forms\Form;
 
 /**
  * @link http://www.tabulator.info/
@@ -69,6 +70,9 @@ class TabulatorGrid extends FormField
     const JS_FLAG_FORMATTER = 'SSTabulator.flagFormatter';
     const JS_BUTTON_FORMATTER = 'SSTabulator.buttonFormatter';
     const JS_CUSTOM_TICK_CROSS_FORMATTER = 'SSTabulator.customTickCrossFormatter';
+    const JS_BOOL_GROUP_HEADER = 'SSTabulator.boolGroupHeader';
+    const JS_SIMPLE_ROW_FORMATTER = 'SSTabulator.simpleRowFormatter';
+    const JS_EXPAND_TOOLTIP = 'SSTabulator.expandTooltip';
     const JS_DATA_AJAX_RESPONSE = 'SSTabulator.dataAjaxResponse';
 
     /**
@@ -95,7 +99,7 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
-    private static string $version = '5.2.3';
+    private static string $version = '5.2.4';
 
     /**
      * @config
@@ -137,12 +141,19 @@ class TabulatorGrid extends FormField
         // 'height' => '100%', // http://www.tabulator.info/docs/5.2/layout#height-fixed
         'maxHeight' => "100%",
         'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.2/layout#responsive
+        'rowFormatter' => "SSTabulator.simpleRowFormatter", // http://tabulator.info/docs/5.2/format#row
     ];
 
     /**
+     * @link http://tabulator.info/docs/5.2/columns#defaults
      * @config
      */
-    private static bool $use_pagination_icons = true;
+    private static array $default_column_options = [
+        'resizable' => false,
+        'tooltip' => 'SSTabulator.expandTooltip',
+    ];
+
+    private static bool $enable_ajax_init = true;
 
     /**
      * @config
@@ -160,25 +171,18 @@ class TabulatorGrid extends FormField
     protected array $columns = [];
 
     /**
+     * @link http://tabulator.info/docs/5.2/columns#defaults
+     */
+    protected array $columnDefaults = [];
+
+    /**
      * @link http://www.tabulator.info/docs/5.2/options
      */
     protected array $options = [];
 
-    /**
-     * Make all columns editable
-     * @link http://www.tabulator.info/docs/5.2/edit
-     */
-    protected bool $columnsEditable = false;
-
-    /**
-     * Make all columns filterable
-     * @link http://www.tabulator.info/docs/5.2/filter#header
-     */
-    protected bool $columnsFilterable = false;
-
-    protected bool $columnsResizable = false;
-
     protected bool $autoloadDataList = true;
+
+    protected bool $rowClickTriggersAction = false;
 
     protected int $pageSize = 10;
 
@@ -194,6 +198,7 @@ class TabulatorGrid extends FormField
     {
         parent::__construct($name, $title, $value);
         $this->options = self::config()->default_options ?? [];
+        $this->columnDefaults = self::config()->default_column_options ?? [];
 
         // We don't want regular setValue for this since it would break with loadFrom logic
         if ($value) {
@@ -297,6 +302,8 @@ class TabulatorGrid extends FormField
                 $this->addButton($url, $icon, $title);
             }
         }
+
+        $this->setRowClickTriggersAction(true);
     }
 
     public static function requirements(): void
@@ -332,7 +339,11 @@ class TabulatorGrid extends FormField
             Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
         }
         Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
-        // Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField-init.js?t=' . time());
+
+        // In the cms, init will not be triggered on ajax nav
+        if (self::config()->enable_ajax_init && Director::is_ajax()) {
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField-init.js?t=' . time());
+        }
     }
 
     public function setValue($value, $data = null)
@@ -358,6 +369,8 @@ class TabulatorGrid extends FormField
             $this->form = new Form(Controller::curr(), 'TabulatorForm');
         }
 
+        $this->addExtraClass('tabulator-' . $this->getOption('layout'));
+
         return parent::Field($properties);
     }
 
@@ -381,28 +394,13 @@ class TabulatorGrid extends FormField
             $this->wizardRemotePagination();
             $data = null;
         }
-
         $opts = $this->options;
+        $opts['columnDefaults'] = $this->columnDefaults;
+
         if (empty($this->columns)) {
             $opts['autoColumns'] = true;
         } else {
             $opts['columns'] = array_values($this->columns);
-        }
-
-        if (!empty($opts['columns'])) {
-            foreach ($opts['columns'] as $colIdx => $colOptions) {
-                if ($this->columnsEditable && !isset($colOptions['editor'])) {
-                    $opts['columns'][$colIdx]['editor'] = true;
-                }
-                if ($this->columnsFilterable && !isset($colOptions['headerFilter'])) {
-                    $opts['columns'][$colIdx]['headerFilter'] = true;
-                }
-                if ($this->columnsResizable && !isset($colOptions['resizable'])) {
-                    $opts['columns'][$colIdx]['resizable'] = true;
-                } elseif (!isset($colOptions['resizable'])) {
-                    $opts['columns'][$colIdx]['resizable'] = false;
-                }
-            }
         }
 
         if ($data && is_iterable($data)) {
@@ -430,12 +428,14 @@ class TabulatorGrid extends FormField
             "all" =>  _t("TabulatorPagination.all", "All"),
         ];
         // This will always default to last icon if present
-        if (self::config()->use_pagination_icons) {
+        if (!empty(self::config()->custom_pagination_icons)) {
             $customIcons = self::config()->custom_pagination_icons;
             $paginationTranslations['first'] = $customIcons['first'] ?? "<<";
             $paginationTranslations['last'] = $customIcons['last'] ?? ">>";
             $paginationTranslations['prev'] = $customIcons['prev'] ?? "<";
             $paginationTranslations['next'] = $customIcons['next'] ?? ">";
+        } else {
+            $opts['useCustomPaginationIcons'] = true;
         }
         $dataTranslations = [
             "loading" => _t("TabulatorData.loading", "Loading"),
@@ -556,7 +556,7 @@ class TabulatorGrid extends FormField
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
     }
 
-    public function wizardResponsiveCollapse($startOpen = false)
+    public function wizardResponsiveCollapse(bool $startOpen = false)
     {
         $this->setOption("responsiveLayout", "collapse");
         $this->setOption("responsiveLayoutCollapseStartOpen", $startOpen);
@@ -567,6 +567,15 @@ class TabulatorGrid extends FormField
                 'width' => 50,
             ]
         ], $this->columns);
+    }
+
+    public function wizardGroupBy(string $field, string $toggleElement = 'header', bool $isBool = false)
+    {
+        $this->setOption("groupBy", $field);
+        $this->setOption("groupToggleElement", "header");
+        if ($isBool) {
+            $this->setOption("groupHeader", self::JS_BOOL_GROUP_HEADER);
+        }
     }
 
     /**
@@ -847,10 +856,10 @@ class TabulatorGrid extends FormField
         $controller = $this->form ? $this->form->getController() : Controller::curr();
         $link = $this->Link();
         foreach ($this->columns as $name => $params) {
-            if (isset($params['formatterParams']['url'])) {
+            if (!empty($params['formatterParams']['url'])) {
                 $url = $params['formatterParams']['url'];
                 // It's already processed
-                if (strpos($url, $link) !== false) {
+                if (strpos($url, $link) !== false || $url == '#') {
                     continue;
                 }
                 // It's a custom protocol
@@ -866,6 +875,7 @@ class TabulatorGrid extends FormField
     public function makeButton(string $action, string $icon, string $title): array
     {
         $opts = [
+            "responsive" => 0,
             "tooltip" => $title,
             "formatter" => "SSTabulator.buttonFormatter",
             "formatterParams" => [
@@ -1037,37 +1047,24 @@ class TabulatorGrid extends FormField
         }
     }
 
-    /**
-     * Get make all columns editable
-     */
-    public function getColumnsEditable(): bool
+    public function getColumnDefault(string $opt)
     {
-        return $this->columnsEditable;
+        return $this->columnDefaults[$opt] ?? null;
     }
 
-    /**
-     * Set make all columns editable
-     */
-    public function setColumnsEditable(bool $columnsEditable): self
+    public function setColumnDefault(string $opt, $value)
     {
-        $this->columnsEditable = $columnsEditable;
-        return $this;
+        $this->columnDefaults[$opt] = $value;
     }
 
-    /**
-     * Get make all columns filterable
-     */
-    public function getColumnsFilterable(): bool
+    public function getColumnDefaults(): array
     {
-        return $this->columnsFilterable;
+        return $this->columnDefaults;
     }
 
-    /**
-     * Set make all columns filterable
-     */
-    public function setColumnsFilterable(bool $columnsFilterable): self
+    public function setColumnDefaults(array $columnDefaults): self
     {
-        $this->columnsFilterable = $columnsFilterable;
+        $this->columnDefaults = $columnDefaults;
         return $this;
     }
 
@@ -1136,19 +1133,19 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * Get the value of columnsResizable
+     * Get the value of rowClickTriggersAction
      */
-    public function getColumnsResizable(): bool
+    public function getRowClickTriggersAction(): bool
     {
-        return $this->columnsResizable;
+        return $this->rowClickTriggersAction;
     }
 
     /**
-     * Set the value of columnsResizable
+     * Set the value of rowClickTriggersAction
      */
-    public function setColumnsResizable(bool $columnsResizable): self
+    public function setRowClickTriggersAction(bool $rowClickTriggersAction): self
     {
-        $this->columnsResizable = $columnsResizable;
+        $this->rowClickTriggersAction = $rowClickTriggersAction;
         return $this;
     }
 }

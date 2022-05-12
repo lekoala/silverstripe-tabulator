@@ -19,8 +19,11 @@
 
 .tabulator .tabulator-alert .tabulator-alert-msg.tabulator-alert-state-msg {
     border: 0;
+    background-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 15%);
+    border-radius: 0.5rem;
+    /* Fade in after 0.25s */
     opacity: 0;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     animation-name: tabulatorShow;
     animation-timing-function: ease-in;
     animation-fill-mode: forwards;
@@ -28,31 +31,32 @@
     animation-delay: 0.25s;
 }
 
-/* Nice scrollbars */
-.tabulator-tableholder {
-    overflow-y: scroll;
+/* Make sure that fitColumns don't display unwanted horizontal scrolls */
+.tabulator.tabulator-fitColumns .tabulator-tableholder {
+    overflow-x: hidden;
+}
+
+/* Nice scrollbars for desktop */
+.tabulator-navigator-desktop .tabulator-tableholder {
     scroll-behavior: smooth;
-    /* Don't scroll the body https://caniuse.com/css-scroll-behavior */
-    overscroll-behavior: contain;
     scrollbar-color: #c1c1c1 transparent;
     scrollbar-width: thin;
 }
-.tabulator-tableholder::-webkit-scrollbar {
-    /* More or less the equivalent of "thin" for FireFox */
+.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
-.tabulator-tableholder::-webkit-scrollbar-track {
-    background: transparent;
+.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar-track {
+    background: var(--bs-gray-100, #f8f9f9);
 }
-.tabulator-tableholder::-webkit-scrollbar-thumb {
+.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar-thumb {
     background: #c1c1c1;
 }
-.tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar-thumb:hover {
     background: #a1a1a1;
 }
 
 /* SilverStripe improvements over BS5 theme */
-
 .tabulator-tooltip {
     background: #fff;
 }
@@ -60,6 +64,11 @@
 .tabulator {
     font-size: inherit;
 }
+
+.tabulator-row .tabulator-responsive-collapse table {
+    font-size: inherit;
+}
+
 .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
     padding: 0.75rem 1rem;
 }
@@ -90,6 +99,7 @@
 
 .tabulator .tabulator-footer .tabulator-page {
     border-radius: 0;
+    margin-top: 0;
 }
 
 .tabulator .tabulator-footer .tabulator-page svg {
@@ -103,6 +113,7 @@
     height: 20px;
     width: 20px;
 }
+
 .tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle > span {
     margin-top: -0.2em;
 }
@@ -124,8 +135,35 @@
     color: var(--bs-primary, #0a58ca);
 }
 
-/* Custom UI */
+/* Improve row grouping ui */
+.tabulator-group {
+    display: flex;
+    align-items: center;
+}
 
+.tabulator-row.tabulator-group .tabulator-arrow {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-right: 16px;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 0;
+    border-left: 6px solid #666;
+    vertical-align: middle;
+    animation: transform ease-in-out 0.2s; /* Doesn't work because node is replaced */
+}
+
+.tabulator-row.tabulator-group.tabulator-group-visible .tabulator-arrow {
+    transform: rotate(90deg);
+    margin-right: 16px;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 0;
+    border-left: 6px solid #666;
+}
+
+/* Custom UI */
 .tabulator-tools {
     display: flex;
     justify-content: space-between;

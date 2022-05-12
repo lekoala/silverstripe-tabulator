@@ -47,6 +47,7 @@
     };
     var buttonFormatter = function (cell, formatterParams, onRendered) {
         var iconName = formatterParams.icon;
+        // We can show alternative icons based on simple state on the row
         if (formatterParams.showAlt) {
             var showAltClause = formatterParams.showAlt;
             var isNot = showAltClause[0] == "!";
@@ -64,11 +65,8 @@
 
         var iconTitle = formatterParams.title;
         var btnClasses = formatterParams.classes;
-        var url = formatterParams.url;
-        url = interpolate(url, cell._cell.row.data);
-
         var classes = btnClasses || "btn btn-primary";
-        // It can be an url
+        // It can be an url or an icon name
         if (iconName[0] === "/") {
             var icon = '<img src="' + iconName + '" alt="' + iconTitle + '"/>';
         } else {
@@ -78,6 +76,13 @@
             }
         }
 
+        var url = formatterParams.url;
+        if (url) {
+            url = interpolate(url, cell._cell.row.data);
+        }
+        if (!url) {
+            return icon;
+        }
         var link =
             '<a href="' + url + '" class="' + classes + '">' + icon + "</a>";
         return link;
@@ -105,29 +110,80 @@
         }
         return response.data;
     };
+    var simpleRowFormatter = function (row) {
+        const data = row.getData();
+        if (data.TabulatorRowColor) {
+            row.getElement().style.backgroundColor = data.TabulatorRowColor;
+        }
+        if (data.TabulatorRowClass) {
+            row.getElement().classList.add(data.TabulatorRowClass);
+        }
+    };
+    var boolGroupHeader = function (value, count, data, group) {
+        if (value) {
+            return group._group.field + " (" + count + ")";
+        }
+        return "(" + count + ")";
+    };
+    var expandTooltip = function (e, cell, onRendered) {
+        const el = cell._cell.element;
+        const isTruncated = el.scrollWidth > el.clientWidth;
+        if (isTruncated) {
+            return cell._cell.value;
+        }
+        return '';
+    };
     var createTabulator = function (selector, options) {
-        options.langs[options.locale].pagination.first =
-            '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
-        options.langs[options.locale].pagination.last =
-            '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" fill="currentColor"/></svg>';
-        options.langs[options.locale].pagination.next =
-            '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>';
-        options.langs[options.locale].pagination.prev =
-            '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>';
+        let useCustomPaginationIcons = false;
+        if (typeof options.useCustomPaginationIcons != "undefined") {
+            useCustomPaginationIcons = options.useCustomPaginationIcons;
+            delete options["useCustomPaginationIcons"];
+        }
+        if (useCustomPaginationIcons) {
+            options.langs[options.locale].pagination.first =
+                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
+            options.langs[options.locale].pagination.last =
+                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" fill="currentColor"/></svg>';
+            options.langs[options.locale].pagination.next =
+                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>';
+            options.langs[options.locale].pagination.prev =
+                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>';
+            delete options["useCustomPaginationIcons"];
+        }
+        let rowClickTriggersAction = false;
+        if (typeof options.rowClickTriggersAction != "undefined") {
+            rowClickTriggersAction = options.rowClickTriggersAction;
+            delete options["rowClickTriggersAction"];
+        }
+
+        // Add desktop or mobile class
+        let navigatorClass = "desktop";
+        if (
+            ["iphone", "ipad", "android"].some((el) =>
+                navigator.userAgent.toLowerCase().includes(el)
+            )
+        ) {
+            navigatorClass = "mobile";
+        }
+        document
+            .querySelector(selector)
+            .classList.add("tabulator-navigator-" + navigatorClass);
 
         var tabulator = new Tabulator(selector, options);
 
         // Trigger first action on row click if present
-        tabulator.on("rowClick", function (e, row) {
-            let target = getInteractiveElement(e.target);
-            if (["A", "INPUT"].includes(target.tagName)) {
-                return;
-            }
-            var firstBtn = row._row.element.querySelector(".btn");
-            if (firstBtn) {
-                firstBtn.click();
-            }
-        });
+        if (rowClickTriggersAction) {
+            tabulator.on("rowClick", function (e, row) {
+                let target = getInteractiveElement(e.target);
+                if (["A", "INPUT"].includes(target.tagName)) {
+                    return;
+                }
+                var firstBtn = row._row.element.querySelector(".btn");
+                if (firstBtn) {
+                    firstBtn.click();
+                }
+            });
+        }
 
         // Mitigate issue https://github.com/olifolkerd/tabulator/issues/3692
         document
@@ -145,8 +201,11 @@
         buttonFormatter: buttonFormatter,
         customTickCross: customTickCross,
         buttonHandler: buttonHandler,
-        init: init,
+        boolGroupHeader: boolGroupHeader,
+        simpleRowFormatter: simpleRowFormatter,
+        expandTooltip: expandTooltip,
         dataAjaxResponse: dataAjaxResponse,
+        init: init,
     };
     window.SSTabulator = window.SSTabulator
         ? Object.assign(window.SSTabulator, publicApi)
