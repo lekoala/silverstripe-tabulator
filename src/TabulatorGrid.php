@@ -194,6 +194,12 @@ class TabulatorGrid extends FormField
 
     protected array $tools = [];
 
+    protected array $listeners = [];
+
+    protected array $jsNamespaces = [
+        'SSTabulator'
+    ];
+
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
@@ -414,6 +420,8 @@ class TabulatorGrid extends FormField
             $opts['data'] = $data;
         }
 
+        $opts['listeners'] = $this->listeners;
+
         // i18n
         $locale = strtolower(str_replace('_', '-', i18n::get_locale()));
         $paginationTranslations = [
@@ -462,7 +470,9 @@ class TabulatorGrid extends FormField
         $json = json_encode($opts);
 
         // Escape functions (see TabulatorField.js)
-        $json = preg_replace('/"(SSTabulator\.[a-zA-Z]*)"/', "$1", $json);
+        foreach ($this->jsNamespaces as $ns) {
+            $json = preg_replace('/"(' . $ns . '\.[a-zA-Z]*)"/', "$1", $json);
+        }
 
         return $json;
     }
@@ -876,6 +886,7 @@ class TabulatorGrid extends FormField
     {
         $opts = [
             "responsive" => 0,
+            "cssClass" => 'tabulator-cell-btn',
             "tooltip" => $title,
             "formatter" => "SSTabulator.buttonFormatter",
             "formatterParams" => [
@@ -887,6 +898,7 @@ class TabulatorGrid extends FormField
             "width" => 70,
             "hozAlign" => "center",
             "headerSort" => false,
+
         ];
         return $opts;
     }
@@ -1065,6 +1077,54 @@ class TabulatorGrid extends FormField
     public function setColumnDefaults(array $columnDefaults): self
     {
         $this->columnDefaults = $columnDefaults;
+        return $this;
+    }
+
+    public function getListeners(): array
+    {
+        return $this->listeners;
+    }
+
+    public function setListeners(array $listeners): self
+    {
+        $this->listeners = $listeners;
+        return $this;
+    }
+
+    public function addListener(string $event, string $functionName): self
+    {
+        $this->listeners[$event] = $functionName;
+        return $this;
+    }
+
+    public function removeListener(string $event): self
+    {
+        if (isset($this->listeners[$event])) {
+            unset($this->listeners[$event]);
+        }
+        return $this;
+    }
+
+    public function getJsNamespaces(): array
+    {
+        return $this->jsNamespaces;
+    }
+
+    public function setJsNamespaces(array $jsNamespaces): self
+    {
+        $this->jsNamespaces = $jsNamespaces;
+        return $this;
+    }
+
+    public function registerJsNamespace(string $ns): self
+    {
+        $this->jsNamespaces[] = $ns;
+        return $this;
+    }
+
+    public function unregisterJsNamespace(string $ns): self
+    {
+        $this->jsNamespaces = array_diff($this->jsNamespaces, [$ns]);
         return $this;
     }
 

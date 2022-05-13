@@ -1,4 +1,10 @@
 (() => {
+    // Private methods
+
+    function isNumeric(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
+    }
+
     function getInteractiveElement(e) {
         let src = e;
         while (
@@ -10,11 +16,63 @@
         return src;
     }
 
-    var interpolate = (str, data) => {
+    /**
+     * @typedef {Object} MoneyResult
+     * @property {string} input - Source string
+     * @property {string} locale - Locale used
+     * @property {string} currency - Currency used
+     * @property {boolean} isValid - Is valid input
+     * @property {string} string - String using fixed point notation
+     * @property {Number} number - Number instance with format
+     * @property {string} output - Formatted output
+     */
+
+    /**
+     * Parse value to currency
+     * @param {number|string} input - Given input
+     * @param {string} locale - Desired locale i.e: "en-US" "hr-HR"
+     * @param {string} currency - Currency to use "USD" "EUR" "HRK"
+     * @return {MoneyResult} - Formatting results
+     */
+    function parseMoney(input, locale = "en-US", currency = "USD") {
+        let fmt = String(input)
+            .replace(/(?<=\d)[.,](?!\d+$)/g, "")
+            .replace(",", ".");
+        const pts = fmt.split(".");
+        if (pts.length > 1) {
+            if (+pts[0] === 0) fmt = pts.join(".");
+            else if (pts[1].length === 3) fmt = pts.join("");
+        }
+        const number = Number(fmt);
+        const isValid = isFinite(number);
+        const string = number.toFixed(2);
+        const intlNFOpts = new Intl.NumberFormat(locale, {
+            style: "currency",
+            currency: currency,
+        }).resolvedOptions();
+        const output = number.toLocaleString(locale, {
+            ...intlNFOpts,
+            style: "decimal",
+        });
+        return {
+            input,
+            locale,
+            currency,
+            isValid,
+            string,
+            number,
+            output,
+        };
+    }
+
+    function interpolate(str, data) {
         return str.replace(/\{([^\}]+)?\}/g, function ($1, $2) {
             return data[$2];
         });
-    };
+    }
+
+    // Public methods
+
     var customTickCross = function (cell, formatterParams, onRendered) {
         const tick =
             '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -63,28 +121,39 @@
             }
         }
 
-        var iconTitle = formatterParams.title;
+        var title = formatterParams.title;
         var btnClasses = formatterParams.classes;
+        var showIconTitle = formatterParams.showIconTitle;
         var classes = btnClasses || "btn btn-primary";
-        // It can be an url or an icon name
-        if (iconName[0] === "/") {
-            var icon = '<img src="' + iconName + '" alt="' + iconTitle + '"/>';
-        } else {
-            var icon = '<l-i name="' + iconName + '"></l-i>';
-            if (typeof LastIcon == "undefined") {
-                icon = '<span class="font-icon-' + iconName + '"></span>';
+        var icon = "";
+        var btnContent = title;
+        if (iconName) {
+            // It can be an url or an icon name
+            if (iconName[0] === "/") {
+                icon = '<img src="' + iconName + '" alt="' + title + '"/>';
+            } else {
+                icon = '<l-i name="' + iconName + '"></l-i>';
+                if (typeof LastIcon == "undefined") {
+                    icon = '<span class="font-icon-' + iconName + '"></span>';
+                }
+            }
+            if (showIconTitle) {
+                btnContent = icon + btnContent;
+            } else {
+                btnContent = icon;
             }
         }
-
         var url = formatterParams.url;
-        if (url) {
-            url = interpolate(url, cell._cell.row.data);
-        }
         if (!url) {
-            return icon;
+            return btnContent;
         }
-        var link =
-            '<a href="' + url + '" class="' + classes + '">' + icon + "</a>";
+        url = interpolate(url, cell._cell.row.data);
+        var link = '<a href="{url}" class="{classes}">{btnContent}</a>';
+        link = interpolate(link, {
+            url: url,
+            classes: classes,
+            btnContent: btnContent,
+        });
         return link;
     };
     var buttonHandler = function (e, cell) {
@@ -131,9 +200,192 @@
         if (isTruncated) {
             return cell._cell.value;
         }
-        return '';
+        return "";
+    };
+    var dateEditor = function (
+        cell,
+        onRendered,
+        success,
+        cancel,
+        editorParams
+    ) {
+        //create and style editor
+        var editor = document.createElement("input");
+
+        editor.setAttribute("type", "date");
+
+        //create and style input
+        editor.style.padding = "4px";
+        editor.style.width = "100%";
+        editor.style.boxSizing = "border-box";
+
+        //Set value of editor to the current value of the cell
+        editor.value = luxon.DateTime.fromFormat(
+            cell.getValue(),
+            "dd/MM/yyyy"
+        ).toFormat("yyyy-MM-dd");
+
+        //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
+        onRendered(function () {
+            editor.focus({ preventScroll: true });
+            editor.style.height = "100%";
+        });
+
+        //when the value has been set, trigger the cell to update
+        function successFunc() {
+            success(
+                luxon.DateTime.fromFormat(editor.value, "yyyy-MM-dd").toFormat(
+                    "dd/MM/yyyy"
+                )
+            );
+        }
+
+        editor.addEventListener("change", successFunc);
+        editor.addEventListener("blur", successFunc);
+
+        //return the editor element
+        return editor;
+    };
+    var moneyEditor = function (
+        cell,
+        onRendered,
+        success,
+        cancel,
+        editorParams
+    ) {
+        //create and style editor
+        var editor = document.createElement("input");
+
+        editor.setAttribute("type", "text");
+
+        //create and style input
+        editor.style.padding = "4px";
+        editor.style.width = "100%";
+        editor.style.boxSizing = "border-box";
+
+        //Set value of editor to the current value of the cell
+        editor.value = cell.getValue() ?? "";
+
+        //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
+        onRendered(function () {
+            editor.focus({ preventScroll: true });
+            editor.style.height = "100%";
+            if (editorParams.selectContents) {
+                editor.select();
+            }
+        });
+
+        //when the value has been set, trigger the cell to update
+        function successFunc() {
+            editor.value = editor.value.trim();
+            if (editor.value || editorParams.notNull) {
+                fmt = parseMoney(editor.value);
+                editor.value = fmt.output;
+            }
+            success(editor.value);
+        }
+
+        editor.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                successFunc();
+            }
+            if (e.key === "Escape") {
+                e.preventDefault();
+                cancel();
+            }
+            if (
+                e.key.length === 1 &&
+                !(isNumeric(e.key) || [".", ","].includes(e.key))
+            ) {
+                e.preventDefault();
+            }
+        });
+
+        editor.addEventListener("change", successFunc);
+        editor.addEventListener("blur", successFunc);
+
+        //return the editor element
+        return editor;
+    };
+    var externalEditor = function (
+        cell,
+        onRendered,
+        success,
+        cancel,
+        editorParams
+    ) {
+        //create and style editor
+        var tagType = editorParams.tagType || "input";
+        var editor = document.createElement(tagType);
+        if (tagType === "input") {
+            editor.setAttribute("type", "text");
+        }
+
+        var uid =
+            Date.now().toString(36) + Math.random().toString(36).substring(2);
+
+        //create and style tag
+        editor.style.padding = "4px";
+        editor.style.width = "100%";
+        editor.style.boxSizing = "border-box";
+        editor.setAttribute("id", "tabulator-editor-" + uid);
+
+        //Set value of editor to the current value of the cell
+        editor.value = cell.getValue() ?? "";
+
+        //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
+        onRendered(function () {
+            editor.focus({ preventScroll: true });
+            editor.style.height = "100%";
+
+            // init external editor
+            var el = editorParams.idSelector
+                ? "#" + editor.getAttribute("id")
+                : editor;
+            var opts = editorParams.options || {};
+            var inst = window[editorParams.function](el, opts);
+        });
+
+        //when the value has been set, trigger the cell to update
+        function successFunc() {
+            editor.value = editor.value.trim();
+            if (editor.value || editorParams.notNull) {
+                fmt = parseMoney(editor.value);
+                editor.value = fmt.output;
+            }
+            success(editor.value);
+        }
+
+        editor.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                successFunc();
+            }
+            if (e.key === "Escape") {
+                e.preventDefault();
+                cancel();
+            }
+            if (
+                e.key.length === 1 &&
+                !(isNumeric(e.key) || [".", ","].includes(e.key))
+            ) {
+                e.preventDefault();
+            }
+        });
+
+        editor.addEventListener("change", successFunc);
+        editor.addEventListener("blur", successFunc);
+
+        //return the editor element
+        return editor;
     };
     var createTabulator = function (selector, options) {
+        let listeners = {};
+        if (typeof options.listeners != "undefined") {
+            listeners = options.listeners;
+            delete options["listeners"];
+        }
         let useCustomPaginationIcons = false;
         if (typeof options.useCustomPaginationIcons != "undefined") {
             useCustomPaginationIcons = options.useCustomPaginationIcons;
@@ -156,20 +408,22 @@
             delete options["rowClickTriggersAction"];
         }
 
+        var tabulator = new Tabulator(selector, options);
+
         // Add desktop or mobile class
         let navigatorClass = "desktop";
-        if (
-            ["iphone", "ipad", "android"].some((el) =>
-                navigator.userAgent.toLowerCase().includes(el)
-            )
-        ) {
+        if (tabulator.browserMobile) {
             navigatorClass = "mobile";
         }
         document
             .querySelector(selector)
             .classList.add("tabulator-navigator-" + navigatorClass);
 
-        var tabulator = new Tabulator(selector, options);
+        // Register events
+        for (const listenerName in listeners) {
+            var cb = listeners[listenerName];
+            tabulator.on(listenerName, cb);
+        }
 
         // Trigger first action on row click if present
         if (rowClickTriggersAction) {
@@ -205,6 +459,9 @@
         simpleRowFormatter: simpleRowFormatter,
         expandTooltip: expandTooltip,
         dataAjaxResponse: dataAjaxResponse,
+        dateEditor: dateEditor,
+        moneyEditor: moneyEditor,
+        externalEditor: externalEditor,
         init: init,
     };
     window.SSTabulator = window.SSTabulator

@@ -93,8 +93,13 @@
     background-color: transparent;
 }
 
-.tabulator-cell .btn {
-    margin: -0.5em 0;
+.tabulator-row .tabulator-cell.tabulator-cell-btn {
+    padding: 6px;
+    display: inline-flex;
+    align-items: center;
+}
+.tabulator-row .tabulator-cell.tabulator-cell-btn .btn {
+    width: 100%;
 }
 
 .tabulator .tabulator-footer .tabulator-page {
@@ -133,6 +138,30 @@
 
 .tabulator .tabulator-footer .tabulator-page:not(.disabled):hover {
     color: var(--bs-primary, #0a58ca);
+}
+
+.tabulator-row .editing-only {
+    visibility: hidden;
+}
+.tabulator-row.tabulator-row-editing .editing-only {
+    visibility: visible;
+}
+
+.tabulator-row .tabulator-cell.tabulator-cell-narrow {
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.tabulator-cell-right {
+    text-align: right;
+}
+.tabulator-cell-right input {
+    text-align: right;
+}
+
+.tabulator-cell img {
+    margin: 0;
+    display: block;
 }
 
 /* Improve row grouping ui */
