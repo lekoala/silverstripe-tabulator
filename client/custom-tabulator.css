@@ -32,9 +32,9 @@
 }
 
 /* Make sure that fitColumns don't display unwanted horizontal scrolls */
-.tabulator.tabulator-fitColumns .tabulator-tableholder {
+/* .tabulator[tabulator-layout="fitColumns"] .tabulator-tableholder {
     overflow-x: hidden;
-}
+} */
 
 /* Nice scrollbars for desktop */
 .tabulator-navigator-desktop .tabulator-tableholder {
@@ -42,17 +42,18 @@
     scrollbar-color: #c1c1c1 transparent;
     scrollbar-width: thin;
 }
-.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar {
+.tabulator-navigator-desktop .tabulator-tableholder::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
-.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar-track {
+.tabulator-navigator-desktop .tabulator-tableholder::-webkit-scrollbar-track {
     background: var(--bs-gray-100, #f8f9f9);
 }
-.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar-thumb {
+.tabulator-navigator-desktop .tabulator-tableholder::-webkit-scrollbar-thumb {
     background: #c1c1c1;
 }
-.tabulator-navigator-desktop.tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+.tabulator-navigator-desktop
+    .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
     background: #a1a1a1;
 }
 
@@ -89,10 +90,6 @@
     background: var(--bs-gray-100, #f8f9f9);
 }
 
-.tabulator .tabulator-footer {
-    background-color: transparent;
-}
-
 .tabulator-row .tabulator-cell.tabulator-cell-btn {
     padding: 6px;
     display: inline-flex;
@@ -100,6 +97,11 @@
 }
 .tabulator-row .tabulator-cell.tabulator-cell-btn .btn {
     width: 100%;
+}
+
+.tabulator .tabulator-footer {
+    background-color: transparent;
+    border-top: 0;
 }
 
 .tabulator .tabulator-footer .tabulator-page {
@@ -110,6 +112,11 @@
 .tabulator .tabulator-footer .tabulator-page svg {
     width: 1em;
     height: 1em;
+}
+
+.tabulator .tabulator-footer .tabulator-page.active {
+    background-color: var(--bs-link-color, #0071c4);
+    border-color: var(--bs-link-color, #0071c4);
 }
 
 .tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle {
@@ -123,21 +130,16 @@
     margin-top: -0.2em;
 }
 
-.tabulator .tabulator-footer .tabulator-page.active {
-    background-color: var(--bs-primary, #0d6efd);
-    border-color: var(--bs-primary, #0d6efd);
-}
-
 .tabulator
     .tabulator-header
     .tabulator-col
     .tabulator-header-filter
     input:focus {
-    border-color: var(--bs-primary, #0a58ca);
+    border-color: var(--bs-link-color-hover, #0062ab);
 }
 
 .tabulator .tabulator-footer .tabulator-page:not(.disabled):hover {
-    color: var(--bs-primary, #0a58ca);
+    color: var(--bs-link-color-hover, #0062ab);
 }
 
 .tabulator-row .editing-only {
@@ -162,6 +164,27 @@
 .tabulator-cell img {
     margin: 0;
     display: block;
+}
+
+.tabulator-responsive-flex-open {
+    display: flex;
+    flex-wrap: wrap;
+}
+.tabulator-responsive-flex-cell {
+    order: 9999;
+    text-align: left !important;
+}
+.tabulator-responsive-flex-cell::before {
+    content: attr(data-label);
+    width: 100px;
+    display: block;
+    float: left;
+    font-weight: bold;
+    text-align: left !important;
+    font-size: 12px !important;
+}
+.tabulator-editing.tabulator-responsive-flex-cell::before {
+    display: none;
 }
 
 /* Improve row grouping ui */
@@ -197,7 +220,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
+    margin-bottom: 1.2308rem;
 }
 
 .tabulator-tools-start {
@@ -208,4 +231,11 @@
 .tabulator-tools-end {
     display: flex;
     justify-content: flex-end;
+}
+
+/* CMS specific styles */
+
+.cms .tabulatorgrid {
+    margin-left: -1.5385rem;
+    margin-right: -1.5385rem;
 }

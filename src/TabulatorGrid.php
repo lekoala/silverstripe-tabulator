@@ -13,6 +13,7 @@ use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Control\Director;
 use SilverStripe\View\Requirements;
@@ -89,6 +90,7 @@ class TabulatorGrid extends FormField
 
     private static array $casting = [
         'JsonOptions' => 'HTMLFragment',
+        'ShowTools' => 'HTMLFragment',
     ];
 
     /**
@@ -119,6 +121,11 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
+    private static bool $use_custom_build = true;
+
+    /**
+     * @config
+     */
     private static bool $enable_luxon = false;
 
     /**
@@ -139,7 +146,7 @@ class TabulatorGrid extends FormField
         'index' => "ID", // http://tabulator.info/docs/5.2/data#row-index
         'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.2/layout#layout
         // 'height' => '100%', // http://www.tabulator.info/docs/5.2/layout#height-fixed
-        'maxHeight' => "100%",
+        // 'maxHeight' => "100%",
         'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.2/layout#responsive
         'rowFormatter' => "SSTabulator.simpleRowFormatter", // http://tabulator.info/docs/5.2/format#row
     ];
@@ -209,6 +216,8 @@ class TabulatorGrid extends FormField
         // We don't want regular setValue for this since it would break with loadFrom logic
         if ($value) {
             $this->setList($value);
+        } else {
+            $this->setList(new ArrayList());
         }
     }
 
@@ -221,6 +230,18 @@ class TabulatorGrid extends FormField
         return new GridFieldConfig;
     }
 
+    public static function replaceGridField(FieldList $fields, string $name)
+    {
+        /** @var \SilverStripe\Forms\GridField\GridField $gridField */
+        $gridField = $fields->dataFieldByName($name);
+        if (!$gridField) {
+            return;
+        }
+        $tabulatorGrid = new TabulatorGrid($name, $gridField->Title(), $gridField->getList());
+        $tabulatorGrid->configureFromDataObject($gridField->getModelClass());
+        $fields->replaceField($name, $tabulatorGrid);
+    }
+
     public function configureFromDataObject($className = null, bool $clear = true): void
     {
         $this->columns = [];
@@ -231,6 +252,7 @@ class TabulatorGrid extends FormField
         if (!$className) {
             throw new RuntimeException("Could not find the model class");
         }
+        $this->modelClass = $className;
 
         /** @var DataObject $singl */
         $singl = singleton($className);
@@ -291,6 +313,7 @@ class TabulatorGrid extends FormField
             $this->addButton($itemUrl, "visibility", "View");
         }
 
+        $this->tools = [];
         if ($singl->canCreate()) {
             $this->addTool(self::POS_START, new TabulatorAddNewButton());
         }
@@ -315,6 +338,7 @@ class TabulatorGrid extends FormField
     public static function requirements(): void
     {
         $use_cdn = self::config()->use_cdn;
+        $use_custom_build = self::config()->use_custom_build;
         $theme = self::config()->theme; // simple, midnight, modern or framework
         $version = self::config()->version;
         $luxon_version = self::config()->luxon_version;
@@ -336,7 +360,18 @@ class TabulatorGrid extends FormField
             Requirements::css("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.css");
             Requirements::javascript("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.js");
         }
-        Requirements::javascript("$baseDir/js/tabulator.min.js");
+        if ($use_custom_build) {
+            if (Director::isDev()) {
+                Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.js", ['type' => 'module']);
+            } else {
+                Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js", ['type' => 'module']);
+            }
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', ['type' => 'module']);
+        } else {
+            Requirements::javascript("$baseDir/js/tabulator.min.js");
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
+        }
+
         Requirements::css("$baseDir/css/tabulator.min.css");
         if ($theme) {
             Requirements::css("$baseDir/css/tabulator_$theme.min.css");
@@ -344,7 +379,6 @@ class TabulatorGrid extends FormField
         if ($theme && $theme == "bootstrap5") {
             Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
         }
-        Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
 
         // In the cms, init will not be triggered on ajax nav
         if (self::config()->enable_ajax_init && Director::is_ajax()) {
@@ -375,20 +409,34 @@ class TabulatorGrid extends FormField
             $this->form = new Form(Controller::curr(), 'TabulatorForm');
         }
 
-        $this->addExtraClass('tabulator-' . $this->getOption('layout'));
-
         return parent::Field($properties);
     }
 
-    public function ShowTools($pos): ArrayList
+    public function ShowTools(): string
     {
-        $list = new ArrayList();
-        foreach ($this->tools as $tool) {
-            if ($tool['position'] == $pos) {
-                $list->push($tool['tool']);
-            }
+        if (empty($this->tools)) {
+            return '';
         }
-        return $list;
+        $html = '';
+        $html .= '<div class="tabulator-tools">';
+        $html .= '<div class="tabulator-tools-start">';
+        foreach ($this->tools as $tool) {
+            if ($tool['position'] != self::POS_START) {
+                continue;
+            }
+            $html .= ($tool['tool'])->forTemplate();
+        }
+        $html .= '</div>';
+        $html .= '<div class="tabulator-tools-end">';
+        foreach ($this->tools as $tool) {
+            if ($tool['position'] != self::POS_END) {
+                continue;
+            }
+            $html .= ($tool['tool'])->forTemplate();
+        }
+        $html .= '</div>';
+        $html .= '</div>';
+        return $html;
     }
 
     public function JsonOptions(): string
@@ -568,13 +616,14 @@ class TabulatorGrid extends FormField
 
     public function wizardResponsiveCollapse(bool $startOpen = false)
     {
-        $this->setOption("responsiveLayout", "collapse");
+        $this->setOption("responsiveLayout", "flexCollapse");
         $this->setOption("responsiveLayoutCollapseStartOpen", $startOpen);
         $this->columns = array_merge([
             'ui_responsive_collapse' => [
+                "cssClass" => 'tabulator-cell-btn',
                 'formatter' => 'responsiveCollapse',
                 'headerSort' => false,
-                'width' => 50,
+                'width' => 40,
             ]
         ], $this->columns);
     }

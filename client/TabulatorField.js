@@ -73,7 +73,11 @@
 
     // Public methods
 
-    var customTickCross = function (cell, formatterParams, onRendered) {
+    var customTickCrossFormatter = function (
+        cell,
+        formatterParams,
+        onRendered
+    ) {
         const tick =
             '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         const cross =
@@ -155,6 +159,14 @@
             btnContent: btnContent,
         });
         return link;
+    };
+    var externalFormatter = function (cell, formatterParams, onRendered) {
+        var v = cell.getValue();
+        var formatted = "";
+        if (v || formatterParams["notNull"]) {
+            formatted = window[formatterParams["function"]](v);
+        }
+        return formatted;
     };
     var buttonHandler = function (e, cell) {
         console.log("button", e, cell._cell.row.data);
@@ -380,6 +392,34 @@
         //return the editor element
         return editor;
     };
+    var editableCollapsedData = function (data) {
+        var list = document.createElement("table");
+
+        data.forEach(function (item) {
+            var row = document.createElement("tr");
+            var titleData = document.createElement("th");
+            var valueData = document.createElement("td");
+            var node_content;
+
+            this.langBind("columns|" + item.field, function (text) {
+                titleData.innerHTML = text || item.title;
+            });
+
+            if (item.value instanceof Node) {
+                node_content = document.createElement("div");
+                node_content.appendChild(item.value);
+                valueData.appendChild(node_content);
+            } else {
+                valueData.innerHTML = item.value;
+            }
+
+            row.appendChild(titleData);
+            row.appendChild(valueData);
+            list.appendChild(row);
+        }, this);
+
+        return Object.keys(data).length ? list : "";
+    };
     var createTabulator = function (selector, options) {
         let listeners = {};
         if (typeof options.listeners != "undefined") {
@@ -453,7 +493,8 @@
     var publicApi = {
         flagFormatter: flagFormatter,
         buttonFormatter: buttonFormatter,
-        customTickCross: customTickCross,
+        customTickCrossFormatter: customTickCrossFormatter,
+        externalFormatter: externalFormatter,
         buttonHandler: buttonHandler,
         boolGroupHeader: boolGroupHeader,
         simpleRowFormatter: simpleRowFormatter,
@@ -462,6 +503,7 @@
         dateEditor: dateEditor,
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
+        editableCollapsedData: editableCollapsedData,
         init: init,
     };
     window.SSTabulator = window.SSTabulator
