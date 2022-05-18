@@ -61,6 +61,12 @@ public function tabulatorRowActions()
 
 This will call the method `doTabulatorAction` on your record.
 
+## JS requirements
+
+To use in the SilverStripe admin, you need to enable lazy load behaviour. See `admin.js` file for this. It is NOT
+automatically included, it's up to you to enable this if you plan to use Tabulator in the admin.
+Also see: https://github.com/silverstripe/silverstripe-admin/issues/1308
+
 ## Using wizards
 
 The class contain a couple of "wizard" functions that will set a group of options in a consistent manner.
