@@ -239,6 +239,7 @@ class TabulatorGrid extends FormField
         }
         $tabulatorGrid = new TabulatorGrid($name, $gridField->Title(), $gridField->getList());
         $tabulatorGrid->configureFromDataObject($gridField->getModelClass());
+        $tabulatorGrid->setLazyInit(true);
         $fields->replaceField($name, $tabulatorGrid);
     }
 
