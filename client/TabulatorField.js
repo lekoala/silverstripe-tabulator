@@ -175,7 +175,7 @@
         const el = document.querySelector(selector);
         if (el.classList.contains("lazy-loadable")) {
             el.addEventListener(
-                "lazyloaded",
+                "lazyload",
                 (e) => {
                     createTabulator(selector, options);
                 },
