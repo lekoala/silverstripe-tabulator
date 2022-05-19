@@ -115,15 +115,19 @@
         var iconName = formatterParams.icon;
         // We can show alternative icons based on simple state on the row
         if (formatterParams.showAlt) {
-            var showAltClause = formatterParams.showAlt;
-            var isNot = showAltClause[0] == "!";
-            showAltClause = showAltClause.replace("!", "");
+            var showAltField = formatterParams.showAlt;
+            var isNot = showAltField[0] == "!";
+            showAltField = showAltField.replace("!", "");
+            var altValue = cell._cell.row.data[showAltField];
+            if (typeof altValue == "undefined") {
+                return "";
+            }
             if (isNot) {
-                if (!cell._cell.row.data[showAltClause]) {
+                if (!altValue) {
                     iconName = formatterParams.showAltIcon;
                 }
             } else {
-                if (cell._cell.row.data[showAltClause]) {
+                if (altValue) {
                     iconName = formatterParams.showAltIcon;
                 }
             }
@@ -197,11 +201,11 @@
     };
     var simpleRowFormatter = function (row) {
         const data = row.getData();
-        if (data.TabulatorRowColor) {
-            row.getElement().style.backgroundColor = data.TabulatorRowColor;
+        if (data._color) {
+            row.getElement().style.backgroundColor = data._color;
         }
-        if (data.TabulatorRowClass) {
-            row.getElement().classList.add(data.TabulatorRowClass);
+        if (data._class) {
+            row.getElement().classList.add(data._class);
         }
     };
     var boolGroupHeader = function (value, count, data, group) {
@@ -217,6 +221,9 @@
             return cell._cell.value;
         }
         return "";
+    };
+    var isCellEditable = function (cell) {
+        return cell._cell.row.data["_editable"];
     };
     var dateEditor = function (
         cell,
@@ -479,6 +486,7 @@
         dateEditor: dateEditor,
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
+        isCellEditable: isCellEditable,
         init: init,
     };
     window.SSTabulator = window.SSTabulator

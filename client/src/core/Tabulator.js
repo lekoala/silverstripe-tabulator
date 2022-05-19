@@ -402,7 +402,6 @@ class Tabulator {
 			if(data){
 				data.forEach((item) => {
 					var row = this.rowManager.findRow(item[this.options.index]);
-
 					if(row){
 						responses++;
 
