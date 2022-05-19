@@ -148,6 +148,12 @@
 .tabulator-row.tabulator-row-editing .editing-only {
     visibility: visible;
 }
+.tabulator-row .tabulator-cell-editable {
+    cursor: text;
+}
+.tabulator-row:hover .tabulator-cell-editable {
+    background: rgba(255, 206, 86, 0.2);
+}
 
 .tabulator-row .tabulator-cell.tabulator-cell-narrow {
     padding-left: 6px;

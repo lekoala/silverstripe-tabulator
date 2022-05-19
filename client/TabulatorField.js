@@ -83,14 +83,18 @@
         const cross =
             '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75827 17.2426L12.0009 12M17.2435 6.75736L12.0009 12M12.0009 12L6.75827 6.75736M12.0009 12L17.2435 17.2426" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         let el;
+
+        var color = formatterParams.color || null;
         if (cell.getValue()) {
             el = formatterParams.onlyCross ? "" : tick;
+            color = formatterParams.tickColor || color;
         } else {
             el = formatterParams.onlyTick ? "" : cross;
+            color = formatterParams.crossColor || color;
         }
-        if (formatterParams.color) {
+        if (color) {
             el = interpolate('<span style="color:{color}">{el}</span>', {
-                color: formatterParams.color,
+                color: color,
                 el: el,
             });
         }
@@ -291,7 +295,7 @@
         function successFunc() {
             editor.value = editor.value.trim();
             if (editor.value || editorParams.notNull) {
-                fmt = parseMoney(editor.value);
+                let fmt = parseMoney(editor.value);
                 editor.value = fmt.output;
             }
             success(editor.value);
@@ -363,7 +367,7 @@
         function successFunc() {
             editor.value = editor.value.trim();
             if (editor.value || editorParams.notNull) {
-                fmt = parseMoney(editor.value);
+                let fmt = parseMoney(editor.value);
                 editor.value = fmt.output;
             }
             success(editor.value);
@@ -391,34 +395,6 @@
 
         //return the editor element
         return editor;
-    };
-    var editableCollapsedData = function (data) {
-        var list = document.createElement("table");
-
-        data.forEach(function (item) {
-            var row = document.createElement("tr");
-            var titleData = document.createElement("th");
-            var valueData = document.createElement("td");
-            var node_content;
-
-            this.langBind("columns|" + item.field, function (text) {
-                titleData.innerHTML = text || item.title;
-            });
-
-            if (item.value instanceof Node) {
-                node_content = document.createElement("div");
-                node_content.appendChild(item.value);
-                valueData.appendChild(node_content);
-            } else {
-                valueData.innerHTML = item.value;
-            }
-
-            row.appendChild(titleData);
-            row.appendChild(valueData);
-            list.appendChild(row);
-        }, this);
-
-        return Object.keys(data).length ? list : "";
     };
     var createTabulator = function (selector, options) {
         let listeners = {};
@@ -503,7 +479,6 @@
         dateEditor: dateEditor,
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
-        editableCollapsedData: editableCollapsedData,
         init: init,
     };
     window.SSTabulator = window.SSTabulator

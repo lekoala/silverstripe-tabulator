@@ -1,6 +1,5 @@
 export default function(cell, formatterParams, onRendered){
-	var open = false,
-	el = document.createElement("div"),
+	var el = document.createElement("div"),
 	config = cell.getRow()._row.modules.responsiveLayout;
 
 	el.classList.add("tabulator-responsive-collapse-toggle");
@@ -22,14 +21,13 @@ export default function(cell, formatterParams, onRendered){
         if(collapseEl){
             collapseEl.style.display = isOpen ? "" : "none";
         }
-
-        cell.getRow()._row.dispatch("row-responsive-toggled", cell.getRow(), isOpen);
-        cell.getTable().rowManager.adjustTableSize();
 	}
 
 	el.addEventListener("click", function(e){
 		e.stopImmediatePropagation();
 		toggleList(!config.open);
+        cell.getRow()._row.dispatch("row-responsive-toggled", cell.getRow(), isOpen);
+        cell.getTable().rowManager.adjustTableSize();
 	});
 
 	toggleList(config.open);

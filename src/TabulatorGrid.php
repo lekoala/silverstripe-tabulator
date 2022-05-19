@@ -216,8 +216,6 @@ class TabulatorGrid extends FormField
         // We don't want regular setValue for this since it would break with loadFrom logic
         if ($value) {
             $this->setList($value);
-        } else {
-            $this->setList(new ArrayList());
         }
     }
 
@@ -516,7 +514,8 @@ class TabulatorGrid extends FormField
             $locale => $translations
         ];
 
-        $json = json_encode($opts);
+        $format = Director::isDev() ? JSON_PRETTY_PRINT : 0;
+        $json = json_encode($opts, $format);
 
         // Escape functions (see TabulatorField.js)
         foreach ($this->jsNamespaces as $ns) {
@@ -617,7 +616,7 @@ class TabulatorGrid extends FormField
 
     public function wizardResponsiveCollapse(bool $startOpen = false)
     {
-        $this->setOption("responsiveLayout", "flexCollapse");
+        $this->setOption("responsiveLayout", "collapse");
         $this->setOption("responsiveLayoutCollapseStartOpen", $startOpen);
         $this->columns = array_merge([
             'ui_responsive_collapse' => [
