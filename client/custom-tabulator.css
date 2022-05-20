@@ -156,7 +156,12 @@
 .tabulator-row .tabulator-cell-editable {
     cursor: text;
 }
-.tabulator-row:hover .tabulator-cell-editable {
+.tabulator:not(.tabulator-table-editing)
+    .tabulator-row:hover
+    .tabulator-cell-editable,
+.tabulator.tabulator-table-editing
+    .tabulator-row-editing
+    .tabulator-cell-editable {
     background: var(--tabulator-highlight-color);
 }
 .tabulator-row.tabulator-row-invalid .tabulator-cell-editable {

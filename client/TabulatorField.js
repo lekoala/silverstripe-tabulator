@@ -356,6 +356,7 @@
 
         //Set value of editor to the current value of the cell
         editor.value = cell.getValue() ?? "";
+        editor.dataset.prevValue = editor.value;
 
         //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
         onRendered(function () {
@@ -373,6 +374,10 @@
         //when the value has been set, trigger the cell to update
         function successFunc() {
             editor.value = editor.value.trim();
+            if (editor.value == editor.dataset.prevValue) {
+                cancel();
+                return;
+            }
             if (editor.value || editorParams.notNull) {
                 let fmt = parseMoney(editor.value);
                 editor.value = fmt.output;
@@ -455,7 +460,13 @@
                 if (["A", "INPUT"].includes(target.tagName)) {
                     return;
                 }
-                var firstBtn = row._row.element.querySelector(".btn");
+                var firstBtn = null;
+                firstBtn = row._row.element.querySelector(
+                    ".btn.default-action"
+                );
+                if (!firstBtn) {
+                    firstBtn = row._row.element.querySelector(".btn");
+                }
                 if (firstBtn) {
                     firstBtn.click();
                 }
