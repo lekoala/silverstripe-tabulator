@@ -1,3 +1,12 @@
+.tabulator {
+    --tabulator-primary-color: var(--bs-link-color, #0071c4);
+    --tabulator-primary-hover-color: var(--bs-link-hover-color, #0062ab);
+    --tabulator-valid-color: #d6fbe5;
+    --tabulator-invalid-color: #fde1e5;
+    --tabulator-highlight-color: #faf0d8;
+    font-size: inherit;
+}
+
 /* Alert UI improvements - Only show alert after a 0.25s delay */
 @keyframes tabulatorShow {
     0% {
@@ -62,10 +71,6 @@
     background: #fff;
 }
 
-.tabulator {
-    font-size: inherit;
-}
-
 .tabulator-row .tabulator-responsive-collapse table {
     font-size: inherit;
 }
@@ -115,8 +120,8 @@
 }
 
 .tabulator .tabulator-footer .tabulator-page.active {
-    background-color: var(--bs-link-color, #0071c4);
-    border-color: var(--bs-link-color, #0071c4);
+    background-color: var(--tabulator-primary-color);
+    border-color: var(--tabulator-primary-color);
 }
 
 .tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle {
@@ -135,11 +140,11 @@
     .tabulator-col
     .tabulator-header-filter
     input:focus {
-    border-color: var(--bs-link-color-hover, #0062ab);
+    border-color: var(--tabulator-primary-hover-color);
 }
 
 .tabulator .tabulator-footer .tabulator-page:not(.disabled):hover {
-    color: var(--bs-link-color-hover, #0062ab);
+    color: var(--tabulator-primary-hover-color);
 }
 
 .tabulator-row .editing-only {
@@ -152,7 +157,13 @@
     cursor: text;
 }
 .tabulator-row:hover .tabulator-cell-editable {
-    background: rgba(255, 206, 86, 0.2);
+    background: var(--tabulator-highlight-color);
+}
+.tabulator-row.tabulator-row-invalid .tabulator-cell-editable {
+    background: var(--tabulator-invalid-color);
+}
+.tabulator-row.tabulator-row-valid .tabulator-cell-editable {
+    background: var(--tabulator-valid-color);
 }
 
 .tabulator-row .tabulator-cell.tabulator-cell-narrow {
