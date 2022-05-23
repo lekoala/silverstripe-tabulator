@@ -360,12 +360,12 @@ class TabulatorGrid extends FormField
             Requirements::javascript("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.js");
         }
         if ($use_custom_build) {
-            if (Director::isDev()) {
+            if (Director::isDev() && !Director::is_ajax()) {
                 Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.js", ['type' => 'module']);
             } else {
-                Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js", ['type' => 'module']);
+                Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js");
             }
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', ['type' => 'module']);
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
         } else {
             Requirements::javascript("$baseDir/js/tabulator.min.js");
             Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');

@@ -405,9 +405,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $previousAndNextGroup->setFieldHolderTemplate(CompositeField::class . '_holder_buttongroup');
 
         /** @var GridFieldDetailForm $component */
-        $component = $this->gridField->getConfig()->getComponentByType(GridFieldDetailForm::class);
+        $component = $this->tabulatorGrid->getConfig()->getComponentByType(GridFieldDetailForm::class);
         $paginator = $this->getGridField()->getConfig()->getComponentByType(GridFieldPaginator::class);
-        $gridState = $this->getStateManager()->getStateFromRequest($this->gridField, $this->getRequest());
+        $gridState = $this->getStateManager()->getStateFromRequest($this->tabulatorGrid, $this->getRequest());
         if ($component && $paginator && $component->getShowPagination()) {
             $previousIsDisabled = !$this->getPreviousRecordID();
             $nextIsDisabled = !$this->getNextRecordID();
@@ -448,7 +448,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
                 LiteralField::create(
                     'new-record',
                     HTML::createTag('a', [
-                        'href' => Controller::join_links($this->gridField->Link('item'), 'new'),
+                        'href' => Controller::join_links($this->tabulatorGrid->Link('item'), 'new'),
                         'data-grid-state' => $gridState,
                         'title' => _t(__CLASS__ . '.NEW', 'Add new record'),
                         'aria-label' => _t(__CLASS__ . '.NEW', 'Add new record'),
@@ -564,12 +564,12 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     public function getEditLink($id)
     {
         $link = Controller::join_links(
-            $this->gridField->Link(),
+            $this->tabulatorGrid->Link(),
             'item',
             $id
         );
 
-        return $this->getStateManager()->addStateToURL($this->gridField, $link);
+        return $this->getStateManager()->addStateToURL($this->tabulatorGrid, $link);
     }
 
     /**
@@ -581,7 +581,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $gridField = $this->getGridField();
         $list = $gridField->getManipulatedList();
         $state = $gridField->getState(false);
-        $gridStateStr = $this->getStateManager()->getStateFromRequest($this->gridField, $this->getRequest());
+        $gridStateStr = $this->getStateManager()->getStateFromRequest($this->tabulatorGrid, $this->getRequest());
         if (!empty($gridStateStr)) {
             $state->setValue($gridStateStr);
         }
@@ -633,13 +633,13 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $controller = $this->getToplevelController();
         if ($isNewRecord) {
             return $controller->redirect($this->Link());
-        } elseif ($this->gridField->getList()->byID($this->record->ID)) {
+        } elseif ($this->tabulatorGrid->getList()->byID($this->record->ID)) {
             // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
             // to the same URL (it assumes that its content is already current, and doesn't reload)
             return $this->edit($controller->getRequest());
         } else {
             // We might be able to redirect to open the record in a different view
-            if ($redirectDest = $this->component->getLostRecordRedirection($this->gridField, $controller->getRequest(), $this->record->ID)) {
+            if ($redirectDest = $this->component->getLostRecordRedirection($this->tabulatorGrid, $controller->getRequest(), $this->record->ID)) {
                 return $controller->redirect($redirectDest, 302);
             }
 
@@ -668,7 +668,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
      */
     protected function saveFormIntoRecord($data, $form)
     {
-        $list = $this->gridField->getList();
+        $list = $this->tabulatorGrid->getList();
 
         // Check object matches the correct classname
         if (isset($data['ClassName']) && $data['ClassName'] != $this->record->ClassName) {
