@@ -6,7 +6,7 @@
     }
 
     function isHidden(el) {
-        return el.offsetParent === null;
+        return el.offsetHeight === 0;
     }
 
     function getInteractiveElement(e) {
