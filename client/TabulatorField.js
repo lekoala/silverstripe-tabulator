@@ -1,14 +1,26 @@
 (() => {
     // Private methods
 
+    /**
+     * @param {number} n
+     * @returns {boolean}
+     */
     function isNumeric(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
     }
 
+    /**
+     * @param {HTMLElement} el
+     * @returns {boolean}
+     */
     function isHidden(el) {
         return el.offsetHeight === 0;
     }
 
+    /**
+     * @param {HTMLElement} e
+     * @returns {HTMLElement}
+     */
     function getInteractiveElement(e) {
         let src = e;
         while (

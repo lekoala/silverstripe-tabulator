@@ -25,6 +25,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
+use SilverStripe\ORM\FieldType\DBBoolean;
 
 /**
  * @link http://www.tabulator.info/
@@ -281,6 +282,18 @@ class TabulatorGrid extends FormField
                 default:
                     $columns[$key]['headerFilterFunc'] =  "like";
                     break;
+            }
+
+            // Restrict based on data type
+            $dbObject = $singl->dbObject($key);
+            if ($dbObject) {
+                if ($dbObject instanceof DBBoolean) {
+                    $columns[$key]['headerFilter'] = 'tickCross';
+                    $columns[$key]['headerFilterFunc'] =  "=";
+                    $columns[$key]['headerFilterParams'] =  [
+                        'tristate' => true
+                    ];
+                }
             }
         }
 
@@ -781,12 +794,20 @@ class TabulatorGrid extends FormField
                 }
                 $value = $filterValues['value'];
                 $type = $filterValues['type'];
+
+                // Strict value
+                if ($value === "true") {
+                    $value = true;
+                } elseif ($value === "false") {
+                    $value = false;
+                }
+
                 switch ($type) {
                     case "=":
-                        $where["$field:nocase"] = $value;
+                        $where["$field"] = $value;
                         break;
                     case "!=":
-                        $where["$field:nocase:not"] = $value;
+                        $where["$field:not"] = $value;
                         break;
                     case "like":
                         $where["$field:PartialMatch:nocase"] = $value;
