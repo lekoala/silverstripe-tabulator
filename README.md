@@ -50,8 +50,7 @@ In order to forward actions to a record (the preferred way), add a `tabulatorRow
 public function tabulatorRowActions()
 {
     return [
-        [
-            'action' => 'doTabulatorAction',
+        'doTabulatorAction' => [
             'title' => 'Do This',
             'icon' => 'favorite_border'
         ],

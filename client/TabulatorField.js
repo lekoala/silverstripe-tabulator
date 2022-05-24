@@ -14,7 +14,7 @@
      * @returns {boolean}
      */
     function isHidden(el) {
-        return el.offsetHeight === 0;
+        return el.offsetHeight <= 0 && el.offsetWidth <= 0;
     }
 
     /**
@@ -34,13 +34,16 @@
 
     /**
      * @param {string} selector
+     * @param {fromMutation} alreadyPresent
      * @returns {Promise}
      */
-    function waitForElem(selector) {
+    function waitForElem(selector, alreadyPresent = true) {
         return new Promise((resolve) => {
-            let el = document.querySelector(selector);
-            if (el) {
-                return resolve(el);
+            if (alreadyPresent) {
+                let el = document.querySelector(selector);
+                if (el) {
+                    return resolve(el);
+                }
             }
             const observer = new MutationObserver((mutations) => {
                 for (var i = 0; i < mutations.length; i++) {
@@ -181,6 +184,7 @@
         var title = formatterParams.title;
         var btnClasses = formatterParams.classes;
         var showIconTitle = formatterParams.showIconTitle;
+        var urlParams = formatterParams.urlParams || {};
         var classes = btnClasses || "btn btn-primary";
         var icon = "";
         var btnContent = title;
@@ -205,6 +209,7 @@
             return btnContent;
         }
         url = interpolate(url, cell._cell.row.data);
+        url += "?" + new URLSearchParams(urlParams).toString();
         var link = '<a href="{url}" class="{classes}">{btnContent}</a>';
         link = interpolate(link, {
             url: url,
@@ -222,21 +227,37 @@
         return formatted;
     };
     var buttonHandler = function (e, cell) {
-        console.log("button", e, cell._cell.row.data);
+        // This helps restoring state after click on button
+        document.cookie = "hash=" + (window.location.hash || "") + "; path=/";
+    };
+    var initElement = function (el, options) {
+        let selector = "#" + el.getAttribute("id");
+        if (el.classList.contains("lazy-loadable")) {
+            el.addEventListener(
+                "lazyload",
+                (e) => {
+                    if (!isHidden(el)) {
+                        createTabulator(selector, options);
+                    }
+                },
+                {
+                    once: true,
+                }
+            );
+        } else {
+            createTabulator(selector, options);
+        }
     };
     var init = function (selector, options) {
         waitForElem(selector).then((el) => {
-            if (el.classList.contains("lazy-loadable") && isHidden(el)) {
-                el.addEventListener(
-                    "lazyload",
-                    (e) => {
-                        createTabulator(selector, options);
-                    },
-                    { once: true }
-                );
-            } else {
-                createTabulator(selector, options);
+            if (el.classList.contains("tabulatorgrid-created")) {
+                // It's already there from a previous request and content hasn't been refreshed yet
+                waitForElem(selector, false).then((el) => {
+                    initElement(el, options);
+                });
+                return;
             }
+            initElement(el, options);
         });
     };
     var dataAjaxResponse = function (url, params, response) {
@@ -455,6 +476,11 @@
         return editor;
     };
     var createTabulator = function (selector, options) {
+        let el = document.querySelector(selector);
+        if (el.classList.contains("tabulatorgrid-created")) {
+            return;
+        }
+        el.classList.add("tabulatorgrid-created");
         let listeners = {};
         if (typeof options.listeners != "undefined") {
             listeners = options.listeners;
@@ -489,9 +515,8 @@
         if (tabulator.browserMobile) {
             navigatorClass = "mobile";
         }
-        document
-            .querySelector(selector)
-            .classList.add("tabulator-navigator-" + navigatorClass);
+
+        el.classList.add("tabulator-navigator-" + navigatorClass);
 
         // Register events
         for (const listenerName in listeners) {

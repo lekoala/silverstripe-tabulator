@@ -15,6 +15,7 @@ use SilverStripe\Forms\FormAction;
 use SilverStripe\ORM\ManyManyList;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\Control\Controller;
+use SilverStripe\Control\Director;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
@@ -80,6 +81,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $this->record->ID ? $this->record->ID : 'new',
             $action
         );
+    }
+
+    public function AbsoluteLink($action = null)
+    {
+        return Director::absoluteURL($this->Link($action));
     }
 
     public function index(HTTPRequest $request)
@@ -161,7 +167,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         $dataClass = $this->tabulatorGrid->getModelClass();
         $record = DataObject::get_by_id($dataClass, $ID);
-        $validActions = array_column($record->tabulatorRowActions(), 'action');
+        $rowActions = $record->tabulatorRowActions();
+        $validActions = array_keys($rowActions);
         if (!$customAction || !in_array($customAction, $validActions)) {
             return $this->httpError(403, _t(
                 __CLASS__ . '.CustomActionPermissionsFailure',
@@ -169,6 +176,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
                 ['ActionName' => $customAction, 'ObjectTitle' => $this->record->singular_name()]
             ));
         }
+
+        $clickedAction = $rowActions[$customAction];
 
         $error = false;
         try {
@@ -185,15 +194,29 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         // Show message on controller or in form
         $controller = $this->getToplevelController();
-        $target = $this->form;
-        if ($controller->hasMethod('sessionMessage')) {
-            $target = $controller;
+        if (Director::is_ajax()) {
+            $controller = $this->getToplevelController();
+            $controller->getResponse()->addHeader('X-Status', rawurlencode($result));
+            if (!empty($clickedAction['refresh'])) {
+                $controller->getResponse()->addHeader('X-Reload', "true");
+            }
+            // 4xx status makes a red box
+            if ($error) {
+                $controller->getResponse()->setStatusCode(400);
+            }
+        } else {
+            $target = $this->ItemEditForm();
+            if ($controller->hasMethod('sessionMessage')) {
+                $target = $controller;
+            }
+            if ($target) {
+                $target->sessionMessage($result, $error ? "bad" : "good");
+            }
         }
-        $target->sessionMessage($result, $error ? "bad" : "good");
 
         $url = $this->getBackURL()
             ?: $this->getReturnReferer()
-            ?: $this->Link();
+            ?: $this->AbsoluteLink();
 
         return $controller->redirect($url);
     }

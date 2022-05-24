@@ -338,8 +338,9 @@ class TabulatorGrid extends FormField
                 throw new RuntimeException("tabulatorRowActions must return an array");
             }
             foreach ($rowActions as $key => $actionConfig) {
-                $url = 'item/{ID}/customAction/' . $actionConfig['action'];
-                $icon = $actionConfig['icon'] ?? "star";
+                $action = $actionConfig['action'] ?? $key;
+                $url = 'item/{ID}/customAction/' . $action;
+                $icon = $actionConfig['icon'] ?? "cog";
                 $title = $actionConfig['title'] ?? "";
                 $this->addButton($url, $icon, $title);
             }
@@ -948,7 +949,6 @@ class TabulatorGrid extends FormField
 
     protected function processButtonActions()
     {
-        $controller = $this->form ? $this->form->getController() : Controller::curr();
         $link = $this->Link();
         foreach ($this->columns as $name => $params) {
             if (!empty($params['formatterParams']['url'])) {
@@ -957,11 +957,11 @@ class TabulatorGrid extends FormField
                 if (strpos($url, $link) !== false || $url == '#') {
                     continue;
                 }
-                // It's a custom protocol
+                // It's a custom protocol (mailto: etc)
                 if (strpos($url, ':') !== false) {
                     continue;
                 }
-                $url = $controller->Link($url);
+                $url = $this->Link($url);
                 $this->columns[$name]['formatterParams']['url'] = $url;
             }
         }
