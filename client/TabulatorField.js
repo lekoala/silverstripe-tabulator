@@ -5,6 +5,10 @@
         return !isNaN(parseFloat(n)) && isFinite(n);
     }
 
+    function isHidden(el) {
+        return el.offsetParent === null;
+    }
+
     function getInteractiveElement(e) {
         let src = e;
         while (
@@ -14,6 +18,35 @@
             src = src.parentElement;
         }
         return src;
+    }
+
+    /**
+     * @param {string} selector
+     * @returns {Promise}
+     */
+    function waitForElem(selector) {
+        return new Promise((resolve) => {
+            let el = document.querySelector(selector);
+            if (el) {
+                return resolve(el);
+            }
+            const observer = new MutationObserver((mutations) => {
+                for (var i = 0; i < mutations.length; i++) {
+                    var mutation = mutations[i];
+                    if (mutation.addedNodes.length > 0) {
+                        el = document.querySelector(selector);
+                        if (el) {
+                            resolve(el);
+                            observer.disconnect();
+                        }
+                    }
+                }
+            });
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+            });
+        });
     }
 
     /**
@@ -180,18 +213,19 @@
         console.log("button", e, cell._cell.row.data);
     };
     var init = function (selector, options) {
-        const el = document.querySelector(selector);
-        if (el.classList.contains("lazy-loadable")) {
-            el.addEventListener(
-                "lazyload",
-                (e) => {
-                    createTabulator(selector, options);
-                },
-                { once: true }
-            );
-        } else {
-            createTabulator(selector, options);
-        }
+        waitForElem(selector).then((el) => {
+            if (el.classList.contains("lazy-loadable") && isHidden(el)) {
+                el.addEventListener(
+                    "lazyload",
+                    (e) => {
+                        createTabulator(selector, options);
+                    },
+                    { once: true }
+                );
+            } else {
+                createTabulator(selector, options);
+            }
+        });
     };
     var dataAjaxResponse = function (url, params, response) {
         if (!response.data) {
@@ -500,6 +534,8 @@
         isCellEditable: isCellEditable,
         init: init,
     };
+
+    // You can extend this with your own features
     window.SSTabulator = window.SSTabulator
         ? Object.assign(window.SSTabulator, publicApi)
         : publicApi;

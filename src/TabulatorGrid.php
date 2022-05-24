@@ -82,6 +82,7 @@ class TabulatorGrid extends FormField
     private static array $allowed_actions = [
         'load',
         'handleItem',
+        'configProvider',
     ];
 
     private static $url_handlers = [
@@ -360,11 +361,11 @@ class TabulatorGrid extends FormField
             Requirements::javascript("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.js");
         }
         if ($use_custom_build) {
-            if (Director::isDev() && !Director::is_ajax()) {
-                Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.js", ['type' => 'module']);
-            } else {
-                Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js");
-            }
+            // if (Director::isDev() && !Director::is_ajax()) {
+            //     Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.js");
+            // } else {
+            Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js");
+            // }
             Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
         } else {
             Requirements::javascript("$baseDir/js/tabulator.min.js");
@@ -377,11 +378,6 @@ class TabulatorGrid extends FormField
         }
         if ($theme && $theme == "bootstrap5") {
             Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
-        }
-
-        // In the cms, init will not be triggered on ajax nav
-        if (self::config()->enable_ajax_init && Director::is_ajax()) {
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField-init.js?t=' . time());
         }
     }
 
@@ -407,6 +403,10 @@ class TabulatorGrid extends FormField
         if (!$this->form) {
             $this->form = new Form(Controller::curr(), 'TabulatorForm');
         }
+
+        $configLink = "/" . ltrim($this->Link("configProvider"), "/");
+        $configLink .= "?t=" . time();
+        Requirements::javascript($configLink);
 
         return parent::Field($properties);
     }
@@ -689,6 +689,21 @@ class TabulatorGrid extends FormField
         }
         $this->extend('updateItemRequestHandler', $handler);
         return $handler;
+    }
+
+    /**
+     * Provides the configuration for this instance
+     * @param HTTPRequest $request
+     * @return HTTPResponse
+     */
+    public function configProvider(HTTPRequest $request)
+    {
+        $JsonOptions = $this->JsonOptions();
+        $ID = $this->ID();
+        $script = "SSTabulator.init(\"#$ID\", $JsonOptions);";
+        $response = new HTTPResponse($script);
+        $response->addHeader('Content-Type', 'application/script');
+        return $response;
     }
 
     /**
