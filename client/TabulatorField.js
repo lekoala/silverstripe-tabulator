@@ -230,8 +230,10 @@
         // This helps restoring state after click on button
         document.cookie = "hash=" + (window.location.hash || "") + "; path=/";
     };
+    var pendingInit = {};
     var initElement = function (el, options) {
         let selector = "#" + el.getAttribute("id");
+        pendingInit[selector] = false;
         if (el.classList.contains("lazy-loadable")) {
             el.addEventListener(
                 "lazyload",
@@ -249,6 +251,11 @@
         }
     };
     var init = function (selector, options) {
+        if (pendingInit[selector]) {
+            console.warn("Init is already pending for this element", selector);
+            return;
+        }
+        pendingInit[selector] = true;
         waitForElem(selector).then((el) => {
             if (el.classList.contains("tabulatorgrid-created")) {
                 // It's already there from a previous request and content hasn't been refreshed yet

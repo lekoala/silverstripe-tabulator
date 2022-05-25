@@ -7,15 +7,16 @@ use SilverStripe\View\HTML;
 use SilverStripe\Forms\Form;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\View\SSViewer;
+use SilverStripe\Control\Cookie;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\ArrayData;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\ORM\HasManyList;
+use SilverStripe\Control\Director;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\ORM\ManyManyList;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\Control\Controller;
-use SilverStripe\Control\Director;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
@@ -217,6 +218,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $url = $this->getBackURL()
             ?: $this->getReturnReferer()
             ?: $this->AbsoluteLink();
+
+        $hash = Cookie::get('hash');
+        if ($hash) {
+            $url .= '#' . ltrim($hash, '#');
+        }
 
         return $controller->redirect($url);
     }
