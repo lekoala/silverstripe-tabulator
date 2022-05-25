@@ -93,6 +93,7 @@ class TabulatorGrid extends FormField
     private static array $casting = [
         'JsonOptions' => 'HTMLFragment',
         'ShowTools' => 'HTMLFragment',
+        'dataAttributesHTML' => 'HTMLFragment',
     ];
 
     /**
@@ -213,6 +214,8 @@ class TabulatorGrid extends FormField
         'ajaxURL'
     ];
 
+    protected array $dataAttributes = [];
+
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
@@ -245,6 +248,11 @@ class TabulatorGrid extends FormField
         return '*' . $action;
     }
 
+    /**
+     * @param FieldList $fields
+     * @param string $name
+     * @return TabulatorGrid|null
+     */
     public static function replaceGridField(FieldList $fields, string $name)
     {
         /** @var \SilverStripe\Forms\GridField\GridField $gridField */
@@ -260,6 +268,8 @@ class TabulatorGrid extends FormField
         $tabulatorGrid->configureFromDataObject($gridField->getModelClass());
         $tabulatorGrid->setLazyInit(true);
         $fields->replaceField($name, $tabulatorGrid);
+
+        return $tabulatorGrid;
     }
 
     public function configureFromDataObject($className = null, bool $clear = true): void
@@ -432,6 +442,14 @@ class TabulatorGrid extends FormField
             self::requirements();
         }
 
+        // Data attributes for our custom behaviour
+        $this->setDataAttribute("row-click-triggers-action", $this->rowClickTriggersAction);
+        $customIcons = self::config()->custom_pagination_icons;
+        $this->setDataAttribute("use-custom-pagination-icons", empty($customIcons));
+
+        $this->setDataAttribute("listeners", $this->listeners);
+        $this->setDataAttribute("edit-url", "/" . $this->Link("item/{ID}/ajaxEdit"));
+
         // Make sure we can use a standalone version of the field without a form
         if (!$this->form) {
             $this->form = new Form(Controller::curr(), 'TabulatorForm');
@@ -499,12 +517,6 @@ class TabulatorGrid extends FormField
             $opts['data'] = $data;
         }
 
-        if ($this->rowClickTriggersAction) {
-            $opts['rowClickTriggersAction'] = $this->rowClickTriggersAction;
-        }
-
-        $opts['listeners'] = $this->listeners;
-
         // i18n
         $locale = strtolower(str_replace('_', '-', i18n::get_locale()));
         $paginationTranslations = [
@@ -519,14 +531,12 @@ class TabulatorGrid extends FormField
             "all" =>  _t("TabulatorPagination.all", "All"),
         ];
         // This will always default to last icon if present
-        if (!empty(self::config()->custom_pagination_icons)) {
-            $customIcons = self::config()->custom_pagination_icons;
+        $customIcons = self::config()->custom_pagination_icons;
+        if (!empty($customIcons)) {
             $paginationTranslations['first'] = $customIcons['first'] ?? "<<";
             $paginationTranslations['last'] = $customIcons['last'] ?? ">>";
             $paginationTranslations['prev'] = $customIcons['prev'] ?? "<";
             $paginationTranslations['next'] = $customIcons['next'] ?? ">";
-        } else {
-            $opts['useCustomPaginationIcons'] = true;
         }
         $dataTranslations = [
             "loading" => _t("TabulatorData.loading", "Loading"),
@@ -1044,6 +1054,33 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+
+    public function getDataAttribute(string $k)
+    {
+        if (isset($this->dataAttributes[$k])) {
+            return $this->dataAttributes[$k];
+        }
+        return $this->getAttribute("data-$k");
+    }
+
+    public function setDataAttribute(string $k, $v): self
+    {
+        $this->dataAttributes[$k] = $v;
+        return $this;
+    }
+
+    public function dataAttributesHTML(): string
+    {
+        $parts = [];
+        foreach ($this->dataAttributes as $k => $v) {
+            if (is_array($v)) {
+                $v = json_encode($v);
+            }
+            $parts[] = "data-$k=\"$v\"";
+        }
+        return implode(" ", $parts);
+    }
+
     protected function processLink(string $url): string
     {
         $link = $this->Link();
@@ -1177,6 +1214,19 @@ class TabulatorGrid extends FormField
 
         $this->columns[$field] = $baseOpts;
         return $this;
+    }
+
+    public function makeColumnEditable(string $field, string $editor = "input", array $params = [])
+    {
+        $col = $this->getColumn($field);
+        if (!$col) {
+            throw new InvalidArgumentException("$field is not a valid column");
+        }
+
+        $col['editor'] = $editor;
+        $col['editorParams'] = $params;
+
+        $this->setColumn($field, $col);
     }
 
     /**

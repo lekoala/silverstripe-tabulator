@@ -18,6 +18,36 @@
     }
 
     /**
+     * @param {string} msg
+     * @param {string} type
+     * @param {Tabulator} table
+     */
+    function notify(msg, type, table = null) {
+        if (typeof jQuery.noticeAdd !== "undefined") {
+            jQuery.noticeAdd({
+                text: msg,
+                type: type,
+                stayTime: 5000,
+                inEffect: {
+                    left: "0",
+                    opacity: "show",
+                },
+            });
+        } else if (typeof window.admini.toaster !== "undefined") {
+            window.admini.toaster({
+                body: msg,
+                className: "border-0 bg-" + type + " text-white",
+            });
+        } else if (typeof alertify !== "undefined") {
+            alertify.notify(result.message, messageType);
+        } else if (table) {
+            table.alert(msg, type);
+        } else {
+            console.log(type + " " + msg);
+        }
+    }
+
+    /**
      * @param {HTMLElement} e
      * @returns {HTMLElement}
      */
@@ -496,23 +526,45 @@
         //return the editor element
         return editor;
     };
+    var cellEditedCallback = function (cell) {
+        var value = cell.getValue();
+        var column = cell.getColumn().getField();
+        var data = cell.getRow().getData();
+        var editUrl = cell.getTable().element.dataset.editUrl;
+        var formData = new FormData();
+        var SecurityID = document.querySelector("input[name=SecurityID]").value;
+
+        editUrl = interpolate(editUrl, data);
+
+        formData.append("Field", column);
+        formData.append("Value", value);
+        formData.append("SecurityID", SecurityID);
+        formData.append("Data", data);
+
+        fetch(editUrl, {
+            method: "POST",
+            body: formData,
+        })
+            .then(function (response) {
+                if (response.status >= 200 && response.status <= 299) {
+                    return response.json();
+                } else {
+                    notify(response.statusText, "danger");
+                }
+            })
+            .then(function (json) {
+                notify(json.message, "success");
+            });
+    };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);
         if (el.classList.contains("tabulatorgrid-created")) {
             return;
         }
+        let dataset = el.dataset;
         el.classList.add("tabulatorgrid-created");
-        let listeners = {};
-        if (typeof options.listeners != "undefined") {
-            listeners = options.listeners;
-            delete options["listeners"];
-        }
-        let useCustomPaginationIcons = false;
-        if (typeof options.useCustomPaginationIcons != "undefined") {
-            useCustomPaginationIcons = options.useCustomPaginationIcons;
-            delete options["useCustomPaginationIcons"];
-        }
-        if (useCustomPaginationIcons) {
+
+        if (dataset.useCustomPaginationIcons) {
             options.langs[options.locale].pagination.first =
                 '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
             options.langs[options.locale].pagination.last =
@@ -522,11 +574,6 @@
             options.langs[options.locale].pagination.prev =
                 '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>';
             delete options["useCustomPaginationIcons"];
-        }
-        let rowClickTriggersAction = false;
-        if (typeof options.rowClickTriggersAction != "undefined") {
-            rowClickTriggersAction = options.rowClickTriggersAction;
-            delete options["rowClickTriggersAction"];
         }
 
         var tabulator = new Tabulator(selector, options);
@@ -540,14 +587,22 @@
         el.classList.add("tabulator-navigator-" + navigatorClass);
 
         // Register events
+        const listeners = JSON.parse(dataset.listeners);
         for (const listenerName in listeners) {
             var cb = listeners[listenerName];
             tabulator.on(listenerName, cb);
         }
+        // Default edit callback
+        if (!listeners["cellEdited"]) {
+            tabulator.on("cellEdited", cellEditedCallback);
+        }
 
         // Trigger first action on row click if present
-        if (rowClickTriggersAction) {
+        if (dataset.rowClickTriggersAction) {
             tabulator.on("rowClick", function (e, row) {
+                if (e.target.classList.contains("tabulator-cell-editable")) {
+                    return;
+                }
                 let target = getInteractiveElement(e.target);
                 if (["A", "INPUT"].includes(target.tagName)) {
                     return;

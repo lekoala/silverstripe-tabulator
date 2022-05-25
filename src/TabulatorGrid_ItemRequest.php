@@ -18,6 +18,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Control\RequestHandler;
+use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 
@@ -26,6 +27,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
     private static $allowed_actions = [
         'edit',
+        'ajaxEdit',
         'view',
         'customAction',
         'ItemEditForm',
@@ -150,6 +152,44 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $form = $this->ItemEditForm();
 
         return $this->returnWithinContext($request, $controller, $form);
+    }
+
+    public function ajaxEdit(HTTPRequest $request)
+    {
+        $SecurityID = $request->postVar('SecurityID');
+        if (!SecurityToken::inst()->check($SecurityID)) {
+            return $this->httpError(404, "Invalid SecurityID");
+        }
+        if (!$this->record->canEdit()) {
+            return $this->httpError(403, _t(
+                __CLASS__ . '.EditPermissionsFailure',
+                'It seems you don\'t have the necessary permissions to edit "{ObjectTitle}"',
+                ['ObjectTitle' => $this->record->singular_name()]
+            ));
+        }
+
+        $Data = $request->postVar("Data");
+        $Field = $request->postVar("Field");
+        $Value = $request->postVar("Value");
+
+        $this->record->$Field = $Value;
+        $error = null;
+        try {
+            $this->record->write();
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+        }
+
+        if ($error) {
+            return $this->httpError(400, $error);
+        }
+
+        $response = new HTTPResponse(json_encode([
+            'success' => true,
+            'message' => _t(__CLASS__ . '.RecordEdited', 'Record edited')
+        ]));
+        $response->addHeader('Content-Type', 'application/json');
+        return $response;
     }
 
     /**
@@ -487,20 +527,16 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
     /**
      * Gets the ID of the previous record in the list.
-     *
-     * @return int
      */
-    public function getPreviousRecordID()
+    public function getPreviousRecordID(): int
     {
         return $this->getAdjacentRecordID(-1);
     }
 
     /**
      * Gets the ID of the next record in the list.
-     *
-     * @return int
      */
-    public function getNextRecordID()
+    public function getNextRecordID(): int
     {
         return $this->getAdjacentRecordID(1);
     }

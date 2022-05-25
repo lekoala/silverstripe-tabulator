@@ -4,6 +4,7 @@ namespace LeKoala\Tabulator;
 
 use SilverStripe\View\HTML;
 use SilverStripe\Forms\Form;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Control\Controller;
@@ -80,6 +81,8 @@ class SilverstripeAdminCompat implements CompatLayerInterface
             }
         }
 
+
+
         return $actions;
     }
 
@@ -147,5 +150,57 @@ class SilverstripeAdminCompat implements CompatLayerInterface
         }
 
         return $rightGroup;
+    }
+
+    /**
+     * @param FieldList $actions
+     * @param DataObject $record
+     * @return void
+     */
+    public function addSaveAndClose(FieldList $actions, DataObject $record)
+    {
+        if (!$record->canEdit()) {
+            return;
+        }
+        if (!$record->ID && !$record->canCreate()) {
+            return;
+        }
+
+        $MajorActions = $actions->fieldByName('MajorActions');
+
+        // If it doesn't exist, push to default group
+        if (!$MajorActions) {
+            $MajorActions = $actions;
+        }
+
+        if ($record->ID) {
+            $label = _t(__CLASS__ . '.SAVEANDCLOSE', 'Save and Close');
+        } else {
+            $label = _t(__CLASS__ . '.CREATEANDCLOSE', 'Create and Close');
+        }
+        $saveAndClose = new FormAction('doSaveAndClose', $label);
+        $saveAndClose->addExtraClass($this->getBtnClassForRecord($record));
+        $saveAndClose->setAttribute('data-text-alternate', $label);
+        if ($record->ID) {
+            $saveAndClose->setAttribute('data-btn-alternate-add', 'btn-primary');
+            $saveAndClose->setAttribute('data-btn-alternate-remove', 'btn-outline-primary');
+        }
+        $saveAndClose->addExtraClass('font-icon-level-up');
+        $saveAndClose->setUseButtonTag(true);
+        $MajorActions->push($saveAndClose);
+    }
+
+    /**
+     * New and existing records have different classes
+     *
+     * @param DataObject $record
+     * @return string
+     */
+    protected function getBtnClassForRecord(DataObject $record)
+    {
+        if ($record->ID) {
+            return 'btn-outline-primary';
+        }
+        return 'btn-primary';
     }
 }

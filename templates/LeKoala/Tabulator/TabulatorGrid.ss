@@ -1,2 +1,2 @@
 $ShowTools
-<div id="$ID" class="$extraClass"></div>
+<div id="$ID" class="$extraClass" $dataAttributesHTML></div>

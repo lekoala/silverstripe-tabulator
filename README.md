@@ -42,7 +42,7 @@ For more advanced usage, please define a `tabulatorColumns` method that returns 
 To define custom actions, you can either use the `addButton` method that will trigger an action on the current controller.
 You can also use `makeButton` and `addButtonFromArray` for finer control.
 
-### Actions in the CMS
+### Row actions in the CMS
 
 In order to forward actions to a record (the preferred way), add a `tabulatorRowActions` on your record.
 
@@ -77,6 +77,12 @@ The class use by default the Bootstrap 5 theme with a few custom improvements to
 
 You can choose your theme with the `theme` config option or set it to null to include your own theme.
 Disabling the bootstrap5 theme also disables the custom css.
+
+## Editing
+
+You can make any column editable. Simply call `makeColumnEditable` and pass along relevant editor details.
+
+Upon blur, it will trigger a ajaxEdit request.
 
 ## Additionnal formaters and helpers
 
