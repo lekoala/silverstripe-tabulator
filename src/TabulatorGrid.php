@@ -294,6 +294,13 @@ class TabulatorGrid extends FormField
                 'field' => $field,
                 'title' => $title,
             ];
+
+            $dbObject = $singl->dbObject($field);
+            if ($dbObject) {
+                if ($dbObject instanceof DBBoolean) {
+                    $columns[$field]['formatter'] = "SSTabulator.customTickCrossFormatter";
+                }
+            }
         }
         foreach ($singl->searchableFields() as $key => $searchOptions) {
             /*

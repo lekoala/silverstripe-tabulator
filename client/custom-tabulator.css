@@ -156,6 +156,105 @@
 .tabulator-row .tabulator-cell-editable {
     cursor: text;
 }
+.tabulator-row .tabulator-cell-editable > span {
+    display: inline-block;
+    margin: 12px;
+}
+
+/* Custom checkboxes
+@link https://codepen.io/BrahmaUI/pen/WgOGQz
+<label class="checkbox-label">
+<input type="checkbox"><span class="checkbox-custom"></span></label> */
+
+.tabulator-cell .checkbox-label {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 24px;
+    height: 24px;
+    width: 24px;
+    margin: 12px;
+}
+
+.tabulator-cell .checkbox-label input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.tabulator-cell .checkbox-custom {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 24px;
+    width: 24px;
+    background-color: transparent;
+    border-radius: 5px;
+    transition: all 0.3s ease-out;
+    border: 2px solid #000;
+}
+
+.tabulator-cell .checkbox-label input:checked ~ .checkbox-custom {
+    background-color: transparent;
+    border-radius: 5px;
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+    border: 2px solid #000;
+}
+
+.tabulator-cell .checkbox-label .checkbox-custom::after {
+    position: absolute;
+    content: "";
+    left: 12px;
+    top: 12px;
+    height: 0px;
+    width: 0px;
+    border-radius: 5px;
+    border: solid #000;
+    border-width: 0 2px 2px 0;
+    transform: rotate(0deg) scale(0);
+    opacity: 1;
+    transition: all 0.3s ease-out;
+}
+
+.tabulator-cell .checkbox-label input:checked ~ .checkbox-custom::after {
+    transform: rotate(45deg) scale(1);
+    opacity: 1;
+    left: 8px;
+    top: 3px;
+    width: 6px;
+    height: 12px;
+    border: solid #000;
+    border-width: 0 2px 2px 0;
+    background-color: transparent;
+    border-radius: 0;
+}
+
+.tabulator-cell .checkbox-label .checkbox-custom::before {
+    position: absolute;
+    content: "";
+    left: 10px;
+    top: 10px;
+    width: 0px;
+    height: 0px;
+    border-radius: 5px;
+    border: 2px solid #000;
+    transform: scale(0);
+}
+
+.tabulator-cell .checkbox-label input:checked ~ .checkbox-custom::before {
+    left: -3px;
+    top: -3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    transform: scale(3);
+    opacity: 0;
+    z-index: 999;
+    transition: all 0.3s ease-out;
+}
+
 .tabulator:not(.tabulator-table-editing)
     .tabulator-row:hover
     .tabulator-cell-editable,

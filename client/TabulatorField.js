@@ -1,6 +1,19 @@
 (() => {
     // Private methods
 
+    const iconTick =
+        '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const iconCross =
+        '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75827 17.2426L12.0009 12M17.2435 6.75736L12.0009 12M12.0009 12L6.75827 6.75736M12.0009 12L17.2435 17.2426" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const iconFirst =
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
+    const iconLast =
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" fill="currentColor"/></svg>';
+    const iconNext =
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>';
+    const iconPrev =
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>';
+
     /**
      * @param {number} n
      * @returns {boolean}
@@ -165,18 +178,14 @@
         formatterParams,
         onRendered
     ) {
-        const tick =
-            '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        const cross =
-            '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75827 17.2426L12.0009 12M17.2435 6.75736L12.0009 12M12.0009 12L6.75827 6.75736M12.0009 12L17.2435 17.2426" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         let el;
 
         var color = formatterParams.color || null;
         if (cell.getValue()) {
-            el = formatterParams.onlyCross ? "" : tick;
+            el = formatterParams.onlyCross ? "" : iconTick;
             color = formatterParams.tickColor || color;
         } else {
-            el = formatterParams.onlyTick ? "" : cross;
+            el = formatterParams.onlyTick ? "" : iconCross;
             color = formatterParams.crossColor || color;
         }
         if (color) {
@@ -342,6 +351,78 @@
     };
     var isCellEditable = function (cell) {
         return cell._cell.row.data["_editable"];
+    };
+    var checkboxEditor = function (
+        cell,
+        onRendered,
+        success,
+        cancel,
+        editorParams
+    ) {
+        var value = cell.getValue();
+        var editor = document.createElement("span");
+
+        var input = document.createElement("input");
+        input.setAttribute("type", "checkbox");
+        input.style.opacity = "0";
+
+        //TODO: fix blur issue
+
+        var tickCross = document.createElement("span");
+        tickCross.style.cursor = "pointer";
+
+        editor.appendChild(input);
+        editor.appendChild(tickCross);
+
+        input.checked =
+            value === true ||
+            value === "true" ||
+            value === "True" ||
+            value === 1;
+
+        function renderTickCross() {
+            if (input.checked) {
+                tickCross.innerHTML = iconTick;
+            } else {
+                tickCross.innerHTML = iconCross;
+            }
+        }
+        onRendered(function () {
+            input.focus({ preventScroll: true });
+            renderTickCross();
+        });
+
+        function setValue() {
+            return input.checked;
+        }
+
+        editor.addEventListener("click", function (e) {
+            e.preventDefault();
+            input.checked = !input.checked;
+            renderTickCross();
+
+            input.focus({ preventScroll: true });
+        });
+
+        input.addEventListener("change", function (e) {
+            success(setValue());
+        });
+
+        input.addEventListener("blur", function (e) {
+            success(setValue(true));
+        });
+
+        //submit new value on enter
+        input.addEventListener("keydown", function (e) {
+            if (e.keyCode == 13) {
+                success(setValue());
+            }
+            if (e.keyCode == 27) {
+                cancel();
+            }
+        });
+
+        return editor;
     };
     var dateEditor = function (
         cell,
@@ -565,14 +646,10 @@
         el.classList.add("tabulatorgrid-created");
 
         if (dataset.useCustomPaginationIcons) {
-            options.langs[options.locale].pagination.first =
-                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
-            options.langs[options.locale].pagination.last =
-                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" fill="currentColor"/></svg>';
-            options.langs[options.locale].pagination.next =
-                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>';
-            options.langs[options.locale].pagination.prev =
-                '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>';
+            options.langs[options.locale].pagination.first = iconFirst;
+            options.langs[options.locale].pagination.last = iconLast;
+            options.langs[options.locale].pagination.next = iconNext;
+            options.langs[options.locale].pagination.prev = iconPrev;
             delete options["useCustomPaginationIcons"];
         }
 
@@ -641,6 +718,7 @@
         simpleRowFormatter: simpleRowFormatter,
         expandTooltip: expandTooltip,
         dataAjaxResponse: dataAjaxResponse,
+        checkboxEditor: checkboxEditor,
         dateEditor: dateEditor,
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
