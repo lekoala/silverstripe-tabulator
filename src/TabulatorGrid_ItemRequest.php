@@ -3,29 +3,22 @@
 namespace LeKoala\Tabulator;
 
 use Exception;
-use SilverStripe\View\HTML;
 use SilverStripe\Forms\Form;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\View\SSViewer;
 use SilverStripe\Control\Cookie;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\ArrayData;
-use SilverStripe\Forms\FieldList;
 use SilverStripe\ORM\HasManyList;
 use SilverStripe\Control\Director;
-use SilverStripe\Forms\FormAction;
 use SilverStripe\ORM\ManyManyList;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\Control\Controller;
-use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
-use SilverStripe\Forms\CompositeField;
 use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\ORM\ValidationException;
-use SilverStripe\Forms\GridField\GridFieldPaginator;
-use SilverStripe\Forms\GridField\GridFieldDetailForm;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 
 class TabulatorGrid_ItemRequest extends RequestHandler
@@ -44,6 +37,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
      * @var DataObject
      */
     protected $record;
+
+    /**
+     * @var array
+     */
+    protected $manipulatedData = null;
 
     /**
      * This represents the current parent RequestHandler (which does not necessarily need to be a Controller).
@@ -87,6 +85,27 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     public function AbsoluteLink($action = null)
     {
         return Director::absoluteURL($this->Link($action));
+    }
+
+    protected function getManipulatedData(): array
+    {
+        if ($this->manipulatedData) {
+            return $this->manipulatedData;
+        }
+        $grid = $this->getTabulatorGrid();
+
+        $state = $grid->getState($this->popupController->getRequest());
+
+        $currentPage = $state['page'];
+        $itemsPerPage = $state['limit'];
+
+        $limit = $itemsPerPage + 2;
+        $offset = max(0, $itemsPerPage * ($currentPage - 1) - 1);
+
+        $list = $grid->getManipulatedData($limit, $offset, $state['sort'], $state['filter']);
+
+        $this->manipulatedData = $list;
+        return $list;
     }
 
     public function index(HTTPRequest $request)
@@ -279,7 +298,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             }
         }
 
-        $actions = $this->getFormActions();
+        $compatLayer = $this->tabulatorGrid->getCompatLayer($controller);
+
+        $actions = $compatLayer->getFormActions($this);
+        $this->extend('updateFormActions', $actions);
+
         $validator = null;
 
         $form = new Form(
@@ -314,92 +337,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         }
 
         // Coupling with CMS
-        // Copied from GridFieldDetailForm_ItemRequest::ItemEditForm
-        if ($controller instanceof \SilverStripe\Admin\LeftAndMain) {
-            // Always show with base template (full width, no other panels),
-            // regardless of overloaded CMS controller templates.
-            $form->setTemplate([
-                'type' => 'Includes',
-                'SilverStripe\\Admin\\LeftAndMain_EditForm',
-            ]);
-            $form->addExtraClass('cms-content cms-edit-form center fill-height flexbox-area-grow');
-            $form->setAttribute('data-pjax-fragment', 'CurrentForm Content');
-            if ($form->Fields()->hasTabSet()) {
-                $form->Fields()->findOrMakeTab('Root')->setTemplate('SilverStripe\\Forms\\CMSTabSet');
-                $form->addExtraClass('cms-tabset');
-            }
-
-            $form->Backlink = $this->getBackLink();
-        }
-        if ($controller instanceof \LeKoala\Admini\LeftAndMain) {
-            $form->setTemplate([
-                'type' => 'Includes',
-                'LeKoala\\Admini\\LeftAndMain_EditForm',
-            ]);
-            if ($form->Fields()->hasTabSet()) {
-                $form->Fields()->findOrMakeTab('Root')->setTemplate('SilverStripe\\Forms\\CMSTabSet');
-                $form->addExtraClass('cms-tabset');
-            }
-
-            $form->Backlink = $this->getBackLink();
-        }
+        $compatLayer->adjustItemEditForm($this, $form);
 
         $this->extend("updateItemEditForm", $form);
 
         return $form;
-    }
-
-    /**
-     * Build the set of form field actions for this DataObject
-     *
-     * @return FieldList
-     */
-    protected function getFormActions()
-    {
-        $actions = FieldList::create();
-        $majorActions = CompositeField::create()->setName('MajorActions');
-        $majorActions->setFieldHolderTemplate(get_class($majorActions) . '_holder_buttongroup');
-        $actions->push($majorActions);
-
-        if ($this->record->ID !== 0) { // existing record
-            if ($this->record->canEdit()) {
-                $noChangesClasses = 'btn-outline-primary font-icon-tick';
-                $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Save', 'Save'))
-                    ->addExtraClass($noChangesClasses)
-                    ->setAttribute('data-btn-alternate-add', 'btn-primary font-icon-save')
-                    ->setAttribute('data-btn-alternate-remove', $noChangesClasses)
-                    ->setUseButtonTag(true)
-                    ->setAttribute('data-text-alternate', _t('SilverStripe\\CMS\\Controllers\\CMSMain.SAVEDRAFT', 'Save')));
-            }
-
-            if ($this->record->canDelete()) {
-                $actions->insertAfter('MajorActions', FormAction::create('doDelete', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Delete', 'Delete'))
-                    ->setUseButtonTag(true)
-                    ->addExtraClass('btn-outline-danger btn-hide-outline font-icon-trash-bin action--delete'));
-            }
-        } else { // adding new record
-            //Change the Save label to 'Create'
-            $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Create', 'Create'))
-                ->setUseButtonTag(true)
-                ->addExtraClass('btn-primary font-icon-plus-thin'));
-
-            // Add a Cancel link which is a button-like link and link back to one level up.
-            $crumbs = $this->Breadcrumbs();
-            if ($crumbs && $crumbs->count() >= 2) {
-                $oneLevelUp = $crumbs->offsetGet($crumbs->count() - 2);
-                $text = sprintf(
-                    "<a class=\"%s\" href=\"%s\">%s</a>",
-                    "crumb btn btn-secondary cms-panel-link", // CSS classes
-                    $oneLevelUp->Link, // url
-                    _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.CancelBtn', 'Cancel') // label
-                );
-                $actions->insertAfter('MajorActions', new LiteralField('cancelbutton', $text));
-            }
-        }
-
-        $this->extend('updateFormActions', $actions);
-
-        return $actions;
     }
 
     /**
@@ -421,76 +363,6 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     }
 
     /**
-     * @return CompositeField Returns the right aligned toolbar group field along with its FormAction's
-     */
-    protected function getRightGroupField()
-    {
-        $rightGroup = CompositeField::create()->setName('RightGroup');
-        $rightGroup->addExtraClass('ml-auto');
-        $rightGroup->setFieldHolderTemplate(get_class($rightGroup) . '_holder_buttongroup');
-
-        $previousAndNextGroup = CompositeField::create()->setName('PreviousAndNextGroup');
-        $previousAndNextGroup->addExtraClass('btn-group--circular mr-2');
-        $previousAndNextGroup->setFieldHolderTemplate(CompositeField::class . '_holder_buttongroup');
-
-        /** @var GridFieldDetailForm $component */
-        $component = $this->tabulatorGrid->getConfig()->getComponentByType(GridFieldDetailForm::class);
-        $paginator = $this->getGridField()->getConfig()->getComponentByType(GridFieldPaginator::class);
-        $gridState = $this->getStateManager()->getStateFromRequest($this->tabulatorGrid, $this->getRequest());
-        if ($component && $paginator && $component->getShowPagination()) {
-            $previousIsDisabled = !$this->getPreviousRecordID();
-            $nextIsDisabled = !$this->getNextRecordID();
-
-            $previousAndNextGroup->push(
-                LiteralField::create(
-                    'previous-record',
-                    HTML::createTag($previousIsDisabled ? 'span' : 'a', [
-                        'href' => $previousIsDisabled ? '#' : $this->getEditLink($this->getPreviousRecordID()),
-                        'data-grid-state' => $gridState,
-                        'title' => _t(__CLASS__ . '.PREVIOUS', 'Go to previous record'),
-                        'aria-label' => _t(__CLASS__ . '.PREVIOUS', 'Go to previous record'),
-                        'class' => 'btn btn-secondary font-icon-left-open action--previous discard-confirmation'
-                            . ($previousIsDisabled ? ' disabled' : ''),
-                    ])
-                )
-            );
-
-            $previousAndNextGroup->push(
-                LiteralField::create(
-                    'next-record',
-                    HTML::createTag($nextIsDisabled ? 'span' : 'a', [
-                        'href' => $nextIsDisabled ? '#' : $this->getEditLink($this->getNextRecordID()),
-                        'data-grid-state' => $gridState,
-                        'title' => _t(__CLASS__ . '.NEXT', 'Go to next record'),
-                        'aria-label' => _t(__CLASS__ . '.NEXT', 'Go to next record'),
-                        'class' => 'btn btn-secondary font-icon-right-open action--next discard-confirmation'
-                            . ($nextIsDisabled ? ' disabled' : ''),
-                    ])
-                )
-            );
-        }
-
-        $rightGroup->push($previousAndNextGroup);
-
-        if ($component && $component->getShowAdd() && $this->record->canCreate()) {
-            $rightGroup->push(
-                LiteralField::create(
-                    'new-record',
-                    HTML::createTag('a', [
-                        'href' => Controller::join_links($this->tabulatorGrid->Link('item'), 'new'),
-                        'data-grid-state' => $gridState,
-                        'title' => _t(__CLASS__ . '.NEW', 'Add new record'),
-                        'aria-label' => _t(__CLASS__ . '.NEW', 'Add new record'),
-                        'class' => 'btn btn-primary font-icon-plus-thin btn--circular action--new discard-confirmation',
-                    ])
-                )
-            );
-        }
-
-        return $rightGroup;
-    }
-
-    /**
      */
     public function getToplevelController(): RequestHandler
     {
@@ -502,7 +374,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         return $c;
     }
 
-    protected function getBackLink(): string
+    public function getBackLink(): string
     {
         $backlink = '';
         $toplevelController = $this->getToplevelController();
@@ -598,7 +470,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $id
         );
 
-        return $this->getStateManager()->addStateToURL($this->tabulatorGrid, $link);
+        return $link;
     }
 
     /**
@@ -607,26 +479,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
      */
     private function getAdjacentRecordID($offset)
     {
-        $gridField = $this->getGridField();
-        $list = $gridField->getManipulatedList();
-        $state = $gridField->getState(false);
-        $gridStateStr = $this->getStateManager()->getStateFromRequest($this->tabulatorGrid, $this->getRequest());
-        if (!empty($gridStateStr)) {
-            $state->setValue($gridStateStr);
-        }
-        $data = $state->getData();
-        $paginator = $data->getData('GridFieldPaginator');
-        if (!$paginator) {
-            return false;
-        }
-
-        $currentPage = $paginator->getData('currentPage');
-        $itemsPerPage = $paginator->getData('itemsPerPage');
-
-        $limit = $itemsPerPage + 2;
-        $limitOffset = max(0, $itemsPerPage * ($currentPage - 1) - 1);
-
-        $map = $list->limit($limit, $limitOffset)->column('ID');
+        $list = $this->getManipulatedData();
+        $map = array_column($list['data'], "ID");
         $index = array_search($this->record->ID, $map);
         return isset($map[$index + $offset]) ? $map[$index + $offset] : false;
     }
@@ -662,7 +516,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $controller = $this->getToplevelController();
         if ($isNewRecord) {
             return $controller->redirect($this->Link());
-        } elseif ($this->tabulatorGrid->getList()->byID($this->record->ID)) {
+        } elseif ($this->tabulatorGrid->hasDataList() && $this->tabulatorGrid->getDataList()->byID($this->record->ID)) {
             // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
             // to the same URL (it assumes that its content is already current, and doesn't reload)
             return $this->edit($controller->getRequest());

@@ -209,6 +209,10 @@ class TabulatorGrid extends FormField
         'SSTabulator'
     ];
 
+    protected array $linksOptions = [
+        'ajaxURL'
+    ];
+
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
@@ -230,6 +234,17 @@ class TabulatorGrid extends FormField
         return new GridFieldConfig;
     }
 
+    /**
+     * Temporary link that will be replaced by a real link by processLinks
+     *
+     * @param string $action
+     * @return string
+     */
+    public function TempLink(string $action): string
+    {
+        return '*' . $action;
+    }
+
     public static function replaceGridField(FieldList $fields, string $name)
     {
         /** @var \SilverStripe\Forms\GridField\GridField $gridField */
@@ -238,6 +253,10 @@ class TabulatorGrid extends FormField
             return;
         }
         $tabulatorGrid = new TabulatorGrid($name, $gridField->Title(), $gridField->getList());
+        // In the cms, this is mostly never happening
+        if ($gridField->getForm()) {
+            $tabulatorGrid->setForm($gridField->getForm());
+        }
         $tabulatorGrid->configureFromDataObject($gridField->getModelClass());
         $tabulatorGrid->setLazyInit(true);
         $fields->replaceField($name, $tabulatorGrid);
@@ -319,7 +338,7 @@ class TabulatorGrid extends FormField
         // We use a pseudo link, because maybe we cannot call Link() yet if it's not linked to a form
 
         // - Core actions
-        $itemUrl = 'item/{ID}';
+        $itemUrl = $this->TempLink('item/{ID}');
         if ($singl->canEdit()) {
             $this->addButton($itemUrl, "edit", "Edit");
         } elseif ($singl->canView()) {
@@ -339,7 +358,7 @@ class TabulatorGrid extends FormField
             }
             foreach ($rowActions as $key => $actionConfig) {
                 $action = $actionConfig['action'] ?? $key;
-                $url = 'item/{ID}/customAction/' . $action;
+                $url = $this->TempLink('item/{ID}/customAction/' . $action);
                 $icon = $actionConfig['icon'] ?? "cog";
                 $title = $actionConfig['title'] ?? "";
                 $this->addButton($url, $icon, $title);
@@ -454,11 +473,10 @@ class TabulatorGrid extends FormField
 
     public function JsonOptions(): string
     {
-        $this->processButtonActions();
+        $this->processLinks();
 
         $data = $this->list ?? [];
         if ($this->autoloadDataList && $data instanceof DataList) {
-            $this->wizardRemotePagination();
             $data = null;
         }
         $opts = $this->options;
@@ -479,6 +497,10 @@ class TabulatorGrid extends FormField
                 }
             }
             $opts['data'] = $data;
+        }
+
+        if ($this->rowClickTriggersAction) {
+            $opts['rowClickTriggersAction'] = $this->rowClickTriggersAction;
         }
 
         $opts['listeners'] = $this->listeners;
@@ -539,6 +561,20 @@ class TabulatorGrid extends FormField
         return $json;
     }
 
+    /**
+     * @param Controller $controller
+     * @return CompatLayerInterface
+     */
+    public function getCompatLayer(Controller $controller)
+    {
+        if (is_subclass_of($controller, \SilverStripe\Admin\LeftAndMain::class)) {
+            return new SilverstripeAdminCompat();
+        }
+        if (is_subclass_of($controller, \LeKoala\Admini\LeftAndMain::class)) {
+            return new AdminiCompat();
+        }
+    }
+
     public function getAttributes()
     {
         $attrs = parent::getAttributes();
@@ -595,7 +631,7 @@ class TabulatorGrid extends FormField
 
     public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $params = [])
     {
-        $this->setRemotePagination($this->Link('load'), $params, $pageSize, $initialPage);
+        $this->setRemotePagination($this->TempLink('load'), $params, $pageSize, $initialPage);
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
     }
@@ -623,7 +659,7 @@ class TabulatorGrid extends FormField
         $params = array_merge([
             'SecurityID' => SecurityToken::getSecurityID()
         ], $extraParams);
-        $this->setProgressiveLoad($this->Link('load'), $params, $pageSize, $initialPage, $mode, $scrollMargin);
+        $this->setProgressiveLoad($this->TempLink('load'), $params, $pageSize, $initialPage, $mode, $scrollMargin);
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
     }
@@ -705,6 +741,29 @@ class TabulatorGrid extends FormField
         return $handler;
     }
 
+    public function getStateKey()
+    {
+        return $this->getName();
+    }
+
+    public function getState(HTTPRequest $request)
+    {
+        $stateKey = $this->getName();
+        $state = $request->getSession()->get("TabulatorState[$stateKey]");
+        return $state ?? [
+            'page' => 1,
+            'limit' => $this->pageSize,
+            'sort' => [],
+            'filter' => [],
+        ];
+    }
+
+    public function setState(HTTPRequest $request, $state)
+    {
+        $stateKey = $this->getName();
+        $request->getSession()->set("TabulatorState[$stateKey]", $state);
+    }
+
     /**
      * Provides the configuration for this instance
      * @param HTTPRequest $request
@@ -727,12 +786,6 @@ class TabulatorGrid extends FormField
      */
     public function load(HTTPRequest $request)
     {
-        /** @var DataList $dataList */
-        $dataList = $this->list;
-        if (!$dataList instanceof DataList) {
-            return $this->httpError(404, "Invalid datalist");
-        }
-
         $SecurityID = $request->getVar('SecurityID');
         if (!SecurityToken::inst()->check($SecurityID)) {
             return $this->httpError(404, "Invalid SecurityID");
@@ -740,7 +793,90 @@ class TabulatorGrid extends FormField
 
         $page = (int) $request->getVar('page');
         $limit = (int) $request->getVar('size');
+
+        $sort = $request->getVar('sort');
+        $filter = $request->getVar('filter');
+
+        // Persist state to allow the ItemEditForm to display navigation
+        $state = [
+            'page' => $page,
+            'limit' => $limit,
+            'sort' => $sort,
+            'filter' => $filter,
+        ];
+        $this->setState($request, $state);
+
         $offset = ($page - 1) * $limit;
+        $data = $this->getManipulatedData($limit, $offset, $sort, $filter);
+
+        $response = new HTTPResponse(json_encode($data));
+        $response->addHeader('Content-Type', 'application/json');
+        return $response;
+    }
+
+    /**
+     * @param GridField $gridField
+     * @param HTTPRequest $request
+     * @return DataObject|null
+     */
+    protected function getRecordFromRequest(HTTPRequest $request): ?DataObject
+    {
+        /** @var DataObject $record */
+        if (is_numeric($request->param('ID'))) {
+            /** @var Filterable $dataList */
+            $dataList = $this->getList();
+            $record = $dataList->byID($request->param('ID'));
+        } else {
+            $record = Injector::inst()->create($this->getModelClass());
+        }
+        return $record;
+    }
+
+    public function getList(): SS_List
+    {
+        return $this->list;
+    }
+
+    public function setList(SS_List $list): self
+    {
+        if ($this->autoloadDataList && $list instanceof DataList) {
+            $this->wizardRemotePagination();
+        }
+        $this->list = $list;
+        return $this;
+    }
+
+    public function hasDataList(): bool
+    {
+        return $this->list instanceof DataList;
+    }
+
+    public function getDataList(): DataList
+    {
+        if (!$this->list instanceof DataList) {
+            throw new RuntimeException("Value is not a DataList, it is a: " . gettype($this->list));
+        }
+        return $this->list;
+    }
+
+    public function getManipulatedData(int $limit, int $offset, array $sort = null, array $filter = null): array
+    {
+        if (!$this->hasDataList()) {
+            $data = $this->list->toNestedArray();
+
+            $lastRow = $this->list->count();
+            $lastPage = ceil($lastRow / $limit);
+
+            $result = [
+                'last_row' => $lastRow,
+                'last_page' => $lastPage,
+                'data' => $data,
+            ];
+
+            return $result;
+        }
+
+        $dataList = $this->getDataList();
 
         $schema = DataObject::getSchema();
         $dataClass = $dataList->dataClass();
@@ -748,8 +884,6 @@ class TabulatorGrid extends FormField
         $singleton = singleton($dataClass);
         $resolutionMap = [];
 
-        // Sorting is an array of field/dir pairs
-        $sort = $request->getVar('sort');
         $sortSql = [];
         if ($sort) {
             foreach ($sort as $sortValues) {
@@ -784,7 +918,6 @@ class TabulatorGrid extends FormField
         }
 
         // Filtering is an array of field/type/value arrays
-        $filter = $request->getVar('filter');
         $where = [];
         if ($filter) {
             foreach ($filter as $filterValues) {
@@ -884,50 +1017,14 @@ class TabulatorGrid extends FormField
             }
             $data[] = $item;
         }
-        $response = new HTTPResponse(json_encode([
+
+        $result = [
             'last_row' => $lastRow,
             'last_page' => $lastPage,
             'data' => $data,
-        ]));
-        $response->addHeader('Content-Type', 'application/json');
-        return $response;
-    }
+        ];
 
-    /**
-     * @param GridField $gridField
-     * @param HTTPRequest $request
-     * @return DataObject|null
-     */
-    protected function getRecordFromRequest(HTTPRequest $request): ?DataObject
-    {
-        /** @var DataObject $record */
-        if (is_numeric($request->param('ID'))) {
-            /** @var Filterable $dataList */
-            $dataList = $this->getList();
-            $record = $dataList->byID($request->param('ID'));
-        } else {
-            $record = Injector::inst()->create($this->getModelClass());
-        }
-        return $record;
-    }
-
-    public function getList(): SS_List
-    {
-        return $this->list;
-    }
-
-    public function setList(SS_List $list): self
-    {
-        $this->list = $list;
-        return $this;
-    }
-
-    public function getDataList(): DataList
-    {
-        if (!$this->list instanceof DataList) {
-            throw new RuntimeException("Value is not a DataList, it is a: " . gettype($this->list));
-        }
-        return $this->list;
+        return $result;
     }
 
     public function getModelClass(): ?string
@@ -947,23 +1044,38 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    protected function processButtonActions()
+    protected function processLink(string $url): string
     {
         $link = $this->Link();
+        // It's already processed
+        if (strpos($url, $link) !== false || $url == '#') {
+            return $url;
+        }
+        // It's a custom protocol (mailto: etc)
+        if (strpos($url, ':') !== false) {
+            return $url;
+        }
+        // It's a temporary link
+        if (strpos($url, '*') === 0) {
+            $url = $this->Link(ltrim($url, '*'));
+        }
+        return $url;
+    }
+
+    protected function processLinks(): void
+    {
+        // Formatter actions
         foreach ($this->columns as $name => $params) {
             if (!empty($params['formatterParams']['url'])) {
-                $url = $params['formatterParams']['url'];
-                // It's already processed
-                if (strpos($url, $link) !== false || $url == '#') {
-                    continue;
-                }
-                // It's a custom protocol (mailto: etc)
-                if (strpos($url, ':') !== false) {
-                    continue;
-                }
-                $url = $this->Link($url);
+                $url = $this->processLink($params['formatterParams']['url']);
                 $this->columns[$name]['formatterParams']['url'] = $url;
             }
+        }
+
+        // Other links
+        $url = $this->getOption('ajaxURL');
+        if ($url) {
+            $this->setOption('ajaxURL', $this->processLink($url));
         }
     }
 
@@ -1210,6 +1322,29 @@ class TabulatorGrid extends FormField
     public function unregisterJsNamespace(string $ns): self
     {
         $this->jsNamespaces = array_diff($this->jsNamespaces, [$ns]);
+        return $this;
+    }
+
+    public function getLinksOptions(): array
+    {
+        return $this->linksOptions;
+    }
+
+    public function setLinksOptions(array $linksOptions): self
+    {
+        $this->linksOptions = $linksOptions;
+        return $this;
+    }
+
+    public function registerLinkOption(string $linksOption): self
+    {
+        $this->linksOptions[] = $linksOption;
+        return $this;
+    }
+
+    public function unregisterLinkOption(string $linksOption): self
+    {
+        $this->linksOptions = array_diff($this->linksOptions, [$linksOption]);
         return $this;
     }
 

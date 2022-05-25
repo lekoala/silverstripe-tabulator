@@ -6,7 +6,6 @@ use SilverStripe\Control\Controller;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\View\ArrayData;
-use SilverStripe\View\SSViewer;
 
 /**
  * This component provides a button for opening the add new form
