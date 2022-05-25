@@ -34,16 +34,15 @@
 
     /**
      * @param {string} selector
-     * @param {fromMutation} alreadyPresent
      * @returns {Promise}
      */
-    function waitForElem(selector, alreadyPresent = true) {
+    function waitForElem(selector) {
         return new Promise((resolve) => {
-            if (alreadyPresent) {
-                let el = document.querySelector(selector);
-                if (el) {
-                    return resolve(el);
-                }
+            let el = document.querySelector(selector);
+            // let timer;
+            if (el) {
+                resolve(el);
+                return;
             }
             const observer = new MutationObserver((mutations) => {
                 for (var i = 0; i < mutations.length; i++) {
@@ -51,12 +50,22 @@
                     if (mutation.addedNodes.length > 0) {
                         el = document.querySelector(selector);
                         if (el) {
+                            // clearTimeout(timer);
                             resolve(el);
                             observer.disconnect();
                         }
                     }
                 }
             });
+
+            // timer = setTimeout(() => {
+            //     let el = document.querySelector(selector);
+            //     if (el) {
+            //         resolve(el);
+            //         observer.disconnect();
+            //     }
+            // }, 300);
+
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,
@@ -258,13 +267,18 @@
         pendingInit[selector] = true;
         waitForElem(selector).then((el) => {
             if (el.classList.contains("tabulatorgrid-created")) {
+                el.remove();
                 // It's already there from a previous request and content hasn't been refreshed yet
-                waitForElem(selector, false).then((el) => {
+                waitForElem(selector).then((el) => {
                     initElement(el, options);
+                    // Trigger lazy load if visible
+                    if (!isHidden(el)) {
+                        el.dispatchEvent(new Event("lazyload"));
+                    }
                 });
-                return;
+            } else {
+                initElement(el, options);
             }
-            initElement(el, options);
         });
     };
     var dataAjaxResponse = function (url, params, response) {
