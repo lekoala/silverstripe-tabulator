@@ -36,6 +36,10 @@ foreach ($files as $file) {
     //     $bundleCss .= $contents;
     // }
 
+    // Remove sourcemap
+    $base = basename($file);
+    $contents = str_replace("/*# sourceMappingURL=$base.map */", "", $contents);
+
     file_put_contents($destFile, $contents);
     echo "Copied $file to $destFile\n";
 }

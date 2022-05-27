@@ -104,7 +104,7 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
-    private static string $version = '5.2.4';
+    private static string $version = '5.2.5';
 
     /**
      * @config
@@ -422,10 +422,12 @@ class TabulatorGrid extends FormField
             Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
         }
 
-        Requirements::css("$baseDir/css/tabulator.min.css");
         if ($theme) {
             Requirements::css("$baseDir/css/tabulator_$theme.min.css");
+        } else {
+            Requirements::css("$baseDir/css/tabulator.min.css");
         }
+
         if ($theme && $theme == "bootstrap5") {
             Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
         }
