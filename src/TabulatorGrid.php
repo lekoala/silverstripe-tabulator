@@ -451,6 +451,11 @@ class TabulatorGrid extends FormField
             self::requirements();
         }
 
+        // Make sure we can use a standalone version of the field without a form
+        if (!$this->form) {
+            $this->form = new Form(Controller::curr(), 'TabulatorForm');
+        }
+
         // Data attributes for our custom behaviour
         $this->setDataAttribute("row-click-triggers-action", $this->rowClickTriggersAction);
         $customIcons = self::config()->custom_pagination_icons;
@@ -458,11 +463,6 @@ class TabulatorGrid extends FormField
 
         $this->setDataAttribute("listeners", $this->listeners);
         $this->setDataAttribute("edit-url", "/" . $this->Link("item/{ID}/ajaxEdit"));
-
-        // Make sure we can use a standalone version of the field without a form
-        if (!$this->form) {
-            $this->form = new Form(Controller::curr(), 'TabulatorForm');
-        }
 
         $configLink = "/" . ltrim($this->Link("configProvider"), "/");
         $configLink .= "?t=" . time();
