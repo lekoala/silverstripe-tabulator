@@ -216,6 +216,10 @@ class TabulatorGrid extends FormField
 
     protected array $dataAttributes = [];
 
+    protected string $controllerFunction;
+
+    protected bool $useConfigProvider = true;
+
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
@@ -452,8 +456,9 @@ class TabulatorGrid extends FormField
         }
 
         // Make sure we can use a standalone version of the field without a form
+        // Function should match the name
         if (!$this->form) {
-            $this->form = new Form(Controller::curr(), 'TabulatorForm');
+            $this->form = new Form(Controller::curr(), $this->getControllerFunction());
         }
 
         // Data attributes for our custom behaviour
@@ -464,9 +469,14 @@ class TabulatorGrid extends FormField
         $this->setDataAttribute("listeners", $this->listeners);
         $this->setDataAttribute("edit-url", "/" . $this->Link("item/{ID}/ajaxEdit"));
 
-        $configLink = "/" . ltrim($this->Link("configProvider"), "/");
-        $configLink .= "?t=" . time();
-        Requirements::javascript($configLink);
+        if ($this->useConfigProvider) {
+            $configLink = "/" . ltrim($this->Link("configProvider"), "/");
+            $configLink .= "?t=" . time();
+            Requirements::javascript($configLink);
+        } else {
+            Requirements::customScript($this->getInitScript());
+        }
+
 
         return parent::Field($properties);
     }
@@ -783,17 +793,26 @@ class TabulatorGrid extends FormField
         $request->getSession()->set("TabulatorState[$stateKey]", $state);
     }
 
+    public function getInitScript(): string
+    {
+        $JsonOptions = $this->JsonOptions();
+        $ID = $this->ID();
+        $script = "SSTabulator.init(\"#$ID\", $JsonOptions);";
+        return $script;
+    }
+
     /**
      * Provides the configuration for this instance
+     *
+     * This is really useful in the context of the admin as it will be served over
+     * ajax
+     *
      * @param HTTPRequest $request
      * @return HTTPResponse
      */
     public function configProvider(HTTPRequest $request)
     {
-        $JsonOptions = $this->JsonOptions();
-        $ID = $this->ID();
-        $script = "SSTabulator.init(\"#$ID\", $JsonOptions);";
-        $response = new HTTPResponse($script);
+        $response = new HTTPResponse($this->getInitScript());
         $response->addHeader('Content-Type', 'application/script');
         return $response;
     }
@@ -1485,6 +1504,43 @@ class TabulatorGrid extends FormField
     public function setRowClickTriggersAction(bool $rowClickTriggersAction): self
     {
         $this->rowClickTriggersAction = $rowClickTriggersAction;
+        return $this;
+    }
+
+    /**
+     * Get the value of controllerFunction
+     */
+    public function getControllerFunction(): string
+    {
+        if (!$this->controllerFunction) {
+            return $this->getName() ?? "TabulatorGrid";
+        }
+        return $this->controllerFunction;
+    }
+
+    /**
+     * Set the value of controllerFunction
+     */
+    public function setControllerFunction(string $controllerFunction): self
+    {
+        $this->controllerFunction = $controllerFunction;
+        return $this;
+    }
+
+    /**
+     * Get the value of useConfigProvider
+     */
+    public function getUseConfigProvider(): bool
+    {
+        return $this->useConfigProvider;
+    }
+
+    /**
+     * Set the value of useConfigProvider
+     */
+    public function setUseConfigProvider(bool $useConfigProvider): self
+    {
+        $this->useConfigProvider = $useConfigProvider;
         return $this;
     }
 }

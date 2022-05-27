@@ -66,6 +66,20 @@ To use in the SilverStripe admin, you need to enable lazy load behaviour. See `a
 automatically included, it's up to you to enable this if you plan to use Tabulator in the admin.
 Also see: https://github.com/silverstripe/silverstripe-admin/issues/1308
 
+
+## JS Init
+
+Tabulator supports two mode of init. One using js include (the default mode) which works will in the SilverStripe
+admin during ajax navigation, as the init script with its options is served as a distinct script.
+
+This might not always be convenient in the frontend where ajax might not be used or x-include-js handled. In this
+case, you can disable the configProvider and simply use a regular inline script.
+
+```php
+$grid->setControllerFunction(__FUNCTION__);
+$grid->setUseConfigProvider(false);
+```
+
 ## Using wizards
 
 The class contain a couple of "wizard" functions that will set a group of options in a consistent manner.
