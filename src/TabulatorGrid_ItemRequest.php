@@ -22,6 +22,11 @@ use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 
+/**
+ * Endpoint for actions related to a specific record
+ *
+ * It also allows to display a form to edit this record
+ */
 class TabulatorGrid_ItemRequest extends RequestHandler
 {
 

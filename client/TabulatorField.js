@@ -36,6 +36,9 @@
      * @param {Tabulator} table
      */
     function notify(msg, type, table = null) {
+        if (typeof SSTabulator.notify !== "undefined") {
+            SSTabulator.notify(msg, type);
+        }
         if (typeof jQuery.noticeAdd !== "undefined") {
             jQuery.noticeAdd({
                 text: msg,
@@ -352,59 +355,6 @@
     var isCellEditable = function (cell) {
         return cell._cell.row.data["_editable"];
     };
-    var dateEditor = function (
-        cell,
-        onRendered,
-        success,
-        cancel,
-        editorParams
-    ) {
-        //create and style editor
-        var editor = document.createElement("input");
-
-        editor.setAttribute("type", "date");
-
-        //create and style input
-        editor.style.padding = "4px";
-        editor.style.width = "100%";
-        editor.style.boxSizing = "border-box";
-
-        //Set value of editor to the current value of the cell
-        if (typeof luxon !== "undefined") {
-            editor.value = luxon.DateTime.fromFormat(
-                cell.getValue(),
-                "dd/MM/yyyy"
-            ).toFormat("yyyy-MM-dd");
-        } else {
-            editor.value = cell.getValue();
-        }
-
-        //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
-        onRendered(function () {
-            editor.focus({ preventScroll: true });
-            editor.style.height = "100%";
-        });
-
-        //when the value has been set, trigger the cell to update
-        function successFunc() {
-            if (typeof luxon !== "undefined") {
-                success(
-                    luxon.DateTime.fromFormat(
-                        editor.value,
-                        "yyyy-MM-dd"
-                    ).toFormat("dd/MM/yyyy")
-                );
-            } else {
-                success(editor.value);
-            }
-        }
-
-        editor.addEventListener("change", successFunc);
-        editor.addEventListener("blur", successFunc);
-
-        //return the editor element
-        return editor;
-    };
     var moneyEditor = function (
         cell,
         onRendered,
@@ -655,7 +605,6 @@
         simpleRowFormatter: simpleRowFormatter,
         expandTooltip: expandTooltip,
         dataAjaxResponse: dataAjaxResponse,
-        dateEditor: dateEditor,
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
         isCellEditable: isCellEditable,

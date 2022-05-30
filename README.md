@@ -66,7 +66,6 @@ To use in the SilverStripe admin, you need to enable lazy load behaviour. See `a
 automatically included, it's up to you to enable this if you plan to use Tabulator in the admin.
 Also see: https://github.com/silverstripe/silverstripe-admin/issues/1308
 
-
 ## JS Init
 
 Tabulator supports two mode of init. One using js include (the default mode) which works will in the SilverStripe
@@ -98,15 +97,25 @@ You can make any column editable. Simply call `makeColumnEditable` and pass alon
 
 Upon blur, it will trigger a ajaxEdit request.
 
+## Notifications
+
+There is a built-in `notify` helper function that supports quite a few notification types by default.
+
+If needed, you can register a global SSTabulator.notify function that will be called instead of the default function.
+
 ## Additionnal formaters and helpers
 
 - SSTabulator.flagFormatter: format a two char country code to a svg flag using Last Icon
 - SSTabulator.buttonFormatter: format buttons
   - Allow showing alternative icons using `showAlt` and `showAltClause`
+- SSTabulator.externalFormatter: format with an external function
 - SSTabulator.customTickCross: nice alternative to the default tick cross formatter
 - SSTabulator.boolGroupHeader: useful to group by boolean values
 - SSTabulator.simpleRowFormatter: apply class or colors if the row contains `TabulatorRowColor` or `TabulatorRowClass`
 - SSTabulator.expandTooltip: show content in a tooltip if truncated
+- SSTabulator.moneyEditor: edit currencies
+- SSTabulator.externalEditor: edit with an external script
+- SSTabulator.isCellEditable: convention based callback to check if the row is editable
 
 ## Dependencies
 

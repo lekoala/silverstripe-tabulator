@@ -84,6 +84,7 @@ class TabulatorGrid extends FormField
         'load',
         'handleItem',
         'configProvider',
+        'autocomplete',
     ];
 
     private static $url_handlers = [
@@ -815,6 +816,17 @@ class TabulatorGrid extends FormField
         $response = new HTTPResponse($this->getInitScript());
         $response->addHeader('Content-Type', 'application/script');
         return $response;
+    }
+
+    /**
+     * Provides autocomplete lists
+     *
+     * @param HTTPRequest $request
+     * @return HTTPResponse
+     */
+    public function autocomplete(HTTPRequest $request)
+    {
+        
     }
 
     /**
