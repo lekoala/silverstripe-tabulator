@@ -711,6 +711,21 @@ class TabulatorGrid extends FormField
         ], $this->columns);
     }
 
+    public function wizardSelectable()
+    {
+        $this->columns = array_merge([
+            'ui_selectable' => [
+                "align" => 'center',
+                "cssClass" => 'tabulator-cell-btn tabulator-cell-selector',
+                'formatter' => 'rowSelection',
+                'titleFormatter' => 'rowSelection',
+                'headerSort' => false,
+                'width' => 40,
+                'cellClick' => 'SSTabulator.forwardClick',
+            ]
+        ], $this->columns);
+    }
+
     public function wizardGroupBy(string $field, string $toggleElement = 'header', bool $isBool = false)
     {
         $this->setOption("groupBy", $field);

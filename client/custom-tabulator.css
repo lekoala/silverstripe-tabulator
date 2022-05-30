@@ -99,9 +99,13 @@
     padding: 6px;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
 }
 .tabulator-row .tabulator-cell.tabulator-cell-btn .btn {
     width: 100%;
+}
+.tabulator-row .tabulator-cell.tabulator-cell-btn input[type="checkbox"] {
+    margin: 0;
 }
 
 .tabulator .tabulator-footer {

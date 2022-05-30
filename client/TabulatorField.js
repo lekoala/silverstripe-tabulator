@@ -70,7 +70,7 @@
     function getInteractiveElement(e) {
         let src = e;
         while (
-            !["A", "INPUT", "TD"].includes(src.tagName) &&
+            !["A", "INPUT", "TD", "TR", "TABLE"].includes(src.tagName) &&
             src.parentElement
         ) {
             src = src.parentElement;
@@ -521,26 +521,33 @@
         fetch(editUrl, {
             method: "POST",
             body: formData,
-        })
-            .then(function (response) {
-                if (response.status >= 200 && response.status <= 299) {
-                    response.json().then(function (json) {
-                        notify(json.message, "success");
+        }).then(function (response) {
+            if (response.status >= 200 && response.status <= 299) {
+                response.json().then(function (json) {
+                    notify(json.message, "success");
 
-                        if (json.value && json.value != value) {
-                            cell.setValue(json.value);
-                        } else if (!cell.getValue() && value) {
-                            cell.setValue(value);
-                        }
-                        disableCallback = false;
-                    });
-                } else {
-                    response.text().then(function (message) {
-                        notify(message, "bad");
-                        disableCallback = false;
-                    });
-                }
-            })
+                    if (json.value && json.value != value) {
+                        cell.setValue(json.value);
+                    } else if (!cell.getValue() && value) {
+                        cell.setValue(value);
+                    }
+                    disableCallback = false;
+                });
+            } else {
+                response.text().then(function (message) {
+                    notify(message, "bad");
+                    disableCallback = false;
+                });
+            }
+        });
+    };
+    var forwardClick = function (e, cell) {
+        e.preventDefault();
+        e.stopPropagation();
+        var input = cell.getElement().querySelector("input");
+        if (input && !input.readonly && !input.disabled) {
+            input.checked = !input.checked;
+        }
     };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);
@@ -585,6 +592,9 @@
                 if (e.target.classList.contains("tabulator-cell-editable")) {
                     return;
                 }
+                if (e.target.classList.contains("tabulator-cell-btn")) {
+                    return;
+                }
                 let target = getInteractiveElement(e.target);
                 if (["A", "INPUT"].includes(target.tagName)) {
                     return;
@@ -623,6 +633,7 @@
         simpleRowFormatter: simpleRowFormatter,
         expandTooltip: expandTooltip,
         dataAjaxResponse: dataAjaxResponse,
+        forwardClick: forwardClick,
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
         isCellEditable: isCellEditable,
