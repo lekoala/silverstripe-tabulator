@@ -4,11 +4,13 @@ namespace LeKoala\Tabulator;
 
 use Exception;
 use RuntimeException;
+use SilverStripe\ORM\DB;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Forms\Form;
 use InvalidArgumentException;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Core\Convert;
+use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\Core\ClassInfo;
@@ -23,9 +25,9 @@ use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
+use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
-use SilverStripe\ORM\FieldType\DBBoolean;
 
 /**
  * @link http://www.tabulator.info/
@@ -295,6 +297,7 @@ class TabulatorGrid extends FormField
         // Mock some base columns using SilverStripe built-in methods
         $columns = [];
         foreach ($singl->summaryFields() as $field => $title) {
+            $title = str_replace(".", " ", $title);
             $columns[$field] = [
                 'field' => $field,
                 'title' => $title,
@@ -826,7 +829,121 @@ class TabulatorGrid extends FormField
      */
     public function autocomplete(HTTPRequest $request)
     {
-        
+        if ($this->isDisabled() || $this->isReadonly()) {
+            return $this->httpError(403);
+        }
+        $SecurityID = $request->getVar('SecurityID');
+        if (!SecurityToken::inst()->check($SecurityID)) {
+            return $this->httpError(404, "Invalid SecurityID");
+        }
+
+        $name = $request->getVar("Column");
+        $col = $this->getColumn($name);
+
+        $term = '%' . $request->getVar('term') . '%';
+
+        $parts = explode(".", $name);
+        if (count($parts) > 2) {
+            array_pop($parts);
+        }
+        if (count($parts) == 2) {
+            $class = $parts[0];
+            $field = $parts[1];
+        } elseif (count($parts) == 1) {
+            $class = preg_replace("/ID$/", "", $parts[0]);
+            $field = 'Title';
+        } else {
+            throw new Exception("Invalid field name $name");
+        }
+
+        $sng = $class::singleton();
+        $baseTable = $sng->baseTable();
+
+        // Make a fast query to the table without orm overhead
+        $searchField = null;
+        $searchCandidates = [
+            'Title', 'Name', 'Surname', 'Email', 'ID'
+        ];
+
+        // Ensure field exists, this is really rudimentary
+        $db = $class::config()->db;
+        foreach ($searchCandidates as $searchCandidate) {
+            if ($searchField) {
+                continue;
+            }
+            if (isset($db[$searchCandidate])) {
+                $searchField = $searchCandidate;
+            }
+        }
+        $searchCols = [$searchField];
+
+        // For members, do something better
+        if ($baseTable == 'Member') {
+            $searchField = "CONCAT(FirstName,' ',Surname)";
+            $searchCols = ['FirstName', 'Surname', 'Email'];
+        }
+
+        if (!empty($col['editorParams']['customSearchField'])) {
+            $searchField = $col['editorParams']['customSearchField'];
+        }
+        if (!empty($col['editorParams']['customSearchCols'])) {
+            $searchCols = $col['editorParams']['customSearchCols'];
+        }
+
+        $sql = 'SELECT ID AS value, ' . $searchField . ' AS label FROM ' . $baseTable . ' WHERE ';
+
+        // Make sure at least one field is not null...
+        $parts = [];
+        foreach ($searchCols as $searchCol) {
+            $parts[] = $searchCol . ' IS NOT NULL';
+        }
+        $sql .= '(' . implode(' OR ', $parts) . ')';
+        // ... and matches search term ...
+        $parts = [];
+        foreach ($searchCols as $searchCol) {
+            $parts[] = $searchCol . ' LIKE ?';
+        }
+        $sql .= ' AND (' . implode(' OR ', $parts) . ')';
+        // ... and any user set requirements
+        $where = null;
+        if (!empty($col['editorParams']['where'])) {
+            $where = $col['editorParams']['where'];
+        }
+        foreach ($searchCols as $searchCol) {
+            // add one parameter per search col
+            $params[] = $term;
+        }
+        if (is_array($where)) {
+            if (ArrayLib::is_associative($where)) {
+                $newWhere = [];
+                foreach ($where as $col => $param) {
+                    // For array, we need a IN statement with a ? for each value
+                    if (is_array($param)) {
+                        $prepValue = [];
+                        foreach ($param as $paramValue) {
+                            $params[] = $paramValue;
+                            $prepValue[] = "?";
+                        }
+                        $newWhere[] = "$col IN (" . implode(',', $prepValue) . ")";
+                    } else {
+                        $params[] = $param;
+                        $newWhere[] = "$col = ?";
+                    }
+                }
+                $where = $newWhere;
+            }
+            $where = implode(' AND ', $where);
+        }
+        if ($where) {
+            $sql .= " AND $where";
+        }
+        $query = DB::prepared_query($sql, $params);
+        $results = iterator_to_array($query);
+
+        $json = json_encode($results);
+        $response = new HTTPResponse($json);
+        $response->addHeader('Content-Type', 'application/script');
+        return $response;
     }
 
     /**
@@ -836,6 +953,9 @@ class TabulatorGrid extends FormField
      */
     public function load(HTTPRequest $request)
     {
+        if ($this->isDisabled() || $this->isReadonly()) {
+            return $this->httpError(403);
+        }
         $SecurityID = $request->getVar('SecurityID');
         if (!SecurityToken::inst()->check($SecurityID)) {
             return $this->httpError(404, "Invalid SecurityID");
@@ -1141,11 +1261,27 @@ class TabulatorGrid extends FormField
 
     protected function processLinks(): void
     {
-        // Formatter actions
+        // Process editor and formatter links
         foreach ($this->columns as $name => $params) {
             if (!empty($params['formatterParams']['url'])) {
                 $url = $this->processLink($params['formatterParams']['url']);
                 $this->columns[$name]['formatterParams']['url'] = $url;
+            }
+            if (!empty($params['editorParams']['url'])) {
+                $url = $this->processLink($params['editorParams']['url']);
+                $this->columns[$name]['editorParams']['url'] = $url;
+            }
+            // Set valuesURL automatically if not already set
+            if (!empty($params['editorParams']['autocomplete'])) {
+                if (empty($params['editorParams']['valuesURL'])) {
+                    $params = [
+                        'Column' => $name,
+                        'SecurityID' => SecurityToken::getSecurityID(),
+                    ];
+                    $url = $this->Link('autocomplete') . '?' . http_build_query($params);
+                    $this->columns[$name]['editorParams']['valuesURL'] = $url;
+                    $this->columns[$name]['editorParams']['filterRemote'] = true;
+                }
             }
         }
 
@@ -1291,11 +1427,12 @@ class TabulatorGrid extends FormField
 
      * @param string $key
      */
-    public function getColumn(string $key): array
+    public function getColumn(string $key): ?array
     {
         if (isset($this->columns[$key])) {
             return $this->columns[$key];
         }
+        return null;
     }
 
     /**

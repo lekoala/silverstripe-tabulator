@@ -494,7 +494,13 @@
         //return the editor element
         return editor;
     };
+    var disableCallback = false;
     var cellEditedCallback = function (cell) {
+        if (disableCallback) {
+            return;
+        }
+        disableCallback = true;
+
         var value = cell.getValue();
         var column = cell.getColumn().getField();
         var data = cell.getRow().getData();
@@ -504,25 +510,37 @@
 
         editUrl = interpolate(editUrl, data);
 
-        formData.append("Field", column);
+        formData.append("Column", column);
         formData.append("Value", value);
         formData.append("SecurityID", SecurityID);
         formData.append("Data", data);
 
+        if (column.indexOf(".") !== -1) {
+            cell.setValue("");
+        }
         fetch(editUrl, {
             method: "POST",
             body: formData,
-        }).then(function (response) {
-            if (response.status >= 200 && response.status <= 299) {
-                response.json().then(function (json) {
-                    notify(json.message, "success");
-                });
-            } else {
-                response.text().then(function (message) {
-                    notify(message, "bad");
-                });
-            }
-        });
+        })
+            .then(function (response) {
+                if (response.status >= 200 && response.status <= 299) {
+                    response.json().then(function (json) {
+                        notify(json.message, "success");
+
+                        if (json.value && json.value != value) {
+                            cell.setValue(json.value);
+                        } else if (!cell.getValue() && value) {
+                            cell.setValue(value);
+                        }
+                        disableCallback = false;
+                    });
+                } else {
+                    response.text().then(function (message) {
+                        notify(message, "bad");
+                        disableCallback = false;
+                    });
+                }
+            })
     };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);

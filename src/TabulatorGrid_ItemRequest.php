@@ -21,6 +21,7 @@ use SilverStripe\Control\RequestHandler;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
+use SilverStripe\ORM\FieldType\DBField;
 
 /**
  * Endpoint for actions related to a specific record
@@ -179,17 +180,39 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         }
 
         $Data = $request->postVar("Data");
-        $Field = $request->postVar("Field");
+        $Column = $request->postVar("Column");
         $Value = $request->postVar("Value");
 
-        if (!$Value && in_array($Field, $preventEmpty)) {
+        if (!$Value && in_array($Column, $preventEmpty)) {
             return $this->httpError(400, _t(__CLASS__ . '.ValueCannotBeEmpty', 'Value cannot be empty'));
         }
 
-        $this->record->$Field = $Value;
+        $field = $Column;
+        $rel = $relField = null;
+        if (strpos($Column, ".") !== false) {
+            $parts = explode(".", $Column);
+            $rel = $parts[0];
+            $relField = $parts[1];
+            $field = $rel . "ID";
+            if (!is_numeric($Value)) {
+                return $this->httpError(400, "ID must have a numerical value");
+            }
+        }
+        if (!$field) {
+            return $this->httpError(400, "Field must not be empty");
+        }
+
+        $this->record->$field = $Value;
+
         $error = null;
         try {
             $this->record->write();
+            $updatedValue = $this->record->$field;
+            if ($rel) {
+                /** @var DataObject $relObject */
+                $relObject = $this->record->$rel();
+                $updatedValue = $relObject->relField($relField);
+            }
         } catch (Exception $e) {
             $error = $e->getMessage();
         }
@@ -200,7 +223,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         $response = new HTTPResponse(json_encode([
             'success' => true,
-            'message' => _t(__CLASS__ . '.RecordEdited', 'Record edited')
+            'message' => _t(__CLASS__ . '.RecordEdited', 'Record edited'),
+            'value' => $updatedValue,
         ]));
         $response->addHeader('Content-Type', 'application/json');
         return $response;
