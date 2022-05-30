@@ -216,7 +216,7 @@ class TabulatorGrid extends FormField
 
     protected array $dataAttributes = [];
 
-    protected string $controllerFunction;
+    protected string $controllerFunction = "";
 
     protected bool $useConfigProvider = true;
 

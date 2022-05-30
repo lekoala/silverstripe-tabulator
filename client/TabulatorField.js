@@ -352,78 +352,6 @@
     var isCellEditable = function (cell) {
         return cell._cell.row.data["_editable"];
     };
-    var checkboxEditor = function (
-        cell,
-        onRendered,
-        success,
-        cancel,
-        editorParams
-    ) {
-        var value = cell.getValue();
-        var editor = document.createElement("span");
-
-        var input = document.createElement("input");
-        input.setAttribute("type", "checkbox");
-        input.style.opacity = "0";
-
-        //TODO: fix blur issue
-
-        var tickCross = document.createElement("span");
-        tickCross.style.cursor = "pointer";
-
-        editor.appendChild(input);
-        editor.appendChild(tickCross);
-
-        input.checked =
-            value === true ||
-            value === "true" ||
-            value === "True" ||
-            value === 1;
-
-        function renderTickCross() {
-            if (input.checked) {
-                tickCross.innerHTML = iconTick;
-            } else {
-                tickCross.innerHTML = iconCross;
-            }
-        }
-        onRendered(function () {
-            input.focus({ preventScroll: true });
-            renderTickCross();
-        });
-
-        function setValue() {
-            return input.checked;
-        }
-
-        editor.addEventListener("click", function (e) {
-            e.preventDefault();
-            input.checked = !input.checked;
-            renderTickCross();
-
-            input.focus({ preventScroll: true });
-        });
-
-        input.addEventListener("change", function (e) {
-            success(setValue());
-        });
-
-        input.addEventListener("blur", function (e) {
-            success(setValue(true));
-        });
-
-        //submit new value on enter
-        input.addEventListener("keydown", function (e) {
-            if (e.keyCode == 13) {
-                success(setValue());
-            }
-            if (e.keyCode == 27) {
-                cancel();
-            }
-        });
-
-        return editor;
-    };
     var dateEditor = function (
         cell,
         onRendered,
@@ -718,7 +646,6 @@
         simpleRowFormatter: simpleRowFormatter,
         expandTooltip: expandTooltip,
         dataAjaxResponse: dataAjaxResponse,
-        checkboxEditor: checkboxEditor,
         dateEditor: dateEditor,
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
