@@ -839,6 +839,9 @@ class TabulatorGrid extends FormField
 
         $name = $request->getVar("Column");
         $col = $this->getColumn($name);
+        if (!$col) {
+            return $this->httpError(403, "Invalid column");
+        }
 
         $term = '%' . $request->getVar('term') . '%';
 
@@ -853,16 +856,16 @@ class TabulatorGrid extends FormField
             $class = preg_replace("/ID$/", "", $parts[0]);
             $field = 'Title';
         } else {
-            throw new Exception("Invalid field name $name");
+            return $this->httpError(403, "Invalid field");
         }
 
+        /** @var DataObject $sng */
         $sng = $class::singleton();
         $baseTable = $sng->baseTable();
 
-        // Make a fast query to the table without orm overhead
         $searchField = null;
         $searchCandidates = [
-            'Title', 'Name', 'Surname', 'Email', 'ID'
+            $field, 'Name', 'Surname', 'Email', 'ID'
         ];
 
         // Ensure field exists, this is really rudimentary
@@ -879,7 +882,7 @@ class TabulatorGrid extends FormField
 
         // For members, do something better
         if ($baseTable == 'Member') {
-            $searchField = "CONCAT(FirstName,' ',Surname)";
+            $searchField = ['FirstName', 'Surname'];
             $searchCols = ['FirstName', 'Surname', 'Email'];
         }
 
@@ -890,57 +893,63 @@ class TabulatorGrid extends FormField
             $searchCols = $col['editorParams']['customSearchCols'];
         }
 
-        $sql = 'SELECT ID AS value, ' . $searchField . ' AS label FROM ' . $baseTable . ' WHERE ';
+
+        /** @var DataList $list */
+        $list = $sng::get();
 
         // Make sure at least one field is not null...
-        $parts = [];
+        $where = [];
         foreach ($searchCols as $searchCol) {
-            $parts[] = $searchCol . ' IS NOT NULL';
+            $where[] = $searchCol . ' IS NOT NULL';
         }
-        $sql .= '(' . implode(' OR ', $parts) . ')';
+        $list = $list->where($where);
         // ... and matches search term ...
-        $parts = [];
+        $where = [];
         foreach ($searchCols as $searchCol) {
-            $parts[] = $searchCol . ' LIKE ?';
+            $where[$searchCol . ' LIKE ?'] = $term;
         }
-        $sql .= ' AND (' . implode(' OR ', $parts) . ')';
-        // ... and any user set requirements
-        $where = null;
-        if (!empty($col['editorParams']['where'])) {
-            $where = $col['editorParams']['where'];
-        }
-        foreach ($searchCols as $searchCol) {
-            // add one parameter per search col
-            $params[] = $term;
-        }
-        if (is_array($where)) {
-            if (ArrayLib::is_associative($where)) {
-                $newWhere = [];
-                foreach ($where as $col => $param) {
-                    // For array, we need a IN statement with a ? for each value
-                    if (is_array($param)) {
-                        $prepValue = [];
-                        foreach ($param as $paramValue) {
-                            $params[] = $paramValue;
-                            $prepValue[] = "?";
-                        }
-                        $newWhere[] = "$col IN (" . implode(',', $prepValue) . ")";
-                    } else {
-                        $params[] = $param;
-                        $newWhere[] = "$col = ?";
-                    }
-                }
-                $where = $newWhere;
-            }
-            $where = implode(' AND ', $where);
-        }
-        if ($where) {
-            $sql .= " AND $where";
-        }
-        $query = DB::prepared_query($sql, $params);
-        $results = iterator_to_array($query);
+        $list = $list->whereAny($where);
 
-        $json = json_encode($results);
+        // ... and any user set requirements
+        if (!empty($col['editorParams']['where'])) {
+            // Deal with in clause
+            $customWhere = [];
+            foreach ($col['editorParams']['where'] as $col => $param) {
+                // For array, we need a IN statement with a ? for each value
+                if (is_array($param)) {
+                    $prepValue = [];
+                    $params = [];
+                    foreach ($param as $paramValue) {
+                        $params[] = $paramValue;
+                        $prepValue[] = "?";
+                    }
+                    $customWhere["$col IN (" . implode(',', $prepValue) . ")"] = $params;
+                } else {
+                    $customWhere["$col = ?"] = $param;
+                }
+            }
+            $list = $list->where($customWhere);
+        }
+
+        $results = iterator_to_array($list);
+        $data = [];
+        foreach ($results as $record) {
+            if (is_array($searchField)) {
+                $labelParts = [];
+                foreach ($searchField as $sf) {
+                    $labelParts[] = $record->$sf;
+                }
+                $label = implode(" ", $labelParts);
+            } else {
+                $label = $record->$searchField;
+            }
+            $data[] = [
+                'value' => $record->ID,
+                'label' => $label,
+            ];
+        }
+
+        $json = json_encode($data);
         $response = new HTTPResponse($json);
         $response->addHeader('Content-Type', 'application/script');
         return $response;
