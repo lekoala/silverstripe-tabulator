@@ -370,10 +370,14 @@
         editor.style.boxSizing = "border-box";
 
         //Set value of editor to the current value of the cell
-        editor.value = luxon.DateTime.fromFormat(
-            cell.getValue(),
-            "dd/MM/yyyy"
-        ).toFormat("yyyy-MM-dd");
+        if (typeof luxon !== "undefined") {
+            editor.value = luxon.DateTime.fromFormat(
+                cell.getValue(),
+                "dd/MM/yyyy"
+            ).toFormat("yyyy-MM-dd");
+        } else {
+            editor.value = cell.getValue();
+        }
 
         //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
         onRendered(function () {
@@ -383,11 +387,16 @@
 
         //when the value has been set, trigger the cell to update
         function successFunc() {
-            success(
-                luxon.DateTime.fromFormat(editor.value, "yyyy-MM-dd").toFormat(
-                    "dd/MM/yyyy"
-                )
-            );
+            if (typeof luxon !== "undefined") {
+                success(
+                    luxon.DateTime.fromFormat(
+                        editor.value,
+                        "yyyy-MM-dd"
+                    ).toFormat("dd/MM/yyyy")
+                );
+            } else {
+                success(editor.value);
+            }
         }
 
         editor.addEventListener("change", successFunc);
@@ -553,17 +562,17 @@
         fetch(editUrl, {
             method: "POST",
             body: formData,
-        })
-            .then(function (response) {
-                if (response.status >= 200 && response.status <= 299) {
-                    return response.json();
-                } else {
-                    notify(response.statusText, "danger");
-                }
-            })
-            .then(function (json) {
-                notify(json.message, "success");
-            });
+        }).then(function (response) {
+            if (response.status >= 200 && response.status <= 299) {
+                response.json().then(function (json) {
+                    notify(json.message, "success");
+                });
+            } else {
+                response.text().then(function (message) {
+                    notify(message, "bad");
+                });
+            }
+        });
     };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);

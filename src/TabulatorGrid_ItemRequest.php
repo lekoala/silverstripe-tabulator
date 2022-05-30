@@ -168,9 +168,18 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ));
         }
 
+        $preventEmpty = [];
+        if ($this->record->hasMethod('tabulatorPreventEmpty')) {
+            $preventEmpty = $this->record->tabulatorPreventEmpty();
+        }
+
         $Data = $request->postVar("Data");
         $Field = $request->postVar("Field");
         $Value = $request->postVar("Value");
+
+        if (!$Value && in_array($Field, $preventEmpty)) {
+            return $this->httpError(400, _t(__CLASS__ . '.ValueCannotBeEmpty', 'Value cannot be empty'));
+        }
 
         $this->record->$Field = $Value;
         $error = null;

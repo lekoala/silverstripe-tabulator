@@ -1251,6 +1251,23 @@ class TabulatorGrid extends FormField
             throw new InvalidArgumentException("$field is not a valid column");
         }
 
+        switch ($editor) {
+            case 'date':
+                $editor = "input";
+                $params = [
+                    'mask' => "9999-99-99",
+                    'maskAutoFill' => 'true',
+                ];
+                break;
+            case 'datetime':
+                $editor = "input";
+                $params = [
+                    'mask' => "9999-99-99 99:99:99",
+                    'maskAutoFill' => 'true',
+                ];
+                break;
+        }
+
         $col['editor'] = $editor;
         $col['editorParams'] = $params;
 
