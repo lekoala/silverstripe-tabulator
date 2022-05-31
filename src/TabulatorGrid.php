@@ -107,7 +107,7 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
-    private static string $version = '5.2.5';
+    private static string $version = '5.2.6';
 
     /**
      * @config
@@ -223,6 +223,8 @@ class TabulatorGrid extends FormField
 
     protected bool $useConfigProvider = true;
 
+    protected string $editUrl = "";
+
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
@@ -250,9 +252,19 @@ class TabulatorGrid extends FormField
      * @param string $action
      * @return string
      */
-    public function TempLink(string $action): string
+    public function TempLink(string $action, bool $controller = false): string
     {
-        return '*' . $action;
+        // It's an absolute link
+        if (strpos($action, '/') === 0 || strpos($action, 'http') === 0) {
+            return $action;
+        }
+        $prefix = $controller ? "form" : "controller";
+        return "$prefix:$action";
+    }
+
+    public function ControllerLink(string $action): string
+    {
+        return $this->getForm()->getController()->Link($action);
     }
 
     /**
@@ -366,6 +378,7 @@ class TabulatorGrid extends FormField
         $itemUrl = $this->TempLink('item/{ID}');
         if ($singl->canEdit()) {
             $this->addButton($itemUrl, "edit", "Edit");
+            $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit");
         } elseif ($singl->canView()) {
             $this->addButton($itemUrl, "visibility", "View");
         }
@@ -471,7 +484,10 @@ class TabulatorGrid extends FormField
         $this->setDataAttribute("use-custom-pagination-icons", empty($customIcons));
 
         $this->setDataAttribute("listeners", $this->listeners);
-        $this->setDataAttribute("edit-url", "/" . $this->Link("item/{ID}/ajaxEdit"));
+        if ($this->editUrl) {
+            $url = $this->processLink($this->editUrl);
+            $this->setDataAttribute("edit-url", $url);
+        }
 
         if ($this->useConfigProvider) {
             $configLink = "/" . ltrim($this->Link("configProvider"), "/");
@@ -1267,18 +1283,21 @@ class TabulatorGrid extends FormField
 
     protected function processLink(string $url): string
     {
-        $link = $this->Link();
-        // It's already processed
-        if (strpos($url, $link) !== false || $url == '#') {
+        // It's not necessary to process
+        if ($url == '#') {
             return $url;
+        }
+        // It's a temporary link on the form
+        if (strpos($url, 'form:') === 0) {
+            return $this->Link(preg_replace('/^form:/', '', $url));
+        }
+        // It's a temporary link on the controller
+        if (strpos($url, 'controller:') === 0) {
+            return $this->ControllerLink(preg_replace('/^controller:/', '', $url));
         }
         // It's a custom protocol (mailto: etc)
         if (strpos($url, ':') !== false) {
             return $url;
-        }
-        // It's a temporary link
-        if (strpos($url, '*') === 0) {
-            $url = $this->Link(ltrim($url, '*'));
         }
         return $url;
     }
@@ -1316,7 +1335,7 @@ class TabulatorGrid extends FormField
         }
     }
 
-    public function makeButton(string $action, string $icon, string $title): array
+    public function makeButton(string $url, string $icon, string $title): array
     {
         $opts = [
             "responsive" => 0,
@@ -1326,7 +1345,7 @@ class TabulatorGrid extends FormField
             "formatterParams" => [
                 "icon" => $icon,
                 "title" => $title,
-                "url" => $action, // This needs to be processed later on to make sure the field is linked to a controller
+                "url" => $this->TempLink($url), // This will be processed later if needed
             ],
             "cellClick" => "SSTabulator.buttonHandler",
             "width" => 70,
@@ -1731,6 +1750,23 @@ class TabulatorGrid extends FormField
     public function setUseConfigProvider(bool $useConfigProvider): self
     {
         $this->useConfigProvider = $useConfigProvider;
+        return $this;
+    }
+
+    /**
+     * Get the value of editUrl
+     */
+    public function getEditUrl(): string
+    {
+        return $this->editUrl;
+    }
+
+    /**
+     * Set the value of editUrl
+     */
+    public function setEditUrl(string $editUrl): self
+    {
+        $this->editUrl = $editUrl;
         return $this;
     }
 }

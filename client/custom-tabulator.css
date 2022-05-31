@@ -157,6 +157,12 @@
 .tabulator-row.tabulator-row-editing .editing-only {
     visibility: visible;
 }
+.tabulator-row .edited-only {
+    visibility: hidden;
+}
+.tabulator-row.tabulator-row-edited .edited-only {
+    visibility: visible;
+}
 .tabulator-row .tabulator-cell-editable {
     cursor: text;
 }

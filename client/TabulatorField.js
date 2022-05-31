@@ -6,13 +6,15 @@
     const iconCross =
         '<svg width="24" height="24" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75827 17.2426L12.0009 12M17.2435 6.75736L12.0009 12M12.0009 12L6.75827 6.75736M12.0009 12L17.2435 17.2426" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const iconFirst =
-        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 0 24 24"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
     const iconLast =
-        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" fill="currentColor"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 0 24 24"><path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2z" fill="currentColor"/></svg>';
     const iconNext =
-        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/></svg>';
     const iconPrev =
-        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/></svg>';
+    const loader =
+        '<svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 0 24 24" xml:space="preserve"><circle fill="currentColor" cx="4" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin=".1"/></circle><circle fill="currentColor" cx="12" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin=".2"/></circle><circle fill="currentColor" cx="20" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin=".3"/></circle></svg>';
 
     /**
      * @param {number} n
@@ -61,6 +63,21 @@
         } else {
             console.log(type + " " + msg);
         }
+    }
+
+    function getGlobalHandler(handler) {
+        if (handler.indexOf(".") !== -1) {
+            var parts = handler.split(".");
+            namespace = window[parts[0]];
+            func = parts[1];
+            return namespace[func];
+        }
+        return window[handler];
+    }
+
+    function getSecurityID() {
+        var el = document.querySelector("input[name=SecurityID]");
+        return el ? el.value : null;
     }
 
     /**
@@ -232,6 +249,7 @@
             }
         }
 
+        var ajax = formatterParams.ajax || false;
         var title = formatterParams.title;
         var btnClasses = formatterParams.classes;
         var showIconTitle = formatterParams.showIconTitle;
@@ -256,16 +274,28 @@
             }
         }
         var url = formatterParams.url;
-        if (!url) {
-            return btnContent;
+        var tag = "a";
+        var attrs = "";
+        if (ajax) {
+            attrs += ' data-ajax="' + ajax + '"';
         }
-        url = interpolate(url, cell._cell.row.data);
-        url += "?" + new URLSearchParams(urlParams).toString();
-        var link = '<a href="{url}" class="{classes}">{btnContent}</a>';
+
+        if (!url) {
+            tag = "span";
+        } else {
+            url = interpolate(url, cell._cell.row.data);
+            if (Object.keys(urlParams).length > 0) {
+                url += "?" + new URLSearchParams(urlParams).toString();
+            }
+            attrs += ' href="' + url + '"';
+        }
+        var link = '<{tag} class="{classes}"{attrs}>{btnContent}</{tag}>';
         link = interpolate(link, {
             url: url,
             classes: classes,
             btnContent: btnContent,
+            attrs: attrs,
+            tag: tag,
         });
         return link;
     };
@@ -280,6 +310,50 @@
     var buttonHandler = function (e, cell) {
         // This helps restoring state after click on button
         document.cookie = "hash=" + (window.location.hash || "") + "; path=/";
+
+        var btn = cell.getElement().querySelector("a,input,button");
+        e.preventDefault();
+        if (btn) {
+            if (btn.dataset.ajax) {
+                e.preventDefault();
+
+                var formData = new FormData();
+                formData.append("Action", btn.dataset.action || "");
+                formData.append("SecurityID", getSecurityID());
+                formData.append("Data", cell.getRow().getData());
+
+                btn.dataset.html = btn.innerHTML;
+                btn.innerHTML = loader;
+
+                if (btn.dataset.ajax != 1 && btn.dataset.ajax != "true") {
+                    var cb = getGlobalHandler(btn.dataset.ajax);
+                    if (!cb) {
+                        console.warn("Handler not found", btn.dataset.ajax);
+                    } else {
+                        cb(e, cell, btn, formData).then(function () {
+                            btn.innerHTML = btn.dataset.html;
+                        });
+                    }
+                } else {
+                    fetch(btn.getAttribute("href"), {
+                        method: "POST",
+                        body: formData,
+                    }).then(function (response) {
+                        if (response.status >= 200 && response.status <= 299) {
+                            response.json().then(function (json) {
+                                notify(json.message, json.status ?? "success");
+                                btn.innerHTML = btn.dataset.html;
+                            });
+                        } else {
+                            response.text().then(function (message) {
+                                notify(message, "bad");
+                                btn.innerHTML = btn.dataset.html;
+                            });
+                        }
+                    });
+                }
+            }
+        }
     };
     var pendingInit = {};
     var initElement = function (el, options) {
@@ -499,32 +573,34 @@
         if (disableCallback) {
             return;
         }
-        disableCallback = true;
-
         var value = cell.getValue();
         var column = cell.getColumn().getField();
         var data = cell.getRow().getData();
         var editUrl = cell.getTable().element.dataset.editUrl;
-        var formData = new FormData();
-        var SecurityID = document.querySelector("input[name=SecurityID]").value;
+        if (!editUrl) {
+            return;
+        }
 
+        disableCallback = true;
         editUrl = interpolate(editUrl, data);
 
+        var formData = new FormData();
         formData.append("Column", column);
         formData.append("Value", value);
-        formData.append("SecurityID", SecurityID);
+        formData.append("SecurityID", getSecurityID());
         formData.append("Data", data);
 
         if (column.indexOf(".") !== -1) {
             cell.setValue("");
         }
+
         fetch(editUrl, {
             method: "POST",
             body: formData,
         }).then(function (response) {
             if (response.status >= 200 && response.status <= 299) {
                 response.json().then(function (json) {
-                    notify(json.message, "success");
+                    notify(json.message, json.status ?? "success");
 
                     if (json.value && json.value != value) {
                         cell.setValue(json.value);

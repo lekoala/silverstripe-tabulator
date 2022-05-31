@@ -97,6 +97,31 @@ You can make any column editable. Simply call `makeColumnEditable` and pass alon
 
 Upon blur, it will trigger a ajaxEdit request.
 
+## Buttons
+
+You can create button columns with the `makeButton` function. Under the hood, it will use the buttonFormatter and
+buttonHandler.
+
+You can also enable ajax mode by setting the `ajax` parameter either as true/1 or as a string.
+Using true/1 will use built-in ajax handler, or you can choose to pick any global function (make sure it's *not* one in your registered namespace).
+```php
+$btn = $grid->makeButton("myaction/{ID}", "", "Confirm");
+$btn['width'] = '100';
+$btn['tooltip'] = '';
+$btn['formatterParams']['classes'] = "btn btn-primary d-block";
+$btn['formatterParams']['ajax'] = "MyAppStatic.handleAjax";
+$grid->addButtonFromArray("MyBtn", $btn);
+```
+
+You custom handler just look like this and return a promise
+
+```js
+ var handleAjax = function (e, cell, btn, formData) {
+     // do something here
+     // return promise
+ }
+ ```
+
 ## Notifications
 
 There is a built-in `notify` helper function that supports quite a few notification types by default.
