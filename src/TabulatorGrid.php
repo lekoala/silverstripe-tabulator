@@ -252,7 +252,7 @@ class TabulatorGrid extends FormField
      * @param string $action
      * @return string
      */
-    public function TempLink(string $action, bool $controller = false): string
+    public function TempLink(string $action, bool $controller = true): string
     {
         // It's an absolute link
         if (strpos($action, '/') === 0 || strpos($action, 'http') === 0) {
@@ -375,12 +375,12 @@ class TabulatorGrid extends FormField
         // We use a pseudo link, because maybe we cannot call Link() yet if it's not linked to a form
 
         // - Core actions
-        $itemUrl = $this->TempLink('item/{ID}');
+        $itemUrl = $this->TempLink('item/{ID}', false);
         if ($singl->canEdit()) {
-            $this->addButton($itemUrl, "edit", "Edit");
-            $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit");
+            $this->addButton("ui_edit", $itemUrl, "edit", "Edit");
+            $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit", false);
         } elseif ($singl->canView()) {
-            $this->addButton($itemUrl, "visibility", "View");
+            $this->addButton("ui_view", $itemUrl, "visibility", "View");
         }
 
         $this->tools = [];
@@ -396,10 +396,10 @@ class TabulatorGrid extends FormField
             }
             foreach ($rowActions as $key => $actionConfig) {
                 $action = $actionConfig['action'] ?? $key;
-                $url = $this->TempLink('item/{ID}/customAction/' . $action);
+                $url = $this->TempLink("item/{ID}/customAction/$action", false);
                 $icon = $actionConfig['icon'] ?? "cog";
                 $title = $actionConfig['title'] ?? "";
-                $this->addButton($url, $icon, $title);
+                $this->addButton("ui_customaction_$action", $url, $icon, $title);
             }
         }
 
@@ -680,7 +680,7 @@ class TabulatorGrid extends FormField
 
     public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $params = [])
     {
-        $this->setRemotePagination($this->TempLink('load'), $params, $pageSize, $initialPage);
+        $this->setRemotePagination($this->TempLink('load', false), $params, $pageSize, $initialPage);
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
     }
@@ -708,7 +708,7 @@ class TabulatorGrid extends FormField
         $params = array_merge([
             'SecurityID' => SecurityToken::getSecurityID()
         ], $extraParams);
-        $this->setProgressiveLoad($this->TempLink('load'), $params, $pageSize, $initialPage, $mode, $scrollMargin);
+        $this->setProgressiveLoad($this->TempLink('load', false), $params, $pageSize, $initialPage, $mode, $scrollMargin);
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
     }
@@ -742,6 +742,12 @@ class TabulatorGrid extends FormField
         ], $this->columns);
     }
 
+    /**
+     * @param string $field
+     * @param string $toggleElement arrow|header|false (header by default)
+     * @param boolean $isBool
+     * @return void
+     */
     public function wizardGroupBy(string $field, string $toggleElement = 'header', bool $isBool = false)
     {
         $this->setOption("groupBy", $field);
@@ -1345,7 +1351,7 @@ class TabulatorGrid extends FormField
             "formatterParams" => [
                 "icon" => $icon,
                 "title" => $title,
-                "url" => $this->TempLink($url), // This will be processed later if needed
+                "url" => $this->TempLink($url), // On the controller by default
             ],
             "cellClick" => "SSTabulator.buttonHandler",
             "width" => 70,
@@ -1377,29 +1383,29 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @param string $action Action on the controller. Parameters between {} will be interpolated by row values.
+     * @param string $action Action name
+     * @param string $url Parameters between {} will be interpolated by row values.
      * @param string $icon
      * @param string $title
      * @param string|null $before
      * @return self
      */
-    public function addButton(string $action, string $icon, string $title, string $before = null): self
+    public function addButton(string $action, string $url, string $icon, string $title, string $before = null): self
     {
-        $opts = $this->makeButton($action, $icon, $title);
-
+        $opts = $this->makeButton($url, $icon, $title);
         $this->addButtonFromArray($action, $opts, $before);
         return $this;
     }
 
-    public function shiftButton(string $action, string $icon, string $title): self
+    public function shiftButton(string $action, string $url, string $icon, string $title): self
     {
         // Find first action
         foreach ($this->columns as $name => $options) {
             if (strpos($name, 'action_') === 0) {
-                return $this->addButton($action, $icon, $title, $name);
+                return $this->addButton($action, $url, $icon, $title, $name);
             }
         }
-        return $this->addButton($action, $icon, $title);
+        return $this->addButton($action, $url, $icon, $title);
     }
 
     public function removeButton(string $action): self
