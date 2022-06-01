@@ -258,7 +258,7 @@ class TabulatorGrid extends FormField
         if (strpos($action, '/') === 0 || strpos($action, 'http') === 0) {
             return $action;
         }
-        $prefix = $controller ? "form" : "controller";
+        $prefix = $controller ? "controller" : "form";
         return "$prefix:$action";
     }
 
