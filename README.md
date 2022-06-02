@@ -9,6 +9,9 @@
 Integrating [Tabulator](http://www.tabulator.info/) into SilverStripe. Because GridField doesn't always cut it.
 This works in the front end and in the cms.
 
+This module is used in [my alternative admin module](https://github.com/lekoala/silverstripe-admini) and in a production project using fairly complex front end editable tables.
+This means that I will have probably faced most of the issues you might have in your own projects :-)
+
 ## Configuring detail fields
 
 When editing or viewing a record, the default `getCMSFields` is used. This might not always be ideal (fields may have gridfields or depend on some implementation).
@@ -35,7 +38,7 @@ On the bad side, it can break because it most probably expect gridfields everywh
 
 This module scaffold some default columns based on summary and searchable fields.
 
-For more advanced usage, please define a `tabulatorColumns` method that returns all the columns according to Tabulator definitions.
+For more advanced usage, please define a `tabulatorColumns` method that returns all the columns according to [Tabulator definitions](http://tabulator.info/docs/5.2/columns).
 
 ## Configuring row actions
 
@@ -79,6 +82,48 @@ $grid->setControllerFunction(__FUNCTION__);
 $grid->setUseConfigProvider(false);
 ```
 
+## Options
+
+You can configure any of the [available options](http://tabulator.info/docs/5.2/options) using the `setOption` call.
+
+### Dynamic callbacks
+
+For dynamic callbacks, you can specify a function available in the global namespace using a namespaced function to avoid scope pollution.
+This namespace must be registered using the `registerJsNamespace` function. The default `SSTabulator` is registered by default.
+
+Any parameter in this namespace will be escaped by a regex from the json encoding when building the option array.
+Using this methodology is the only way to distinguish regular strings from actual function name.
+
+For example:
+
+```php
+$grid->registerJsNamespace('MyApp');
+$grid->addColumn('MyCell', 'My Cell', [
+    'headerSort' => false,
+    'editable' => '_editable',
+    'editor' => 'SSTabulator.externalEditor',
+    'mutatorEdit' => 'MyApp.mutateValue',
+]);
+```
+
+Will be converted to:
+
+```js
+{
+    "headerSort": false,
+    "editable": "_editable",
+    "editor": SSTabulator.externalEditor,
+    "mutatorEdit": MyApp.mutateValue,
+}
+```
+
+If for some reason you need to prevent espacing of a registered namespace, simply prefix with a *
+
+```php
+// Handler is specified as a data attribute on the btn, so we need to keep it as string
+$btn['formatterParams']['ajax'] = "*MyApp.handleAjax";
+```
+
 ## Using wizards
 
 The class contain a couple of "wizard" functions that will set a group of options in a consistent manner.
@@ -95,7 +140,7 @@ Disabling the bootstrap5 theme also disables the custom css.
 
 You can make any column editable. Simply call `makeColumnEditable` and pass along relevant editor details.
 
-Upon blur, it will trigger a ajaxEdit request.
+Upon blur, it will trigger a ajaxEdit request on the editUrl endpoint if set.
 
 ## Buttons
 
@@ -103,13 +148,14 @@ You can create button columns with the `makeButton` function. Under the hood, it
 buttonHandler.
 
 You can also enable ajax mode by setting the `ajax` parameter either as true/1 or as a string.
-Using true/1 will use built-in ajax handler, or you can choose to pick any global function (make sure it's *not* one in your registered namespace).
+Using true/1 will use built-in ajax handler, or you can choose to pick any global function name
+
 ```php
 $btn = $grid->makeButton("myaction/{ID}", "", "Confirm");
 $btn['width'] = '100';
 $btn['tooltip'] = '';
 $btn['formatterParams']['classes'] = "btn btn-primary d-block";
-$btn['formatterParams']['ajax'] = "MyAppStatic.handleAjax";
+$btn['formatterParams']['ajax'] = "*MyApp.handleAjax";
 $grid->addButtonFromArray("MyBtn", $btn);
 ```
 
@@ -121,6 +167,25 @@ You custom handler just look like this and return a promise
      // return promise
  }
  ```
+
+ Buttons are not responsive by default. Simply unset the responsive key if needed
+
+```php
+unset($btn['responsive']);
+```
+
+## Listen to events
+
+You can add custom listeners that should exist in the global namespace.
+
+```php
+$grid->addListener('tableBuilt', 'MyApp.onTableBuilt');
+```
+
+## Data attributes vs options
+
+Some of the settings of Tabulator are set using data attributes. This has been made in order to avoid mixing custom behaviour with built-in options
+from Tabulator. Function names should be regular strings, since they are json encoded and resolved by our custom code.
 
 ## Notifications
 
@@ -141,6 +206,11 @@ If needed, you can register a global SSTabulator.notify function that will be ca
 - SSTabulator.moneyEditor: edit currencies
 - SSTabulator.externalEditor: edit with an external script
 - SSTabulator.isCellEditable: convention based callback to check if the row is editable
+
+## Custom build
+
+This module use a custom build of Tabulator with specific tweaks that might or might not be merged some day.
+You can use the cdn version by disabling `use_custom_build` config flag.
 
 ## Dependencies
 

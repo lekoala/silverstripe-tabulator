@@ -65,16 +65,27 @@
         }
     }
 
+    /**
+     * @param {string} handler
+     * @returns {Function}
+     */
     function getGlobalHandler(handler) {
         if (handler.indexOf(".") !== -1) {
             var parts = handler.split(".");
             namespace = window[parts[0]];
             func = parts[1];
+            if (!namespace) {
+                console.warn("Undefined namespace", parts[0]);
+                return;
+            }
             return namespace[func];
         }
         return window[handler];
     }
 
+    /**
+     * @returns {string}
+     */
     function getSecurityID() {
         var el = document.querySelector("input[name=SecurityID]");
         return el ? el.value : null;
@@ -625,6 +636,21 @@
             input.checked = !input.checked;
         }
     };
+    /**
+     * @param {Tabulator} table
+     * @param {string} group
+     * @returns {GroupRows}
+     */
+    var getGroupByKey = function (table, group) {
+        var groups = table.modules.groupRows.getGroups();
+        var s = null;
+        groups.forEach((g) => {
+            if (g.key == group) {
+                s = g;
+            }
+        });
+        return s;
+    };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);
         if (el.classList.contains("tabulatorgrid-created")) {
@@ -638,7 +664,6 @@
             options.langs[options.locale].pagination.last = iconLast;
             options.langs[options.locale].pagination.next = iconNext;
             options.langs[options.locale].pagination.prev = iconPrev;
-            delete options["useCustomPaginationIcons"];
         }
 
         var tabulator = new Tabulator(selector, options);
@@ -654,8 +679,15 @@
         // Register events
         const listeners = JSON.parse(dataset.listeners);
         for (const listenerName in listeners) {
-            var cb = listeners[listenerName];
-            tabulator.on(listenerName, cb);
+            var cb = getGlobalHandler(listeners[listenerName]);
+            if (cb) {
+                tabulator.on(listenerName, cb);
+            } else {
+                console.warn(
+                    "Listener not found for " + listenerName,
+                    listeners[listenerName]
+                );
+            }
         }
         // Default edit callback
         if (!listeners["cellEdited"]) {
@@ -713,6 +745,7 @@
         moneyEditor: moneyEditor,
         externalEditor: externalEditor,
         isCellEditable: isCellEditable,
+        getGroupByKey: getGroupByKey,
         init: init,
     };
 

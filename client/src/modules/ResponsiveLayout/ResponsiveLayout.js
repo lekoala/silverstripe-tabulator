@@ -121,10 +121,13 @@ class ResponsiveLayout extends Module{
             row.getElement().classList.add("tabulator-responsive-flex-open");
             row.getCells().forEach(function(cell) {
                 var el = cell.getElement();
+                var title = cell.getColumn().getDefinition().title;
                 if(el.style.display === "none") {
                     el.style.display = 'block';
                     el.style.width = "100%";
-                    el.dataset.label = cell.getColumn().getDefinition().title;
+                    if(title && typeof title !== "undefined"){
+                        el.dataset.label = title;
+                    }
                     el.classList.add("tabulator-responsive-flex-cell");
                 }
             });

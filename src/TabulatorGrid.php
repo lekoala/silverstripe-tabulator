@@ -602,9 +602,11 @@ class TabulatorGrid extends FormField
         $format = Director::isDev() ? JSON_PRETTY_PRINT : 0;
         $json = json_encode($opts, $format);
 
-        // Escape functions (see TabulatorField.js)
+        // Escape functions by namespace (see TabulatorField.js)
         foreach ($this->jsNamespaces as $ns) {
             $json = preg_replace('/"(' . $ns . '\.[a-zA-Z]*)"/', "$1", $json);
+            // Keep static namespaces
+            $json = str_replace("*" . $ns, $ns, $json);
         }
 
         return $json;
@@ -751,7 +753,7 @@ class TabulatorGrid extends FormField
     public function wizardGroupBy(string $field, string $toggleElement = 'header', bool $isBool = false)
     {
         $this->setOption("groupBy", $field);
-        $this->setOption("groupToggleElement", "header");
+        $this->setOption("groupToggleElement", $toggleElement);
         if ($isBool) {
             $this->setOption("groupHeader", self::JS_BOOL_GROUP_HEADER);
         }
@@ -1279,10 +1281,13 @@ class TabulatorGrid extends FormField
     {
         $parts = [];
         foreach ($this->dataAttributes as $k => $v) {
+            if (!$v) {
+                continue;
+            }
             if (is_array($v)) {
                 $v = json_encode($v);
             }
-            $parts[] = "data-$k=\"$v\"";
+            $parts[] = "data-$k='$v'";
         }
         return implode(" ", $parts);
     }

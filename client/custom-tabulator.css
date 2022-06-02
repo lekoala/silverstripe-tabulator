@@ -219,7 +219,7 @@
     order: 9999;
     text-align: left !important;
 }
-.tabulator-responsive-flex-cell::before {
+.tabulator-responsive-flex-cell[data-label]::before {
     content: attr(data-label);
     width: 100px;
     display: block;
