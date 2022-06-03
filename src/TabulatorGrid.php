@@ -85,12 +85,14 @@ class TabulatorGrid extends FormField
     private static array $allowed_actions = [
         'load',
         'handleItem',
+        'handleTool',
         'configProvider',
         'autocomplete',
     ];
 
     private static $url_handlers = [
         'item/$ID' => 'handleItem',
+        'tool/$ID' => 'handleTool',
     ];
 
     private static array $casting = [
@@ -645,6 +647,12 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+    public function makeHeadersSticky(): self
+    {
+        $this->addExtraClass("tabulator-sticky");
+        return $this;
+    }
+
     public function setRemoteSource(string $url, array $extraParams = [], bool $dataResponse = false): self
     {
         $this->setOption("ajaxURL", $url); //set url for ajax request
@@ -774,6 +782,22 @@ class TabulatorGrid extends FormField
         }
         $handler = $this->getItemRequestHandler($record, $requestHandler);
         return $handler->handleRequest($request);
+    }
+
+    /**
+     * @param HTTPRequest $request
+     * @return HTTPResponse
+     */
+    public function handleTool($request)
+    {
+        // Our getController could either give us a true Controller, if this is the top-level GridField.
+        // It could also give us a RequestHandler in the form of (GridFieldDetailForm_ItemRequest, TabulatorGrid...)
+        $requestHandler = $this->getForm()->getController();
+        $tool = $this->getToolFromRequest($request);
+        if (!$tool) {
+            return $requestHandler->httpError(404, 'That tool was not found');
+        }
+        return $tool->handleRequest($request);
     }
 
     /**
@@ -1033,7 +1057,6 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @param GridField $gridField
      * @param HTTPRequest $request
      * @return DataObject|null
      */
@@ -1048,6 +1071,17 @@ class TabulatorGrid extends FormField
             $record = Injector::inst()->create($this->getModelClass());
         }
         return $record;
+    }
+
+    /**
+     * @param HTTPRequest $request
+     * @return AbstractTabulatorTool|null
+     */
+    protected function getToolFromRequest(HTTPRequest $request): ?AbstractTabulatorTool
+    {
+        $toolID = $request->param('ID');
+        $tool = $this->getTool($toolID);
+        return $tool;
     }
 
     public function getList(): SS_List
@@ -1529,17 +1563,42 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    public function addTool(string $pos, AbstractTabulatorTool $tool)
+    /**
+     * @param string|AbstractTabulatorTool $tool Pass name or class
+     * @return AbstractTabulatorTool|null
+     */
+    public function getTool($tool): ?AbstractTabulatorTool
+    {
+        if (is_object($tool)) {
+            $tool = get_class($tool);
+        }
+        if (!is_string($tool)) {
+            throw new InvalidArgumentException('Tool must be an object or a class name');
+        }
+        foreach ($this->tools as $t) {
+            if ($t['name'] === $tool) {
+                return $t['tool'];
+            }
+            if ($t['tool'] instanceof $tool) {
+                return $t['tool'];
+            }
+        }
+        return null;
+    }
+
+    public function addTool(string $pos, AbstractTabulatorTool $tool, string $name = ''): self
     {
         $tool->setTabulatorGrid($this);
 
         $this->tools[] = [
             'position' => $pos,
             'tool' => $tool,
+            'name' => $name,
         ];
+        return $this;
     }
 
-    public function removeTool($tool)
+    public function removeTool($tool): self
     {
         if (is_object($tool)) {
             $tool = get_class($tool);
@@ -1548,10 +1607,14 @@ class TabulatorGrid extends FormField
             throw new InvalidArgumentException('Tool must be an object or a class name');
         }
         foreach ($this->tools as $idx => $tool) {
+            if ($tool['name'] === $tool) {
+                unset($this->tools[$idx]);
+            }
             if ($tool['tool'] instanceof $tool) {
                 unset($this->tools[$idx]);
             }
         }
+        return $this;
     }
 
     public function getColumnDefault(string $opt)

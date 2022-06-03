@@ -66,6 +66,20 @@
     background: #a1a1a1;
 }
 
+/* Sticky */
+
+.tabulator-sticky {
+    overflow: unset;
+}
+
+.tabulator-sticky .tabulator-header {
+    z-index: 2;
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+    top: 0;
+    background: #fff;
+}
+
 /* SilverStripe improvements over BS5 theme */
 .tabulator-tooltip {
     background: #fff;

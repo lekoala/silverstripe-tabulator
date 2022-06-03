@@ -2,9 +2,9 @@
 
 namespace LeKoala\Tabulator;
 
-use SilverStripe\View\ViewableData;
+use SilverStripe\Control\RequestHandler;
 
-class AbstractTabulatorTool extends ViewableData
+class AbstractTabulatorTool extends RequestHandler
 {
     protected TabulatorGrid $tabulatorGrid;
 

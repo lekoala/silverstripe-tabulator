@@ -40,29 +40,6 @@ This module scaffold some default columns based on summary and searchable fields
 
 For more advanced usage, please define a `tabulatorColumns` method that returns all the columns according to [Tabulator definitions](http://tabulator.info/docs/5.2/columns).
 
-## Configuring row actions
-
-To define custom actions, you can either use the `addButton` method that will trigger an action on the current controller.
-You can also use `makeButton` and `addButtonFromArray` for finer control.
-
-### Row actions in the CMS
-
-In order to forward actions to a record (the preferred way), add a `tabulatorRowActions` on your record.
-
-```php
-public function tabulatorRowActions()
-{
-    return [
-        'doTabulatorAction' => [
-            'title' => 'Do This',
-            'icon' => 'favorite_border'
-        ],
-    ];
-}
-```
-
-This will call the method `doTabulatorAction` on your record.
-
 ## JS requirements
 
 To use in the SilverStripe admin, you need to enable lazy load behaviour. See `admin.js` file for this. It is NOT
@@ -144,6 +121,8 @@ Upon blur, it will trigger a ajaxEdit request on the editUrl endpoint if set.
 
 ## Buttons
 
+### Row buttons
+
 You can create button columns with the `makeButton` function. Under the hood, it will use the buttonFormatter and
 buttonHandler.
 
@@ -173,6 +152,35 @@ You custom handler just look like this and return a promise
 ```php
 unset($btn['responsive']);
 ```
+
+### Row actions in the CMS
+
+In order to forward actions to a record (the preferred way), add a `tabulatorRowActions` on your record.
+
+```php
+public function tabulatorRowActions()
+{
+    return [
+        'doTabulatorAction' => [
+            'title' => 'Do This',
+            'icon' => 'favorite_border'
+        ],
+    ];
+}
+```
+
+This will call the method `doTabulatorAction` on your record.
+
+## Tools
+
+Tabulator supports "tools" that can be added above the grid. This is how, for example, the add new button is used.
+All tools inherit from the `AbstractTabulatorTool` class.
+
+Tools can handle action by calling /tools/$ID on the TabulatorGrid field.
+
+## Batch actions
+
+TODO
 
 ## Listen to events
 
