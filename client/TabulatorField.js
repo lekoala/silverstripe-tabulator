@@ -651,6 +651,22 @@
         });
         return s;
     };
+    /**
+     * @param {Cell} cell
+     * @returns {HTMLElement}
+     */
+    var getGroupForCell = function (cell) {
+        var el = cell.getElement();
+        var row = el.closest(".tabulator-row");
+        var previousSibling = row.previousSibling;
+        while (
+            previousSibling &&
+            !previousSibling.classList.contains("tabulator-group")
+        ) {
+            previousSibling = previousSibling.previousSibling;
+        }
+        return previousSibling;
+    };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);
         if (el.classList.contains("tabulatorgrid-created")) {
@@ -746,6 +762,7 @@
         externalEditor: externalEditor,
         isCellEditable: isCellEditable,
         getGroupByKey: getGroupByKey,
+        getGroupForCell: getGroupForCell,
         init: init,
     };
 

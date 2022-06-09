@@ -153,7 +153,7 @@ class TabulatorGrid extends FormField
     private static array $default_options = [
         'index' => "ID", // http://tabulator.info/docs/5.2/data#row-index
         'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.2/layout#layout
-        // 'height' => '100%', // http://www.tabulator.info/docs/5.2/layout#height-fixed
+        'height' => '100%', // http://www.tabulator.info/docs/5.2/layout#height-fixed
         // 'maxHeight' => "100%",
         'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.2/layout#responsive
         'rowFormatter' => "SSTabulator.simpleRowFormatter", // http://tabulator.info/docs/5.2/format#row
