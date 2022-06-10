@@ -332,6 +332,13 @@
         var btn = cell.getElement().querySelector("a,input,button");
         e.preventDefault();
         if (btn) {
+            var styles = window.getComputedStyle(btn);
+            if (
+                styles.display === "none" ||
+                styles.visibility === "hidden"
+            ) {
+                return;
+            }
             if (btn.dataset.ajax) {
                 e.preventDefault();
 

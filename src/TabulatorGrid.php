@@ -688,14 +688,15 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $params = [])
+    public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $params = []): self
     {
         $this->setRemotePagination($this->TempLink('load', false), $params, $pageSize, $initialPage);
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
+        return $this;
     }
 
-    public function setProgressiveLoad(string $url, array $params = [], int $pageSize = 0, int $initialPage = 1, string $mode = 'scroll', int $scrollMargin = 0)
+    public function setProgressiveLoad(string $url, array $params = [], int $pageSize = 0, int $initialPage = 1, string $mode = 'scroll', int $scrollMargin = 0): self
     {
         $this->setOption("ajaxURL", $url);
         if (!empty($params)) {
@@ -711,9 +712,10 @@ class TabulatorGrid extends FormField
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);
         $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.2/page#counter
+        return $this;
     }
 
-    public function wizardProgressiveLoad(int $pageSize = 0, int $initialPage = 1, string $mode = 'scroll', int $scrollMargin = 0, array $extraParams = [])
+    public function wizardProgressiveLoad(int $pageSize = 0, int $initialPage = 1, string $mode = 'scroll', int $scrollMargin = 0, array $extraParams = []): self
     {
         $params = array_merge([
             'SecurityID' => SecurityToken::getSecurityID()
@@ -721,9 +723,10 @@ class TabulatorGrid extends FormField
         $this->setProgressiveLoad($this->TempLink('load', false), $params, $pageSize, $initialPage, $mode, $scrollMargin);
         $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.2/sort#ajax-sort
         $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.2/filter#ajax-filter
+        return $this;
     }
 
-    public function wizardResponsiveCollapse(bool $startOpen = false, string $mode = "collapse")
+    public function wizardResponsiveCollapse(bool $startOpen = false, string $mode = "collapse"): self
     {
         $this->setOption("responsiveLayout", $mode);
         $this->setOption("responsiveLayoutCollapseStartOpen", $startOpen);
@@ -735,9 +738,22 @@ class TabulatorGrid extends FormField
                 'width' => 40,
             ]
         ], $this->columns);
+        return $this;
     }
 
-    public function wizardSelectable()
+    public function wizardDataTree(bool $startExpanded = false, bool $filter = false, bool $sort = false, string $el = null): self
+    {
+        $this->setOption("dataTree", true);
+        $this->setOption("dataTreeStartExpanded", $startExpanded);
+        $this->setOption("dataTreeFilter", $filter);
+        $this->setOption("dataTreeSort", $sort);
+        if ($el) {
+            $this->setOption("dataTreeElementColumn", $el);
+        }
+        return $this;
+    }
+
+    public function wizardSelectable(): self
     {
         $this->columns = array_merge([
             'ui_selectable' => [
@@ -750,6 +766,7 @@ class TabulatorGrid extends FormField
                 'cellClick' => 'SSTabulator.forwardClick',
             ]
         ], $this->columns);
+        return $this;
     }
 
     /**

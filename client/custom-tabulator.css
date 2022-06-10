@@ -371,6 +371,20 @@
     border-left: 6px solid #666;
 }
 
+/* Improve data tree ui */
+
+.tabulator-distinct-tree .tabulator-tree-level-1 ~ .tabulator-tree-level-0 {
+    border-top: 1px solid #666;
+}
+
+.tabulator-row:not(.tabulator-tree-level-0) .tree-0-only {
+    visibility: hidden;
+}
+
+.tabulator-row:not(.tabulator-tree-level-1) .tree-1-only {
+    visibility: hidden;
+}
+
 /* Custom UI */
 .tabulator-tools {
     display: flex;
