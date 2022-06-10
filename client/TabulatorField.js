@@ -333,10 +333,7 @@
         e.preventDefault();
         if (btn) {
             var styles = window.getComputedStyle(btn);
-            if (
-                styles.display === "none" ||
-                styles.visibility === "hidden"
-            ) {
+            if (styles.display === "none" || styles.visibility === "hidden") {
                 return;
             }
             if (btn.dataset.ajax) {
@@ -776,26 +773,25 @@
 
     // Public api
     var publicApi = {
-        flagFormatter: flagFormatter,
-        buttonFormatter: buttonFormatter,
-        customTickCrossFormatter: customTickCrossFormatter,
-        externalFormatter: externalFormatter,
-        buttonHandler: buttonHandler,
-        boolGroupHeader: boolGroupHeader,
-        simpleRowFormatter: simpleRowFormatter,
-        expandTooltip: expandTooltip,
-        dataAjaxResponse: dataAjaxResponse,
-        forwardClick: forwardClick,
-        moneyEditor: moneyEditor,
-        externalEditor: externalEditor,
-        isCellEditable: isCellEditable,
-        getGroupByKey: getGroupByKey,
-        getGroupForCell: getGroupForCell,
-        init: init,
+        flagFormatter,
+        buttonFormatter,
+        customTickCrossFormatter,
+        externalFormatter,
+        buttonHandler,
+        boolGroupHeader,
+        simpleRowFormatter,
+        expandTooltip,
+        dataAjaxResponse,
+        forwardClick,
+        moneyEditor,
+        externalEditor,
+        isCellEditable,
+        getGroupByKey,
+        getGroupForCell,
+        init,
     };
 
     // You can extend this with your own features
-    window.SSTabulator = window.SSTabulator
-        ? Object.assign(window.SSTabulator, publicApi)
-        : publicApi;
+    window.SSTabulator = window.SSTabulator || {};
+    window.SSTabulator = Object.assign(window.SSTabulator, publicApi);
 })();
