@@ -481,7 +481,7 @@ class TabulatorGrid extends FormField
         }
 
         if ($theme && $theme == "bootstrap5") {
-            Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
+            Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.min.css');
         }
     }
 
