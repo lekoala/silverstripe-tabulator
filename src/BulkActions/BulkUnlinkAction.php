@@ -22,7 +22,9 @@ class BulkUnlinkAction extends AbstractBulkAction
     public function process(HTTPRequest $request): string
     {
         $ids = $this->getRecordIDList();
-        $this->tabulatorGrid->getDataList()->removeMany($ids);
+        if (!empty($ids)) {
+            $this->tabulatorGrid->getDataList()->removeMany($ids);
+        }
         $result = _t(__CLASS__ . ".RECORDSUNLINKED", "{count} records unlinked", ["count" => count($ids)]);
         return $result;
     }

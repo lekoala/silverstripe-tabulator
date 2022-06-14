@@ -21,8 +21,9 @@ class BulkArchiveAction extends AbstractBulkAction
 
     public function process(HTTPRequest $request): string
     {
+        $records = $this->getRecords() ?? [];
         $i = 0;
-        foreach ($this->getRecords() as $record) {
+        foreach ($records as $record) {
             $record->doArchive();
             $i++;
         }

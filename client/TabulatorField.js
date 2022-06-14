@@ -430,10 +430,7 @@
                     handleAction(
                         btn,
                         btn.getAttribute("href"),
-                        {
-                            method: "POST",
-                            body: formData,
-                        },
+                        formData,
                         (json) => {
                             defaultActionHandler(json, cell.getTable());
                         }
@@ -881,17 +878,9 @@
                 var endpoint =
                     bulkEndpoint + selectedAction.getAttribute("value");
                 if (xhr) {
-                    handleAction(
-                        confirm,
-                        endpoint,
-                        {
-                            method: "POST",
-                            body: formData,
-                        },
-                        (json) => {
-                            defaultActionHandler(json, tabulator);
-                        }
-                    );
+                    handleAction(confirm, endpoint, formData, (json) => {
+                        defaultActionHandler(json, tabulator);
+                    });
                 } else {
                     window.location =
                         endpoint + "?records=" + records.join(",");
