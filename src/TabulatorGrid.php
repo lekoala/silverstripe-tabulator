@@ -1603,6 +1603,12 @@ class TabulatorGrid extends FormField
                 break;
         }
 
+        if (empty($col['cssClass'])) {
+            $col['cssClass'] = 'no-change-track';
+        } else {
+            $col['cssClass'] .= ' no-change-track';
+        }
+
         $col['editor'] = $editor;
         $col['editorParams'] = $params;
         if ($editor == "list") {
