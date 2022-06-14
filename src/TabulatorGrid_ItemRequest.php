@@ -163,7 +163,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     {
         $SecurityID = $request->postVar('SecurityID');
         if (!SecurityToken::inst()->check($SecurityID)) {
-            return $this->httpError(404, "Invalid SecurityID");
+            return $this->httpError(404, "Invalid SecurityID: $SecurityID");
         }
         if (!$this->record->canEdit()) {
             return $this->httpError(403, _t(

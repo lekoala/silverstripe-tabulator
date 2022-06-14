@@ -224,6 +224,12 @@
 }
 .tabulator-row .tabulator-cell.tabulator-cell-btn .btn {
     width: 100%;
+    height: 100%;
+    line-height: 1;
+    padding: 0rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .tabulator-row .tabulator-cell.tabulator-cell-btn input[type="checkbox"] {
     margin: 0;
@@ -294,8 +300,8 @@
 
 .tabulator-row .tabulator-cell-editable > input[type="checkbox"] {
     position: absolute;
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
     margin-left: 12px;
     margin-top: 12px !important;
 }

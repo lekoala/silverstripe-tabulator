@@ -6,9 +6,9 @@
     const iconMinus =
         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>';
     const iconTick =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M5 13L9 17L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const iconCross =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M6.75827 17.2426L12.0009 12M17.2435 6.75736L12.0009 12M12.0009 12L6.75827 6.75736M12.0009 12L17.2435 17.2426" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M6.75827 17.2426L12.0009 12M17.2435 6.75736L12.0009 12M12.0009 12L6.75827 6.75736M12.0009 12L17.2435 17.2426" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const iconFirst =
         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M18.41 16.59L13.82 12l4.59-4.59L17 6l-6 6 6 6zM6 6h2v12H6z" fill="currentColor"/></svg>';
     const iconLast =
@@ -64,13 +64,6 @@
         // Legacy server compat
         options.headers = options.headers || {};
         options.headers["X-Requested-With"] = "XMLHttpRequest";
-
-        // Default to application/json if not specified
-        if (options.method == "PUT" || options.method == "POST") {
-            if (!options.headers["Content-Type"]) {
-                options.headers["Content-Type"] = "application/json";
-            }
-        }
 
         return fetch(url, options).then((response) => {
             return response.text().then((text) => {
@@ -173,7 +166,9 @@
     function getInteractiveElement(el) {
         let src = el;
         while (
-            !["A", "INPUT", "TD", "TR", "TABLE"].includes(src.tagName) &&
+            !["A", "INPUT", "SELECT", "TEXTAREA", "DIV"].includes(
+                src.tagName
+            ) &&
             src.parentElement
         ) {
             src = src.parentElement;
@@ -293,6 +288,16 @@
         } else {
             el = formatterParams.onlyTick ? "" : iconCross;
             color = formatterParams.crossColor || color;
+        }
+        if (formatterParams.size) {
+            el = el.replace(
+                'width="16"',
+                'width="' + formatterParams.size + '"'
+            );
+            el = el.replace(
+                'height="16"',
+                'height="' + formatterParams.size + '"'
+            );
         }
         if (color) {
             el = interpolate('<span style="color:{color}">{el}</span>', {
@@ -425,7 +430,10 @@
                     handleAction(
                         btn,
                         btn.getAttribute("href"),
-                        formData,
+                        {
+                            method: "POST",
+                            body: formData,
+                        },
                         (json) => {
                             defaultActionHandler(json, cell.getTable());
                         }
@@ -808,7 +816,11 @@
                 if (target.classList.contains("tabulator-cell-btn")) {
                     return;
                 }
-                if (["A", "INPUT"].includes(target.tagName)) {
+                if (
+                    ["A", "INPUT", "SELECT", "TEXTAREA"].includes(
+                        target.tagName
+                    )
+                ) {
                     return;
                 }
                 var firstBtn = null;
@@ -869,9 +881,17 @@
                 var endpoint =
                     bulkEndpoint + selectedAction.getAttribute("value");
                 if (xhr) {
-                    handleAction(confirm, endpoint, formData, (json) => {
-                        defaultActionHandler(json, tabulator);
-                    });
+                    handleAction(
+                        confirm,
+                        endpoint,
+                        {
+                            method: "POST",
+                            body: formData,
+                        },
+                        (json) => {
+                            defaultActionHandler(json, tabulator);
+                        }
+                    );
                 } else {
                     window.location =
                         endpoint + "?records=" + records.join(",");
