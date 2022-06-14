@@ -38,7 +38,12 @@ class AbstractBulkAction extends AbstractTabulatorTool
     /**
      * Reload after action
      */
-    protected bool $reload = false;
+    protected bool $reload = true;
+
+    /**
+     * refresh page after action
+     */
+    protected bool $refresh = false;
 
     /**
      * Return front-end configuration
@@ -104,6 +109,23 @@ class AbstractBulkAction extends AbstractTabulatorTool
     public function getReload(): bool
     {
         return $this->reload;
+    }
+
+    /**
+     * True if refresh after action
+     */
+    public function setRefresh(bool $refresh): self
+    {
+        $this->refresh = $refresh;
+        return $this;
+    }
+
+    /**
+     * Return refresh
+     */
+    public function getRefresh(): bool
+    {
+        return $this->refresh;
     }
 
     /**
@@ -201,6 +223,7 @@ class AbstractBulkAction extends AbstractTabulatorTool
                 'success' => true,
                 'message' => $message,
                 'reload' => $this->reload,
+                'refresh' => $this->refresh,
             ]);
             $response->setBody($body);
             $response->addHeader('Content-Type', 'application/json');
