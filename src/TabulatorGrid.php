@@ -28,6 +28,7 @@ use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
+use SilverStripe\ORM\FieldType\DBEnum;
 
 /**
  * @link http://www.tabulator.info/
@@ -88,11 +89,13 @@ class TabulatorGrid extends FormField
         'handleTool',
         'configProvider',
         'autocomplete',
+        'handleBulkAction',
     ];
 
     private static $url_handlers = [
         'item/$ID' => 'handleItem',
         'tool/$ID' => 'handleTool',
+        'bulkAction/$ID' => 'handleBulkAction',
     ];
 
     private static array $casting = [
@@ -209,6 +212,11 @@ class TabulatorGrid extends FormField
 
     protected array $tools = [];
 
+    /**
+     * @var AbstractBulkAction[]
+     */
+    protected array $bulkActions = [];
+
     protected array $listeners = [];
 
     protected array $jsNamespaces = [
@@ -226,6 +234,8 @@ class TabulatorGrid extends FormField
     protected bool $useConfigProvider = true;
 
     protected string $editUrl = "";
+
+    protected string $bulkUrl = "";
 
     public function __construct($name, $title = null, $value = null)
     {
@@ -352,6 +362,13 @@ class TabulatorGrid extends FormField
                         'tristate' => true
                     ];
                 }
+                if ($dbObject instanceof DBEnum) {
+                    $columns[$key]['headerFilter'] = 'list';
+                    $columns[$key]['headerFilterFunc'] =  "=";
+                    $columns[$key]['headerFilterParams'] =  [
+                        'values' => $dbObject->enumValues()
+                    ];
+                }
             }
         }
 
@@ -377,6 +394,8 @@ class TabulatorGrid extends FormField
         // We use a pseudo link, because maybe we cannot call Link() yet if it's not linked to a form
 
         // - Core actions
+        $this->bulkUrl = $this->TempLink("bulkAction/", false);
+
         $itemUrl = $this->TempLink('item/{ID}', false);
         if ($singl->canEdit()) {
             $this->addButton("ui_edit", $itemUrl, "edit", "Edit");
@@ -387,7 +406,7 @@ class TabulatorGrid extends FormField
 
         $this->tools = [];
         if ($singl->canCreate()) {
-            $this->addTool(self::POS_START, new TabulatorAddNewButton());
+            $this->addTool(self::POS_START, new TabulatorAddNewButton($this));
         }
 
         // - Custom actions
@@ -490,6 +509,10 @@ class TabulatorGrid extends FormField
             $url = $this->processLink($this->editUrl);
             $this->setDataAttribute("edit-url", $url);
         }
+        if (!empty($this->bulkActions)) {
+            $url = $this->processLink($this->bulkUrl);
+            $this->setDataAttribute("bulk-url", $url);
+        }
 
         if ($this->useConfigProvider) {
             $configLink = "/" . ltrim($this->Link("configProvider"), "/");
@@ -524,6 +547,21 @@ class TabulatorGrid extends FormField
                 continue;
             }
             $html .= ($tool['tool'])->forTemplate();
+        }
+        // Show bulk actions at the end
+        if (!empty($this->bulkActions)) {
+            $selectLabel = _t(__CLASS__ . ".BULKSELECT", "Select a bulk action");
+            $confirmLabel = _t(__CLASS__ . ".BULKCONFIRM", "Go");
+            $html .= "<select class=\"tabulator-bulk-select\">";
+            $html .= "<option>" . $selectLabel . "</option>";
+            foreach ($this->bulkActions as $bulkAction) {
+                $v = $bulkAction->getName();
+                $xhr = $bulkAction->getXhr();
+                $destructive = $bulkAction->getDestructive();
+                $html .= "<option value=\"$v\" data-xhr=\"$xhr\" data-destructive=\"$destructive\">" . $bulkAction->getLabel() . "</option>";
+            }
+            $html .= "</select>";
+            $html .= "<button class=\"tabulator-bulk-confirm btn\">" . $confirmLabel . "</button>";
         }
         $html .= '</div>';
         $html .= '</div>';
@@ -590,11 +628,17 @@ class TabulatorGrid extends FormField
         $headerFiltersTranslations = [
             "default" => _t("TabulatorHeaderFilters.default", "filter column..."),
         ];
+        $bulkActionsTranslations = [
+            "no_action" => _t("TabulatorBulkActions.no_action", "Please select an action"),
+            "no_records" => _t("TabulatorBulkActions.no_records", "Please select a record"),
+            "destructive" => _t("TabulatorBulkActions.destructive", "Confirm destructive action ?"),
+        ];
         $translations = [
             'data' => $dataTranslations,
             'groups' => $groupsTranslations,
             'pagination' => $paginationTranslations,
             'headerFilters' => $headerFiltersTranslations,
+            'bulkActions' => $bulkActionsTranslations,
         ];
         $opts['locale'] = $locale;
         $opts['langs'] = [
@@ -753,11 +797,11 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    public function wizardSelectable(): self
+    public function wizardSelectable(array $actions = []): self
     {
         $this->columns = array_merge([
             'ui_selectable' => [
-                "align" => 'center',
+                "hozAlign" => 'center',
                 "cssClass" => 'tabulator-cell-btn tabulator-cell-selector',
                 'formatter' => 'rowSelection',
                 'titleFormatter' => 'rowSelection',
@@ -766,6 +810,7 @@ class TabulatorGrid extends FormField
                 'cellClick' => 'SSTabulator.forwardClick',
             ]
         ], $this->columns);
+        $this->setBulkActions($actions);
         return $this;
     }
 
@@ -815,6 +860,22 @@ class TabulatorGrid extends FormField
             return $requestHandler->httpError(404, 'That tool was not found');
         }
         return $tool->handleRequest($request);
+    }
+
+    /**
+     * @param HTTPRequest $request
+     * @return HTTPResponse
+     */
+    public function handleBulkAction($request)
+    {
+        // Our getController could either give us a true Controller, if this is the top-level GridField.
+        // It could also give us a RequestHandler in the form of (GridFieldDetailForm_ItemRequest, TabulatorGrid...)
+        $requestHandler = $this->getForm()->getController();
+        $bulkAction = $this->getBulkActionFromRequest($request);
+        if (!$bulkAction) {
+            return $requestHandler->httpError(404, 'That bulk action was not found');
+        }
+        return $bulkAction->handleRequest($request);
     }
 
     /**
@@ -1098,6 +1159,17 @@ class TabulatorGrid extends FormField
     {
         $toolID = $request->param('ID');
         $tool = $this->getTool($toolID);
+        return $tool;
+    }
+
+    /**
+     * @param HTTPRequest $request
+     * @return AbstractBulkAction|null
+     */
+    protected function getBulkActionFromRequest(HTTPRequest $request): ?AbstractBulkAction
+    {
+        $toolID = $request->param('ID');
+        $tool = $this->getBulkAction($toolID);
         return $tool;
     }
 
@@ -1523,6 +1595,14 @@ class TabulatorGrid extends FormField
 
         $col['editor'] = $editor;
         $col['editorParams'] = $params;
+        if ($editor == "list") {
+            if (!empty($params['autocomplete'])) {
+                $col['headerFilter'] = "input"; // force input
+            } else {
+                $col['headerFilterParams'] = $params; // editor is used as base filter editor
+            }
+        }
+
 
         $this->setColumn($field, $col);
     }
@@ -1629,6 +1709,74 @@ class TabulatorGrid extends FormField
             }
             if ($tool['tool'] instanceof $tool) {
                 unset($this->tools[$idx]);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @param string|AbstractBulkAction $bulkAction Pass name or class
+     * @return AbstractBulkAction|null
+     */
+    public function getBulkAction($bulkAction): ?AbstractBulkAction
+    {
+        if (is_object($bulkAction)) {
+            $bulkAction = get_class($bulkAction);
+        }
+        if (!is_string($bulkAction)) {
+            throw new InvalidArgumentException('BulkAction must be an object or a class name');
+        }
+        foreach ($this->bulkActions as $ba) {
+            if ($ba->getName() == $bulkAction) {
+                return $ba;
+            }
+            if ($ba instanceof $bulkAction) {
+                return $ba;
+            }
+        }
+        return null;
+    }
+
+    public function getBulkActions(): array
+    {
+        return $this->bulkActions;
+    }
+
+    /**
+     * @param AbstractBulkAction[] $bulkActions
+     * @return self
+     */
+    public function setBulkActions(array $bulkActions): self
+    {
+        foreach ($bulkActions as $bulkAction) {
+            $bulkAction->setTabulatorGrid($this);
+        }
+        $this->bulkActions = $bulkActions;
+        return $this;
+    }
+
+    public function addBulkAction(AbstractBulkAction $handler): self
+    {
+        $handler->setTabulatorGrid($this);
+
+        $this->bulkActions[] = $handler;
+        return $this;
+    }
+
+    public function removeBulkAction($bulkAction): self
+    {
+        if (is_object($bulkAction)) {
+            $bulkAction = get_class($bulkAction);
+        }
+        if (!is_string($bulkAction)) {
+            throw new InvalidArgumentException('Bulk action must be an object or a class name');
+        }
+        foreach ($this->bulkActions as $idx => $ba) {
+            if ($ba->getName() == $bulkAction) {
+                unset($this->bulkAction[$idx]);
+            }
+            if ($ba instanceof $bulkAction) {
+                unset($this->bulkAction[$idx]);
             }
         }
         return $this;

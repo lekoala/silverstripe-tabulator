@@ -12,6 +12,12 @@ This works in the front end and in the cms.
 This module is used in [my alternative admin module](https://github.com/lekoala/silverstripe-admini) and in a production project using fairly complex front end editable tables.
 This means that I will have probably faced most of the issues you might have in your own projects :-)
 
+It supports many features out of the boxes:
+- Inline editing
+- Bulk actions
+- Custom action on the table or in the edit form
+- Filtering, sorting, pagination...
+
 ## Configuring detail fields
 
 When editing or viewing a record, the default `getCMSFields` is used. This might not always be ideal (fields may have gridfields or depend on some implementation).
@@ -178,9 +184,15 @@ All tools inherit from the `AbstractTabulatorTool` class.
 
 Tools can handle action by calling /tools/$ID on the TabulatorGrid field.
 
-## Batch actions
+## Bulk actions
 
-TODO
+You can make items selectable and pass an array of actions. Actions must extend the `AbstractBulkAction` class.
+
+```php
+$grid->wizardSelectable([
+    new BulkDeleteAction()
+]);
+```
 
 ## Listen to events
 

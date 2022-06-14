@@ -21,7 +21,6 @@ use SilverStripe\Control\RequestHandler;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
-use SilverStripe\ORM\FieldType\DBField;
 
 /**
  * Endpoint for actions related to a specific record
