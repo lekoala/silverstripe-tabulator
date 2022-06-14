@@ -829,49 +829,55 @@
             .querySelector(selector)
             .parentElement.querySelector(".tabulator-bulk-confirm");
 
-        confirm.addEventListener("click", function (e) {
-            var selectedData = tabulator.getSelectedData();
-            var bulkEndpoint = dataset.bulkUrl;
-            var select = this.parentElement.querySelector(
-                ".tabulator-bulk-select"
-            );
-            var selectedAction = select.options[select.selectedIndex];
-            if (!selectedAction.getAttribute("value")) {
-                notify(options.langs[options.locale].bulkActions.no_action);
-                return;
-            }
-            if (!selectedData.length) {
-                notify(options.langs[options.locale].bulkActions.no_records);
-                return;
-            }
-
-            var destructive = selectedAction.dataset.destructive;
-            var xhr = selectedAction.dataset.xhr;
-
-            if (destructive) {
-                var res = window.confirm(
-                    options.langs[options.locale].bulkActions.destructive
+        if (confirm) {
+            confirm.addEventListener("click", function (e) {
+                var selectedData = tabulator.getSelectedData();
+                var bulkEndpoint = dataset.bulkUrl;
+                var select = this.parentElement.querySelector(
+                    ".tabulator-bulk-select"
                 );
-                if (!res) {
+                var selectedAction = select.options[select.selectedIndex];
+                if (!selectedAction.getAttribute("value")) {
+                    notify(options.langs[options.locale].bulkActions.no_action);
                     return;
                 }
-            }
+                if (!selectedData.length) {
+                    notify(
+                        options.langs[options.locale].bulkActions.no_records
+                    );
+                    return;
+                }
 
-            var records = selectedData.map((item) => item.ID);
-            var formData = new FormData();
-            formData.append("Action", selectedAction.getAttribute("value"));
-            formData.append("SecurityID", getSecurityID());
-            formData.append("records[]", records);
+                var destructive = selectedAction.dataset.destructive;
+                var xhr = selectedAction.dataset.xhr;
 
-            var endpoint = bulkEndpoint + selectedAction.getAttribute("value");
-            if (xhr) {
-                handleAction(confirm, endpoint, formData, (json) => {
-                    defaultActionHandler(json, tabulator);
-                });
-            } else {
-                window.location = endpoint + "?records=" + records.join(",");
-            }
-        });
+                if (destructive) {
+                    var res = window.confirm(
+                        options.langs[options.locale].bulkActions.destructive
+                    );
+                    if (!res) {
+                        return;
+                    }
+                }
+
+                var records = selectedData.map((item) => item.ID);
+                var formData = new FormData();
+                formData.append("Action", selectedAction.getAttribute("value"));
+                formData.append("SecurityID", getSecurityID());
+                formData.append("records[]", records);
+
+                var endpoint =
+                    bulkEndpoint + selectedAction.getAttribute("value");
+                if (xhr) {
+                    handleAction(confirm, endpoint, formData, (json) => {
+                        defaultActionHandler(json, tabulator);
+                    });
+                } else {
+                    window.location =
+                        endpoint + "?records=" + records.join(",");
+                }
+            });
+        }
 
         // Mitigate issue https://github.com/olifolkerd/tabulator/issues/3692
         document
