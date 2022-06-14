@@ -127,7 +127,7 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
-    private static bool $use_cdn = true;
+    private static bool $use_cdn = false;
 
     /**
      * @config
@@ -451,8 +451,8 @@ class TabulatorGrid extends FormField
         if ($use_cdn) {
             $baseDir = "https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist";
         } else {
-            $asset = ModuleResourceLoader::resourceURL('lekoala/silverstripe-tabulator:client/cdn/tabulator.min.js');
-            $baseDir = dirname($asset);
+            $asset = ModuleResourceLoader::resourceURL('lekoala/silverstripe-tabulator:client/cdn/js/tabulator.min.js');
+            $baseDir = dirname(dirname($asset));
         }
 
         if ($luxon_version && $enable_luxon) {
