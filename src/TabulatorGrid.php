@@ -270,6 +270,10 @@ class TabulatorGrid extends FormField
         if (strpos($action, '/') === 0 || strpos($action, 'http') === 0) {
             return $action;
         }
+        // Already temp
+        if (strpos($action, ':') !== false) {
+            return $action;
+        }
         $prefix = $controller ? "controller" : "form";
         return "$prefix:$action";
     }
@@ -1469,7 +1473,7 @@ class TabulatorGrid extends FormField
         }
     }
 
-    public function makeButton(string $url, string $icon, string $title): array
+    public function makeButton(string $urlOrAction, string $icon, string $title): array
     {
         $opts = [
             "responsive" => 0,
@@ -1479,7 +1483,7 @@ class TabulatorGrid extends FormField
             "formatterParams" => [
                 "icon" => $icon,
                 "title" => $title,
-                "url" => $this->TempLink($url), // On the controller by default
+                "url" => $this->TempLink($urlOrAction), // On the controller by default
             ],
             "cellClick" => "SSTabulator.buttonHandler",
             "width" => 70,
