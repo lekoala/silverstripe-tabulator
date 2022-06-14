@@ -291,24 +291,32 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         // Show message on controller or in form
         $controller = $this->getToplevelController();
+        $response = $controller->getResponse();
         if (Director::is_ajax()) {
-            $controller = $this->getToplevelController();
-            $controller->getResponse()->addHeader('X-Status', rawurlencode($result));
-            if (!empty($clickedAction['refresh'])) {
-                $controller->getResponse()->addHeader('X-Reload', "true");
+            $responseData = [
+                'message' => $result,
+                'status' => $error ? 'error' : 'success',
+            ];
+            if (!empty($clickedAction['reload'])) {
+                $responseData['reload'] = true;
             }
+            if (!empty($clickedAction['refresh'])) {
+                $responseData['refresh'] = true;
+            }
+            $response->setBody(json_encode($responseData));
             // 4xx status makes a red box
             if ($error) {
-                $controller->getResponse()->setStatusCode(400);
+                $response->setStatusCode(400);
             }
-        } else {
-            $target = $this->ItemEditForm();
-            if ($controller->hasMethod('sessionMessage')) {
-                $target = $controller;
-            }
-            if ($target) {
-                $target->sessionMessage($result, $error ? "bad" : "good");
-            }
+            return $response;
+        }
+
+        $target = $this->ItemEditForm();
+        if ($controller->hasMethod('sessionMessage')) {
+            $target = $controller;
+        }
+        if ($target) {
+            $target->sessionMessage($result, $error ? "bad" : "good");
         }
 
         $url = $this->getBackURL()

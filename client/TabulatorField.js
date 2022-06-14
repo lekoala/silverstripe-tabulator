@@ -20,6 +20,74 @@
     const loader =
         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" xml:space="preserve"><circle fill="currentColor" cx="4" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin=".1"/></circle><circle fill="currentColor" cx="12" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin=".2"/></circle><circle fill="currentColor" cx="20" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin=".3"/></circle></svg>';
 
+    // helper functions
+
+    function defaultActionHandler(json, table) {
+        if (json.reload) {
+            table.setData();
+        }
+        if (json.refresh) {
+            window.location.reload();
+        }
+    }
+
+    /**
+     * @param {HTMLElement} btn
+     * @param {string} endpoint
+     * @param {FormData} formData
+     * @param {Function} cb
+     */
+    function handleAction(btn, endpoint, formData, cb = null) {
+        if (!btn.dataset.html) {
+            btn.dataset.html = btn.innerHTML;
+        }
+        btn.innerHTML = loader;
+
+        fetchWrapper(endpoint, {
+            method: "POST",
+            body: formData,
+        })
+            .then((json) => {
+                notify(json.message, json.status ?? "success");
+                btn.innerHTML = btn.dataset.html;
+                if (cb) {
+                    cb(json);
+                }
+            })
+            .catch((message) => {
+                notify(message, "bad");
+                btn.innerHTML = btn.dataset.html;
+            });
+    }
+
+    function fetchWrapper(url, options = {}) {
+        // Legacy server compat
+        options.headers = options.headers || {};
+        options.headers["X-Requested-With"] = "XMLHttpRequest";
+
+        // Default to application/json if not specified
+        if (options.method == "PUT" || options.method == "POST") {
+            if (!options.headers["Content-Type"]) {
+                options.headers["Content-Type"] = "application/json";
+            }
+        }
+
+        return fetch(url, options).then((response) => {
+            return response.text().then((text) => {
+                // Make sure we have JSON content
+                const data = text && JSON.parse(text);
+
+                if (!response.ok) {
+                    // Use json error message if any or HTTP status text
+                    const error = (data && data.message) || response.statusText;
+                    return Promise.reject(error);
+                }
+
+                return data;
+            });
+        });
+    }
+
     /**
      * @param {number} n
      * @returns {boolean}
@@ -99,11 +167,11 @@
     }
 
     /**
-     * @param {HTMLElement} e
+     * @param {HTMLElement} el
      * @returns {HTMLElement}
      */
-    function getInteractiveElement(e) {
-        let src = e;
+    function getInteractiveElement(el) {
+        let src = el;
         while (
             !["A", "INPUT", "TD", "TR", "TABLE"].includes(src.tagName) &&
             src.parentElement
@@ -330,10 +398,11 @@
         document.cookie = "hash=" + (window.location.hash || "") + "; path=/";
 
         var btn = cell.getElement().querySelector("a,input,button");
-        e.preventDefault();
+
         if (btn) {
             var styles = window.getComputedStyle(btn);
             if (styles.display === "none" || styles.visibility === "hidden") {
+                e.preventDefault();
                 return;
             }
             if (btn.dataset.ajax) {
@@ -344,35 +413,23 @@
                 formData.append("SecurityID", getSecurityID());
                 formData.append("Data", cell.getRow().getData());
 
-                btn.dataset.html = btn.innerHTML;
-                btn.innerHTML = loader;
-
+                // We can have a custom ajax handler
                 if (btn.dataset.ajax != 1 && btn.dataset.ajax != "true") {
                     var cb = getGlobalHandler(btn.dataset.ajax);
                     if (!cb) {
                         console.warn("Handler not found", btn.dataset.ajax);
                     } else {
-                        cb(e, cell, btn, formData).then(function () {
-                            btn.innerHTML = btn.dataset.html;
-                        });
+                        cb(e, cell, btn, formData);
                     }
                 } else {
-                    fetch(btn.getAttribute("href"), {
-                        method: "POST",
-                        body: formData,
-                    }).then(function (response) {
-                        if (response.status >= 200 && response.status <= 299) {
-                            response.json().then(function (json) {
-                                notify(json.message, json.status ?? "success");
-                                btn.innerHTML = btn.dataset.html;
-                            });
-                        } else {
-                            response.text().then(function (message) {
-                                notify(message, "bad");
-                                btn.innerHTML = btn.dataset.html;
-                            });
+                    handleAction(
+                        btn,
+                        btn.getAttribute("href"),
+                        formData,
+                        (json) => {
+                            defaultActionHandler(json, cell.getTable());
                         }
-                    });
+                    );
                 }
             }
         }
@@ -630,29 +687,30 @@
             cell.setValue("");
         }
 
-        fetch(editUrl, {
+        fetchWrapper(editUrl, {
             method: "POST",
             body: formData,
-        }).then(function (response) {
-            if (response.status >= 200 && response.status <= 299) {
-                response.json().then(function (json) {
-                    notify(json.message, json.status ?? "success");
+        })
+            .then((json) => {
+                notify(json.message, json.status ?? "success");
 
-                    if (json.value && json.value != value) {
-                        cell.setValue(json.value);
-                    } else if (!cell.getValue() && value) {
-                        cell.setValue(value);
-                    }
-                    disableCallback = false;
-                });
-            } else {
-                response.text().then(function (message) {
-                    notify(message, "bad");
-                    disableCallback = false;
-                });
-            }
-        });
+                if (json.value && json.value != value) {
+                    cell.setValue(json.value);
+                } else if (!cell.getValue() && value) {
+                    cell.setValue(value);
+                }
+                disableCallback = false;
+            })
+            .catch((message) => {
+                notify(message, "bad");
+                disableCallback = false;
+            });
     };
+    /**
+     * Forwards clicks on cell to checkbox
+     * @param {Event} e
+     * @param {Cell} cell
+     */
     var forwardClick = function (e, cell) {
         e.preventDefault();
         e.stopPropagation();
@@ -691,6 +749,9 @@
             previousSibling = previousSibling.previousSibling;
         }
         return previousSibling;
+    };
+    var getLoader = function () {
+        return loader;
     };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);
@@ -740,13 +801,13 @@
         // Trigger first action on row click if present
         if (dataset.rowClickTriggersAction) {
             tabulator.on("rowClick", function (e, row) {
-                if (e.target.classList.contains("tabulator-cell-editable")) {
-                    return;
-                }
-                if (e.target.classList.contains("tabulator-cell-btn")) {
-                    return;
-                }
                 let target = getInteractiveElement(e.target);
+                if (target.classList.contains("tabulator-cell-editable")) {
+                    return;
+                }
+                if (target.classList.contains("tabulator-cell-btn")) {
+                    return;
+                }
                 if (["A", "INPUT"].includes(target.tagName)) {
                     return;
                 }
@@ -767,6 +828,7 @@
         var confirm = document
             .querySelector(selector)
             .parentElement.querySelector(".tabulator-bulk-confirm");
+
         confirm.addEventListener("click", function (e) {
             var selectedData = tabulator.getSelectedData();
             var bulkEndpoint = dataset.bulkUrl;
@@ -803,25 +865,8 @@
 
             var endpoint = bulkEndpoint + selectedAction.getAttribute("value");
             if (xhr) {
-                fetch(endpoint, {
-                    method: "POST",
-                    body: formData,
-                }).then(function (response) {
-                    if (response.status >= 200 && response.status <= 299) {
-                        response.json().then(function (json) {
-                            notify(json.message, json.status ?? "success");
-
-                            if (json.reload) {
-                                window.location.reload();
-                            } else {
-                                tabulator.setData();
-                            }
-                        });
-                    } else {
-                        response.text().then(function (message) {
-                            notify(message, "bad");
-                        });
-                    }
+                handleAction(confirm, endpoint, formData, (json) => {
+                    defaultActionHandler(json, tabulator);
                 });
             } else {
                 window.location = endpoint + "?records=" + records.join(",");
@@ -855,6 +900,7 @@
         isCellEditable,
         getGroupByKey,
         getGroupForCell,
+        getLoader,
         init,
     };
 

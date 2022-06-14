@@ -397,9 +397,9 @@ class TabulatorGrid extends FormField
         // Actions
         // We use a pseudo link, because maybe we cannot call Link() yet if it's not linked to a form
 
-        // - Core actions
         $this->bulkUrl = $this->TempLink("bulkAction/", false);
 
+        // - Core actions, handled by TabulatorGrid
         $itemUrl = $this->TempLink('item/{ID}', false);
         if ($singl->canEdit()) {
             $this->addButton("ui_edit", $itemUrl, "edit", "Edit");
@@ -408,12 +408,13 @@ class TabulatorGrid extends FormField
             $this->addButton("ui_view", $itemUrl, "visibility", "View");
         }
 
+        // - Tools
         $this->tools = [];
         if ($singl->canCreate()) {
             $this->addTool(self::POS_START, new TabulatorAddNewButton($this));
         }
 
-        // - Custom actions
+        // - Custom actions are forwarded to the model itself
         if ($singl->hasMethod('tabulatorRowActions')) {
             $rowActions = $singl->tabulatorRowActions();
             if (!is_array($rowActions)) {
@@ -424,7 +425,12 @@ class TabulatorGrid extends FormField
                 $url = $this->TempLink("item/{ID}/customAction/$action", false);
                 $icon = $actionConfig['icon'] ?? "cog";
                 $title = $actionConfig['title'] ?? "";
-                $this->addButton("ui_customaction_$action", $url, $icon, $title);
+
+                $button = $this->makeButton($url, $icon, $title);
+                if (!empty($actionConfig['ajax'])) {
+                    $button['formatterParams']['ajax'] = true;
+                }
+                $this->addButtonFromArray("ui_customaction_$action", $button);
             }
         }
 

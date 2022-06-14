@@ -169,7 +169,10 @@ public function tabulatorRowActions()
     return [
         'doTabulatorAction' => [
             'title' => 'Do This',
-            'icon' => 'favorite_border'
+            'icon' => 'favorite_border',
+            'ajax' => true, // submitted through xhr
+            'reload' => true, // reload table data after action
+            'refresh' => true, // refresh the whole page after action
         ],
     ];
 }

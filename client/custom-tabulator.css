@@ -66,6 +66,12 @@
     background: #a1a1a1;
 }
 
+.tabulator,
+.tabulator .tabulator-header,
+.tabulator .tabulator-header .tabulator-col {
+    background: transparent;
+}
+
 /* Sticky */
 
 .tabulator-sticky {
@@ -77,7 +83,7 @@
     position: -webkit-sticky; /* Safari */
     position: sticky;
     top: 0;
-    background: #fff; /* Transparent issue */
+    background: #fff; /* Sticky headers need a background */
 }
 
 /* Accessible sortable icon */
@@ -204,6 +210,10 @@
 
 .tabulator-row.tabulator-row-even {
     background: var(--bs-gray-100, #f8f9f9);
+}
+
+.tabulator-cell-btn .btn > * {
+    pointer-events: none; /* Avoid events on icons */
 }
 
 .tabulator-row .tabulator-cell.tabulator-cell-btn {
@@ -386,6 +396,7 @@
 }
 
 /* Custom UI */
+
 .tabulator-tools {
     display: flex;
     justify-content: space-between;
