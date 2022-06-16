@@ -140,8 +140,8 @@
         }
         if (handler.indexOf(".") !== -1) {
             var parts = handler.split(".");
-            namespace = window[parts[0]];
-            func = parts[1];
+            var namespace = window[parts[0]];
+            var func = parts[1];
             if (!namespace) {
                 console.warn("Undefined namespace", parts[0]);
                 return;

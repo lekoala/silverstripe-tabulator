@@ -236,6 +236,15 @@ If needed, you can register a global SSTabulator.notify function that will be ca
 This module use a custom build of Tabulator with specific tweaks that might or might not be merged some day.
 You can use the cdn version by disabling `use_custom_build` config flag.
 
+## Migrating from GridFields
+
+If you are in a project currently using GridFields, there are a couple of ways you can slowly migrate to Tabulator.
+One way is to inject Tabulator instead of a GridField so that all GridField::create call return a TabulatorGrid.
+As a convenience, Tabulator define a getConfig method that returns a blank GridFieldConfig so that code expecting that doesn't crash.
+
+Another way is to use the TabulatorGrid::replaceGridfield method that tries its best to replace your GridField instance with
+an appropriate and configured TabulatorGrid.
+
 ## Dependencies
 
 - [Last Icon](https://github.com/lekoala/last-icon): for nice icons

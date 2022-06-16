@@ -538,11 +538,11 @@ class TabulatorGrid extends FormField
         if ($this->useConfigProvider) {
             $configLink = "/" . ltrim($this->Link("configProvider"), "/");
             $configLink .= "?t=" . time();
-            Requirements::javascript($configLink);
+            // This cannot be loaded as a js module
+            Requirements::javascript($configLink, ['type' => 'application/javascript', 'defer' => 'true']);
         } else {
             Requirements::customScript($this->getInitScript());
         }
-
 
         return parent::Field($properties);
     }
