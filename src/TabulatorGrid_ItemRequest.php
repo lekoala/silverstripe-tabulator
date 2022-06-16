@@ -21,6 +21,7 @@ use SilverStripe\Control\RequestHandler;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
+use SilverStripe\ORM\DB;
 
 /**
  * Endpoint for actions related to a specific record
@@ -33,6 +34,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     private static $allowed_actions = [
         'edit',
         'ajaxEdit',
+        'ajaxMove',
         'view',
         'customAction',
         'ItemEditForm',
@@ -229,6 +231,63 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         return $response;
     }
 
+    public function ajaxMove(HTTPRequest $request)
+    {
+        $SecurityID = $request->postVar('SecurityID');
+        if (!SecurityToken::inst()->check($SecurityID)) {
+            return $this->httpError(404, "Invalid SecurityID: $SecurityID");
+        }
+        if (!$this->record->canEdit()) {
+            return $this->httpError(403, _t(
+                __CLASS__ . '.EditPermissionsFailure',
+                'It seems you don\'t have the necessary permissions to edit "{ObjectTitle}"',
+                ['ObjectTitle' => $this->record->singular_name()]
+            ));
+        }
+
+        $table = DataObject::getSchema()->baseDataTable(get_class($this->record));
+        $sortField = 'Sort';
+
+        $Data = $request->postVar("Data");
+        $Sort = $request->postVar("Sort");
+
+        if (!isset($data[$sortField])) {
+            return $this->httpError(403, _t(
+                __CLASS__ . '.UnableToResolveSort',
+                'Unable to resolve previous sort order'
+            ));
+        }
+
+        $prevSort = $data[$sortField];
+
+        $error = null;
+        try {
+            if ($prevSort < $Sort) {
+                $set = "$sortField = $sortField - 1";
+                $where = "$sortField > $prevSort and $sortField <= $Sort";
+            } else {
+                $set = "$sortField = $sortField + 1";
+                $where = "$sortField < $prevSort and $sortField >= $Sort";
+            }
+            DB::query("UPDATE $table SET $set WHERE $where");
+            $this->record->$sortField = $Sort;
+            $this->record->write();
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+        }
+
+        if ($error) {
+            return $this->httpError(400, $error);
+        }
+
+        $response = new HTTPResponse(json_encode([
+            'success' => true,
+            'message' => _t(__CLASS__ . '.RecordMove', 'Record moved'),
+        ]));
+        $response->addHeader('Content-Type', 'application/json');
+        return $response;
+    }
+
     /**
      * @return mixed
      */
@@ -323,12 +382,18 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ?: $this->getReturnReferer()
             ?: $this->AbsoluteLink();
 
+        $url = $this->appendHash($url);
+
+        return $controller->redirect($url);
+    }
+
+    protected function appendHash($url): string
+    {
         $hash = Cookie::get('hash');
         if ($hash) {
             $url .= '#' . ltrim($hash, '#');
         }
-
-        return $controller->redirect($url);
+        return $url;
     }
 
     /**
@@ -448,6 +513,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     }
 
     /**
+     * @return \SilverStripe\Control\Controller|\SilverStripe\Admin\LeftAndMain|TabulatorGrid_ItemRequest
      */
     public function getToplevelController(): RequestHandler
     {
@@ -596,7 +662,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     {
         $controller = $this->getToplevelController();
         if ($isNewRecord) {
-            return $controller->redirect($this->Link());
+            $url = $this->appendHash($this->Link());
+            // In Ajax, response content is discarded and hash is not used
+            return $controller->redirect($url);
         } elseif ($this->tabulatorGrid->hasDataList() && $this->tabulatorGrid->getDataList()->byID($this->record->ID)) {
             // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
             // to the same URL (it assumes that its content is already current, and doesn't reload)

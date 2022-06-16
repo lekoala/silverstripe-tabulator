@@ -359,6 +359,15 @@
     display: none;
 }
 
+/* Improve handle ui */
+
+.tabulator-row
+    .tabulator-cell.tabulator-row-handle
+    .tabulator-row-handle-box
+    .tabulator-row-handle-bar {
+    height: 2px;
+}
+
 /* Improve row grouping ui */
 .tabulator-group {
     display: flex;

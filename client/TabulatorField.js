@@ -177,6 +177,13 @@
     }
 
     /**
+     * This helps restoring the proper tabs if needed after navigation or actions
+     */
+    function persistHash() {
+        document.cookie = "hash=" + (window.location.hash || "") + "; path=/";
+    }
+
+    /**
      * @param {string} selector
      * @returns {Promise}
      */
@@ -399,9 +406,6 @@
         return formatted;
     };
     var buttonHandler = function (e, cell) {
-        // This helps restoring state after click on button
-        document.cookie = "hash=" + (window.location.hash || "") + "; path=/";
-
         var btn = cell.getElement().querySelector("a,input,button");
 
         if (btn) {
@@ -758,6 +762,33 @@
     var getLoader = function () {
         return loader;
     };
+    var rowMoved = function (row) {
+        var data = row.getData();
+        var moveUrl = row.getTable().element.dataset.moveUrl;
+        if (!moveUrl) {
+            return;
+        }
+
+        var index = row.getTable().rowManager.getRowIndex(row);
+
+        moveUrl = interpolate(moveUrl, data);
+
+        var formData = new FormData();
+        formData.append("SecurityID", getSecurityID());
+        formData.append("Data", data);
+        formData.append("Sort", index);
+
+        fetchWrapper(moveUrl, {
+            method: "POST",
+            body: formData,
+        })
+            .then((json) => {
+                notify(json.message, json.status ?? "success");
+            })
+            .catch((message) => {
+                notify(message, "bad");
+            });
+    };
     var createTabulator = function (selector, options) {
         let el = document.querySelector(selector);
         if (el.classList.contains("tabulatorgrid-created")) {
@@ -834,9 +865,9 @@
         }
 
         // Bulk support
-        var confirm = document
-            .querySelector(selector)
-            .parentElement.querySelector(".tabulator-bulk-confirm");
+        var confirm = tabulator.element.parentElement.querySelector(
+            ".tabulator-bulk-confirm"
+        );
 
         if (confirm) {
             confirm.addEventListener("click", function (e) {
@@ -888,14 +919,17 @@
             });
         }
 
+        // Deal with state
+        tabulator.element.parentElement.addEventListener("click", function () {
+            persistHash();
+        });
+
         // Mitigate issue https://github.com/olifolkerd/tabulator/issues/3692
-        document
-            .querySelector(selector)
-            .addEventListener("keydown", function (e) {
-                if (e.keyCode == 13) {
-                    e.preventDefault();
-                }
-            });
+        tabulator.element.addEventListener("keydown", function (e) {
+            if (e.keyCode == 13) {
+                e.preventDefault();
+            }
+        });
     };
 
     // Public api
@@ -916,6 +950,7 @@
         getGroupByKey,
         getGroupForCell,
         getLoader,
+        rowMoved,
         init,
     };
 

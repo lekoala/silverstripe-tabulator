@@ -235,6 +235,8 @@ class TabulatorGrid extends FormField
 
     protected string $editUrl = "";
 
+    protected string $moveUrl = "";
+
     protected string $bulkUrl = "";
 
     public function __construct($name, $title = null, $value = null)
@@ -394,6 +396,11 @@ class TabulatorGrid extends FormField
             $this->addColumn($col['field'], $col['title'], $col);
         }
 
+        // Sortable ?
+        if ($singl->hasField('Sort')) {
+            $this->wizardMoveable();
+        }
+
         // Actions
         // We use a pseudo link, because maybe we cannot call Link() yet if it's not linked to a form
 
@@ -518,6 +525,10 @@ class TabulatorGrid extends FormField
         if ($this->editUrl) {
             $url = $this->processLink($this->editUrl);
             $this->setDataAttribute("edit-url", $url);
+        }
+        if ($this->moveUrl) {
+            $url = $this->processLink($this->moveUrl);
+            $this->setDataAttribute("move-url", $url);
         }
         if (!empty($this->bulkActions)) {
             $url = $this->processLink($this->bulkUrl);
@@ -821,6 +832,25 @@ class TabulatorGrid extends FormField
             ]
         ], $this->columns);
         $this->setBulkActions($actions);
+        return $this;
+    }
+
+    public function wizardMoveable(string $callback = "SSTabulator.rowMoved"): self
+    {
+        $this->moveUrl = $this->TempLink("item/{ID}/ajaxMove", false);
+        $this->setOption("movableRows", true);
+        $this->addListener("rowMoved", $callback);
+        $this->columns = array_merge([
+            'ui_move' => [
+                "hozAlign" => 'center',
+                "cssClass" => 'tabulator-cell-btn tabulator-cell-selector',
+                'rowHandle' => true,
+                'formatter' => 'handle',
+                'headerSort' => false,
+                'frozen' => true,
+                'width' => 40,
+            ]
+        ], $this->columns);
         return $this;
     }
 
@@ -2022,6 +2052,40 @@ class TabulatorGrid extends FormField
     public function setEditUrl(string $editUrl): self
     {
         $this->editUrl = $editUrl;
+        return $this;
+    }
+
+    /**
+     * Get the value of moveUrl
+     */
+    public function getMoveUrl(): string
+    {
+        return $this->moveUrl;
+    }
+
+    /**
+     * Set the value of moveUrl
+     */
+    public function setMoveUrl(string $moveUrl): self
+    {
+        $this->moveUrl = $moveUrl;
+        return $this;
+    }
+
+    /**
+     * Get the value of bulkUrl
+     */
+    public function getBulkUrl(): string
+    {
+        return $this->bulkUrl;
+    }
+
+    /**
+     * Set the value of bulkUrl
+     */
+    public function setBulkUrl(string $bulkUrl): self
+    {
+        $this->bulkUrl = $bulkUrl;
         return $this;
     }
 }

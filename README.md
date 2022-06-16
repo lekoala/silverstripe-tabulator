@@ -16,6 +16,7 @@ It supports many features out of the boxes:
 - Inline editing
 - Bulk actions
 - Custom action on the table or in the edit form
+- Moveable rows by drag and drop
 - Filtering, sorting, pagination...
 
 ## Configuring detail fields
