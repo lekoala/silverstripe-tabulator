@@ -2,6 +2,7 @@
 
 namespace LeKoala\Tabulator;
 
+use LeKoala\Admini\MaterialIcons;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
@@ -18,7 +19,6 @@ class AdminiCompat implements CompatLayerInterface
         ]);
         if ($form->Fields()->hasTabSet()) {
             $form->Fields()->findOrMakeTab('Root')->setTemplate('SilverStripe\\Forms\\CMSTabSet');
-            $form->addExtraClass('cms-tabset');
         }
         $form->Backlink = $itemRequest->getBackLink();
     }
@@ -34,25 +34,29 @@ class AdminiCompat implements CompatLayerInterface
 
         if ($record->ID !== 0) { // existing record
             if ($record->canEdit()) {
-                $noChangesClasses = 'btn-outline-primary font-icon-tick';
-                $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Save', 'Save'))
-                    ->addExtraClass($noChangesClasses)
-                    ->setAttribute('data-btn-alternate-add', 'btn-primary font-icon-save')
-                    ->setAttribute('data-btn-alternate-remove', $noChangesClasses)
-                    ->setUseButtonTag(true)
-                    ->setAttribute('data-text-alternate', _t('SilverStripe\\CMS\\Controllers\\CMSMain.SAVEDRAFT', 'Save')));
+                $majorActions->push(
+                    FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Save', 'Save'))
+                        ->setIcon(MaterialIcons::DONE)
+                        ->addExtraClass('btn-success')
+                        ->setUseButtonTag(true)
+                );
             }
 
             if ($record->canDelete()) {
-                $actions->insertAfter('MajorActions', FormAction::create('doDelete', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Delete', 'Delete'))
-                    ->setUseButtonTag(true)
-                    ->addExtraClass('btn-outline-danger btn-hide-outline font-icon-trash-bin action--delete'));
+                $actions->insertAfter(
+                    'MajorActions',
+                    FormAction::create('doDelete', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Delete', 'Delete'))
+                        ->setUseButtonTag(true)
+                        ->setIcon(MaterialIcons::DELETE)
+                        ->addExtraClass('btn-danger')
+                );
             }
         } else { // adding new record
             //Change the Save label to 'Create'
             $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Create', 'Create'))
                 ->setUseButtonTag(true)
-                ->addExtraClass('btn-primary font-icon-plus-thin'));
+                ->setIcon(MaterialIcons::ADD)
+                ->addExtraClass('btn-success'));
 
             // Add a Cancel link which is a button-like link and link back to one level up.
             $crumbs = $itemRequest->Breadcrumbs();
