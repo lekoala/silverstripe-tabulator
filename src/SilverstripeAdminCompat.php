@@ -153,6 +153,8 @@ class SilverstripeAdminCompat implements CompatLayerInterface
     }
 
     /**
+     * Add Save&Close if not using cms-actions
+     *
      * @param FieldList $actions
      * @param DataObject $record
      * @return void

@@ -2,9 +2,12 @@
 
 namespace LeKoala\Tabulator;
 
+use SilverStripe\View\HTML;
 use SilverStripe\Forms\Form;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
+use SilverStripe\Control\Controller;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\CompositeField;
 
@@ -40,7 +43,7 @@ class AdminiCompat implements CompatLayerInterface
                 $majorActions->push(
                     FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Save', 'Save'))
                         ->setIcon('done')
-                        ->addExtraClass('btn-success')
+                        ->addExtraClass('btn-outline-success')
                         ->setUseButtonTag(true)
                 );
             }
@@ -54,6 +57,8 @@ class AdminiCompat implements CompatLayerInterface
                         ->addExtraClass('btn-danger')
                 );
             }
+
+            $actions->push($this->getRightGroupField($itemRequest));
         } else { // adding new record
             //Change the Save label to 'Create'
             $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Create', 'Create'))
@@ -76,5 +81,112 @@ class AdminiCompat implements CompatLayerInterface
         }
 
         return $actions;
+    }
+
+    /**
+     * @return CompositeField Returns the right aligned toolbar group field along with its FormAction's
+     */
+    protected function getRightGroupField(TabulatorGrid_ItemRequest $itemRequest)
+    {
+        $rightGroup = CompositeField::create()->setName('RightGroup');
+        $rightGroup->addExtraClass('ms-auto');
+        $rightGroup->setFieldHolderTemplate(get_class($rightGroup) . '_holder_buttongroup');
+
+        $previousAndNextGroup = CompositeField::create()->setName('PreviousAndNextGroup');
+        $previousAndNextGroup->addExtraClass('btn-group--circular mr-2');
+        $previousAndNextGroup->setFieldHolderTemplate(CompositeField::class . '_holder_buttongroup');
+
+        $grid = $itemRequest->getTabulatorGrid();
+        $record = $itemRequest->getRecord();
+        $pagination = $grid->getOption("pagination");
+        if ($pagination) {
+            $previousIsDisabled = !$itemRequest->getPreviousRecordID();
+            $nextIsDisabled = !$itemRequest->getNextRecordID();
+
+            $previousAndNextGroup->push(
+                LiteralField::create(
+                    'previous-record',
+                    HTML::createTag($previousIsDisabled ? 'span' : 'a', [
+                        'href' => $previousIsDisabled ? '#' : $itemRequest->getEditLink($itemRequest->getPreviousRecordID()),
+                        'title' => _t(__CLASS__ . '.PREVIOUS', 'Go to previous record'),
+                        'aria-label' => _t(__CLASS__ . '.PREVIOUS', 'Go to previous record'),
+                        'class' => 'btn btn-secondary font-icon-left-open action--previous discard-confirmation'
+                            . ($previousIsDisabled ? ' disabled' : ''),
+                    ])
+                )
+            );
+
+            $previousAndNextGroup->push(
+                LiteralField::create(
+                    'next-record',
+                    HTML::createTag($nextIsDisabled ? 'span' : 'a', [
+                        'href' => $nextIsDisabled ? '#' : $itemRequest->getEditLink($itemRequest->getNextRecordID()),
+                        'title' => _t(__CLASS__ . '.NEXT', 'Go to next record'),
+                        'aria-label' => _t(__CLASS__ . '.NEXT', 'Go to next record'),
+                        'class' => 'btn btn-secondary font-icon-right-open action--next discard-confirmation'
+                            . ($nextIsDisabled ? ' disabled' : ''),
+                    ])
+                )
+            );
+        }
+
+        $rightGroup->push($previousAndNextGroup);
+
+        if ($record->canCreate()) {
+            $rightGroup->push(
+                LiteralField::create(
+                    'new-record',
+                    HTML::createTag('a', [
+                        'href' => Controller::join_links($grid->Link('item'), 'new'),
+                        'title' => _t(__CLASS__ . '.NEW', 'Add new record'),
+                        'aria-label' => _t(__CLASS__ . '.NEW', 'Add new record'),
+                        'class' => 'btn btn-primary font-icon-plus-thin btn--circular action--new discard-confirmation',
+                    ])
+                )
+            );
+        }
+
+        return $rightGroup;
+    }
+
+    /**
+     * Add Save&Close if not using cms-actions
+     *
+     * @param FieldList $actions
+     * @param DataObject $record
+     * @return void
+     */
+    public function addSaveAndClose(FieldList $actions, DataObject $record)
+    {
+        if (!$record->canEdit()) {
+            return;
+        }
+        if (!$record->ID && !$record->canCreate()) {
+            return;
+        }
+
+        $MajorActions = $actions->fieldByName('MajorActions');
+
+        // If it doesn't exist, push to default group
+        if (!$MajorActions) {
+            $MajorActions = $actions;
+        }
+
+        if ($record->ID) {
+            $label = _t(__CLASS__ . '.SAVEANDCLOSE', 'Save and Close');
+        } else {
+            $label = _t(__CLASS__ . '.CREATEANDCLOSE', 'Create and Close');
+        }
+
+        $saveAndClose = new FormAction('doSaveAndClose', $label);
+        $saveAndClose->addExtraClass('btn btn-outline-primary');
+        if ($record->ID) {
+            $saveAndClose->setIcon("done");
+        } else {
+            $saveAndClose->setIcon("add");
+        }
+
+        $saveAndClose->setUseButtonTag(true);
+        $MajorActions->push($saveAndClose);
     }
 }
