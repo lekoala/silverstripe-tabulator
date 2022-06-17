@@ -9,6 +9,9 @@ use SilverStripe\Forms\FormScaffolder;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
 
+/**
+ * Helps to scaffold fields with TabulatorGrids instead of GridFields
+ */
 class TabulatorScaffolder extends FormScaffolder
 {
     public static function scaffoldFormFields(DataObject $obj, array $_params = []): FieldList

@@ -198,6 +198,8 @@ $grid->wizardSelectable([
 ]);
 ```
 
+See /src/BulkActions for a full list of actions. These are roughly the equivalent of those you can find in the BulkManager module.
+
 ## Listen to events
 
 You can add custom listeners that should exist in the global namespace.

@@ -4,6 +4,9 @@ namespace LeKoala\Tabulator;
 
 use SilverStripe\Control\RequestHandler;
 
+/**
+ * This is the base class for tools (see TabulatorAddNewButton for sample usage)
+ */
 class AbstractTabulatorTool extends RequestHandler
 {
     protected TabulatorGrid $tabulatorGrid;

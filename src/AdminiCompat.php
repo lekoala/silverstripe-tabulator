@@ -2,13 +2,16 @@
 
 namespace LeKoala\Tabulator;
 
-use LeKoala\Admini\MaterialIcons;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\CompositeField;
 
+/**
+ * Compat layer with admini module
+ * Maybe migrate this to admini module at some point
+ */
 class AdminiCompat implements CompatLayerInterface
 {
     public function adjustItemEditForm(TabulatorGrid_ItemRequest $itemRequest, Form $form)
@@ -36,7 +39,7 @@ class AdminiCompat implements CompatLayerInterface
             if ($record->canEdit()) {
                 $majorActions->push(
                     FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Save', 'Save'))
-                        ->setIcon(MaterialIcons::DONE)
+                        ->setIcon('done')
                         ->addExtraClass('btn-success')
                         ->setUseButtonTag(true)
                 );
@@ -47,7 +50,7 @@ class AdminiCompat implements CompatLayerInterface
                     'MajorActions',
                     FormAction::create('doDelete', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Delete', 'Delete'))
                         ->setUseButtonTag(true)
-                        ->setIcon(MaterialIcons::DELETE)
+                        ->setIcon('delete')
                         ->addExtraClass('btn-danger')
                 );
             }
@@ -55,7 +58,7 @@ class AdminiCompat implements CompatLayerInterface
             //Change the Save label to 'Create'
             $majorActions->push(FormAction::create('doSave', _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Create', 'Create'))
                 ->setUseButtonTag(true)
-                ->setIcon(MaterialIcons::ADD)
+                ->setIcon('add')
                 ->addExtraClass('btn-success'));
 
             // Add a Cancel link which is a button-like link and link back to one level up.

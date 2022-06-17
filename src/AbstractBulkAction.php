@@ -11,6 +11,7 @@ use SilverStripe\Control\RequestHandler;
 
 /**
  * Base class to extend for all custom bulk action handlers
+ * Simply implement "process" method in your subclass
  */
 class AbstractBulkAction extends AbstractTabulatorTool
 {

@@ -4,13 +4,11 @@ namespace LeKoala\Tabulator;
 
 use Exception;
 use RuntimeException;
-use SilverStripe\ORM\DB;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Forms\Form;
 use InvalidArgumentException;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Core\Convert;
-use SilverStripe\ORM\ArrayLib;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\Core\ClassInfo;
@@ -31,6 +29,9 @@ use SilverStripe\Core\Manifest\ModuleResourceLoader;
 use SilverStripe\ORM\FieldType\DBEnum;
 
 /**
+ * This is a replacement for most GridField usages in SilverStripe
+ * It can easily work in the frontend too
+ *
  * @link http://www.tabulator.info/
  */
 class TabulatorGrid extends FormField
