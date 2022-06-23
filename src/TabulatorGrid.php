@@ -240,6 +240,11 @@ class TabulatorGrid extends FormField
 
     protected string $bulkUrl = "";
 
+    /**
+     * @param string $fieldName
+     * @param string|null $title
+     * @param SS_List $value
+     */
     public function __construct($name, $title = null, $value = null)
     {
         parent::__construct($name, $title, $value);
@@ -284,6 +289,11 @@ class TabulatorGrid extends FormField
     public function ControllerLink(string $action): string
     {
         return $this->getForm()->getController()->Link($action);
+    }
+
+    public function getCreateLink(): string
+    {
+        return Controller::join_links($this->Link('item'), 'new');
     }
 
     /**
@@ -1228,6 +1238,19 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+    public function hasArrayList(): bool
+    {
+        return $this->list instanceof ArrayList;
+    }
+
+    public function getArrayList(): ArrayList
+    {
+        if (!$this->list instanceof ArrayList) {
+            throw new RuntimeException("Value is not a ArrayList, it is a: " . get_class($this->list));
+        }
+        return $this->list;
+    }
+
     public function hasDataList(): bool
     {
         return $this->list instanceof DataList;
@@ -1236,7 +1259,7 @@ class TabulatorGrid extends FormField
     public function getDataList(): DataList
     {
         if (!$this->list instanceof DataList) {
-            throw new RuntimeException("Value is not a DataList, it is a: " . gettype($this->list));
+            throw new RuntimeException("Value is not a DataList, it is a: " . get_class($this->list));
         }
         return $this->list;
     }

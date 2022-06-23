@@ -93,7 +93,6 @@ class AdminiCompat implements CompatLayerInterface
         $rightGroup->setFieldHolderTemplate(get_class($rightGroup) . '_holder_buttongroup');
 
         $previousAndNextGroup = CompositeField::create()->setName('PreviousAndNextGroup');
-        $previousAndNextGroup->addExtraClass('btn-group--circular mr-2');
         $previousAndNextGroup->setFieldHolderTemplate(CompositeField::class . '_holder_buttongroup');
 
         $grid = $itemRequest->getTabulatorGrid();
@@ -110,9 +109,9 @@ class AdminiCompat implements CompatLayerInterface
                         'href' => $previousIsDisabled ? '#' : $itemRequest->getEditLink($itemRequest->getPreviousRecordID()),
                         'title' => _t(__CLASS__ . '.PREVIOUS', 'Go to previous record'),
                         'aria-label' => _t(__CLASS__ . '.PREVIOUS', 'Go to previous record'),
-                        'class' => 'btn btn-secondary font-icon-left-open action--previous discard-confirmation'
+                        'class' => 'btn btn-light action--previous discard-confirmation'
                             . ($previousIsDisabled ? ' disabled' : ''),
-                    ])
+                    ], '<l-i name="navigate_before"></l-i>')
                 )
             );
 
@@ -123,9 +122,9 @@ class AdminiCompat implements CompatLayerInterface
                         'href' => $nextIsDisabled ? '#' : $itemRequest->getEditLink($itemRequest->getNextRecordID()),
                         'title' => _t(__CLASS__ . '.NEXT', 'Go to next record'),
                         'aria-label' => _t(__CLASS__ . '.NEXT', 'Go to next record'),
-                        'class' => 'btn btn-secondary font-icon-right-open action--next discard-confirmation'
+                        'class' => 'btn btn-light action--next discard-confirmation'
                             . ($nextIsDisabled ? ' disabled' : ''),
-                    ])
+                    ], '<l-i name="navigate_next"></l-i>')
                 )
             );
         }
@@ -140,8 +139,8 @@ class AdminiCompat implements CompatLayerInterface
                         'href' => Controller::join_links($grid->Link('item'), 'new'),
                         'title' => _t(__CLASS__ . '.NEW', 'Add new record'),
                         'aria-label' => _t(__CLASS__ . '.NEW', 'Add new record'),
-                        'class' => 'btn btn-primary font-icon-plus-thin btn--circular action--new discard-confirmation',
-                    ])
+                        'class' => 'btn btn-success action--new discard-confirmation',
+                    ], '<l-i name="add"></l-i>')
                 )
             );
         }

@@ -403,7 +403,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
      */
     public function ItemEditForm()
     {
-        $list = $this->tabulatorGrid->getDataList();
+        $list = $this->tabulatorGrid->getList();
         $controller = $this->getToplevelController();
 
         try {
@@ -653,6 +653,15 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     }
 
     /**
+     * This is expected in lekoala/silverstripe-cms-actions ActionsGridFieldItemRequest
+     * @return HTTPResponse
+     */
+    public function getResponse()
+    {
+        return $this->getToplevelController()->getResponse();
+    }
+
+    /**
      * Response object for this request after a successful save
      *
      * @param bool $isNewRecord True if this record was just created
@@ -665,7 +674,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $url = $this->appendHash($this->Link());
             // In Ajax, response content is discarded and hash is not used
             return $controller->redirect($url);
-        } elseif ($this->tabulatorGrid->hasDataList() && $this->tabulatorGrid->getDataList()->byID($this->record->ID)) {
+        } elseif ($this->tabulatorGrid->hasArrayList() && $this->tabulatorGrid->getArrayList()->byID($this->record->ID)) {
             // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
             // to the same URL (it assumes that its content is already current, and doesn't reload)
             return $this->edit($controller->getRequest());

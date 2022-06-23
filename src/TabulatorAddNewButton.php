@@ -35,7 +35,7 @@ class TabulatorAddNewButton extends AbstractTabulatorTool
         }
 
         $data = new ArrayData([
-            'NewLink' => Controller::join_links($grid->Link('item'), 'new'),
+            'NewLink' => $grid->getCreateLink(),
             'ButtonName' => $this->buttonName,
         ]);
         return $this->renderWith($this->getViewerTemplates(), $data);
