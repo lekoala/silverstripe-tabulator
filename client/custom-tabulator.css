@@ -321,6 +321,10 @@
     background: var(--tabulator-valid-color);
 }
 
+em.tabulator-value-placeholder {
+    color: #bbb;
+}
+
 .tabulator-row .tabulator-cell.tabulator-cell-narrow {
     padding-left: 6px;
     padding-right: 6px;

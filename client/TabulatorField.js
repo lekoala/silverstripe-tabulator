@@ -307,10 +307,7 @@
             );
         }
         if (color) {
-            el = interpolate('<span style="color:{color}">{el}</span>', {
-                color: color,
-                el: el,
-            });
+            el = `<span style="color:${color}">${el}</span>`;
         }
         return el;
     };
@@ -387,14 +384,7 @@
             }
             attrs += ' href="' + url + '"';
         }
-        var link = '<{tag} class="{classes}"{attrs}>{btnContent}</{tag}>';
-        link = interpolate(link, {
-            url: url,
-            classes: classes,
-            btnContent: btnContent,
-            attrs: attrs,
-            tag: tag,
-        });
+        var link = `<${tag} class="${classes}"${attrs}>${btnContent}</${tag}>`;
         return link;
     };
     var externalFormatter = function (cell, formatterParams, onRendered) {
@@ -402,6 +392,8 @@
         var formatted = "";
         if (v || formatterParams["notNull"]) {
             formatted = getGlobalHandler(formatterParams["function"])(v);
+        } else if (formatterParams["placeholder"]) {
+            formatted = `<em class="tabulator-value-placeholder">${formatterParams["placeholder"]}</em>`;
         }
         return formatted;
     };
