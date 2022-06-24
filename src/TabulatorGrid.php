@@ -180,6 +180,11 @@ class TabulatorGrid extends FormField
     private static array $custom_pagination_icons = [];
 
     /**
+     * @config
+     */
+    private static bool $default_lazy_init = false;
+
+    /**
      * Data source.
      */
     protected ?SS_List $list;
@@ -250,6 +255,7 @@ class TabulatorGrid extends FormField
         parent::__construct($name, $title, $value);
         $this->options = self::config()->default_options ?? [];
         $this->columnDefaults = self::config()->default_column_options ?? [];
+        $this->setLazyInit(self::config()->default_lazy_init);
 
         // We don't want regular setValue for this since it would break with loadFrom logic
         if ($value) {

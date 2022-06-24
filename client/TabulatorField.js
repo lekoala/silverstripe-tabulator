@@ -450,7 +450,7 @@
     var initElement = function (el, options) {
         let selector = "#" + el.getAttribute("id");
         pendingInit[selector] = false;
-        if (el.classList.contains("lazy-loadable")) {
+        if (el.classList.contains("lazy-loadable") && isHidden(el)) {
             el.addEventListener(
                 "lazyload",
                 (e) => {
