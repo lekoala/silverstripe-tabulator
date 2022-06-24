@@ -640,14 +640,21 @@
             success(editor.value);
 
             if (editorParams.successCallback) {
-                getGlobalHandler(editorParams.successCallback)(editor, value);
+                getGlobalHandler(editorParams.successCallback)(
+                    editor,
+                    editor.value
+                );
             }
         }
 
-        editor.addEventListener("keydown", function (e) {
-            console.log(editorParams);
+        editor.addEventListener("focus", (e) => {
             if (editorParams.inputCallback) {
-                getGlobalHandler(editorParams.inputCallback)(e, editor);
+                getGlobalHandler(editorParams.inputCallback)(editor, e);
+            }
+        });
+        editor.addEventListener("keydown", (e) => {
+            if (editorParams.inputCallback) {
+                getGlobalHandler(editorParams.inputCallback)(editor, e);
             }
             if (e.key === "Enter") {
                 e.preventDefault();
