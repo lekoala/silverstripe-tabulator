@@ -48,7 +48,7 @@
             body: formData,
         })
             .then((json) => {
-                notify(json.message, json.status ?? "success");
+                notify(json.message, json.status || "success");
                 btn.innerHTML = btn.dataset.html;
                 if (cb) {
                     cb(json);
@@ -535,7 +535,7 @@
         editor.style.boxSizing = "border-box";
 
         //Set value of editor to the current value of the cell
-        editor.value = cell.getValue() ?? "";
+        editor.value = cell.getValue() || "";
 
         //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
         onRendered(function () {
@@ -604,7 +604,7 @@
         editor.setAttribute("id", "tabulator-editor-" + uid);
 
         //Set value of editor to the current value of the cell
-        editor.value = cell.getValue() ?? "";
+        editor.value = cell.getValue() || "";
         editor.dataset.prevValue = editor.value;
 
         //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
@@ -696,7 +696,7 @@
             body: formData,
         })
             .then((json) => {
-                notify(json.message, json.status ?? "success");
+                notify(json.message, json.status || "success");
 
                 if (json.value && json.value != value) {
                     cell.setValue(json.value);
@@ -778,7 +778,7 @@
             body: formData,
         })
             .then((json) => {
-                notify(json.message, json.status ?? "success");
+                notify(json.message, json.status || "success");
             })
             .catch((message) => {
                 notify(message, "bad");
