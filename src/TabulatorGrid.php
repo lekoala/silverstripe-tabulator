@@ -242,7 +242,7 @@ class TabulatorGrid extends FormField
 
     /**
      * @param string $fieldName
-     * @param string|null $title
+     * @param string|null|bool $title
      * @param SS_List $value
      */
     public function __construct($name, $title = null, $value = null)
