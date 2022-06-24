@@ -255,6 +255,16 @@
     border-color: var(--tabulator-primary-color);
 }
 
+.tabulator .tabulator-footer .tabulator-footer-contents {
+    flex-wrap: wrap;
+}
+
+.tabulator .tabulator-footer .tabulator-page-counter {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+}
+
 .tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle {
     color: #fff;
     cursor: pointer;
