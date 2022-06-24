@@ -539,11 +539,13 @@
 
         //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
         onRendered(function () {
-            editor.focus({ preventScroll: true });
             editor.style.height = "100%";
             if (editorParams.selectContents) {
                 editor.select();
             }
+            setTimeout(() => {
+                editor.focus({ preventScroll: true });
+            }, 1);
         });
 
         //when the value has been set, trigger the cell to update
@@ -609,7 +611,6 @@
 
         //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
         onRendered(function () {
-            editor.focus({ preventScroll: true });
             editor.style.height = "100%";
 
             // init external editor
@@ -622,6 +623,10 @@
             if (editorParams.initCallback) {
                 getGlobalHandler(editorParams.initCallback)(editor, inst);
             }
+
+            setTimeout(() => {
+                editor.focus({ preventScroll: true });
+            }, 1);
         });
 
         //when the value has been set, trigger the cell to update
