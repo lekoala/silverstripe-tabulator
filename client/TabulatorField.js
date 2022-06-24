@@ -402,7 +402,15 @@
 
         if (btn) {
             var styles = window.getComputedStyle(btn);
-            if (styles.display === "none" || styles.visibility === "hidden") {
+            // No trigger if hidden, disabled or readonly (attr or class)
+            if (
+                styles.display === "none" ||
+                styles.visibility === "hidden" ||
+                btn.disabled ||
+                btn.readonly ||
+                btn.classList.contains("disabled") ||
+                btn.classList.contains("readonly")
+            ) {
                 e.preventDefault();
                 return;
             }
@@ -557,6 +565,7 @@
                 e.preventDefault();
                 cancel();
             }
+            // Only allow monetary input
             if (
                 e.key.length === 1 &&
                 !(isNumeric(e.key) || [".", ","].includes(e.key))
@@ -628,10 +637,6 @@
                 }
                 return;
             }
-            if (editor.value || editorParams.notNull) {
-                let fmt = parseMoney(editor.value);
-                editor.value = fmt.output;
-            }
             success(editor.value);
 
             if (editorParams.successCallback) {
@@ -640,6 +645,10 @@
         }
 
         editor.addEventListener("keydown", function (e) {
+            console.log(editorParams);
+            if (editorParams.inputCallback) {
+                getGlobalHandler(editorParams.inputCallback)(e, editor);
+            }
             if (e.key === "Enter") {
                 e.preventDefault();
                 successFunc();
@@ -647,12 +656,6 @@
             if (e.key === "Escape") {
                 e.preventDefault();
                 cancel();
-            }
-            if (
-                e.key.length === 1 &&
-                !(isNumeric(e.key) || [".", ","].includes(e.key))
-            ) {
-                e.preventDefault();
             }
         });
 
