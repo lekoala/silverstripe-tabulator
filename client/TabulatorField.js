@@ -624,7 +624,7 @@
             var inst = getGlobalHandler(editorParams.function)(el, opts);
 
             if (editorParams.initCallback) {
-                getGlobalHandler(editorParams.initCallback)(editor, inst);
+                getGlobalHandler(editorParams.initCallback)(editor, inst, cell);
             }
 
             setTimeout(() => {
@@ -641,7 +641,7 @@
                 cancel();
 
                 if (editorParams.cancelCallback) {
-                    getGlobalHandler(editorParams.cancelCallback)(editor);
+                    getGlobalHandler(editorParams.cancelCallback)(editor, cell);
                 }
                 return;
             }
@@ -650,20 +650,22 @@
             if (editorParams.successCallback) {
                 getGlobalHandler(editorParams.successCallback)(
                     editor,
-                    editor.value
+                    editor.value,
+                    cell
                 );
             }
         }
 
-        editor.addEventListener("focus", (e) => {
-            if (editorParams.inputCallback) {
-                getGlobalHandler(editorParams.inputCallback)(editor, e);
-            }
-        });
+        if (editorParams.inputCallback) {
+            editor.addEventListener("focus", (e) => {
+                getGlobalHandler(editorParams.inputCallback)(editor, e, cell);
+            });
+            // We listen on keyup this way editor.value contains the actual value
+            editor.addEventListener("keyup", (e) => {
+                getGlobalHandler(editorParams.inputCallback)(editor, e, cell);
+            });
+        }
         editor.addEventListener("keydown", (e) => {
-            if (editorParams.inputCallback) {
-                getGlobalHandler(editorParams.inputCallback)(editor, e);
-            }
             if (e.key === "Enter") {
                 e.preventDefault();
                 successFunc();
