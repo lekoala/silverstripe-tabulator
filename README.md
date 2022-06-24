@@ -219,6 +219,12 @@ There is a built-in `notify` helper function that supports quite a few notificat
 
 If needed, you can register a global SSTabulator.notify function that will be called instead of the default function.
 
+## Has one field
+
+If you are using [silverstripe-hasonefield](https://github.com/silvershop/silverstripe-hasonefield/), I have a good news for you
+because this module includes a basic (for now) support for a simple has one editing button.
+Simply replace your instances of `HasOneButtonField` with `HasOneTabulatorField` and you should be good to go!
+
 ## Additionnal formaters and helpers
 
 - SSTabulator.flagFormatter: format a two char country code to a svg flag using Last Icon
