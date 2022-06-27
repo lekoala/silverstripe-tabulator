@@ -454,9 +454,7 @@
             el.addEventListener(
                 "lazyload",
                 (e) => {
-                    if (!isHidden(el)) {
-                        createTabulator(selector, options);
-                    }
+                    createTabulator(selector, options);
                 },
                 {
                     once: true,
