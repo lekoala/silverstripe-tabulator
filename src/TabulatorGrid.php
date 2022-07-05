@@ -20,13 +20,14 @@ use SilverStripe\View\Requirements;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
+use SilverStripe\ORM\FieldType\DBEnum;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\FieldType\DBBoolean;
+use LeKoala\ModularBehaviour\ModularFormField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
-use SilverStripe\ORM\FieldType\DBEnum;
 
 /**
  * This is a replacement for most GridField usages in SilverStripe
@@ -34,7 +35,7 @@ use SilverStripe\ORM\FieldType\DBEnum;
  *
  * @link http://www.tabulator.info/
  */
-class TabulatorGrid extends FormField
+class TabulatorGrid extends ModularFormField
 {
     const POS_START = 'start';
     const POS_END = 'end';
@@ -237,7 +238,9 @@ class TabulatorGrid extends FormField
 
     protected string $controllerFunction = "";
 
-    protected bool $useConfigProvider = true;
+    protected bool $useConfigProvider = false;
+
+    protected bool $useInitScript = false;
 
     protected string $editUrl = "";
 
@@ -517,11 +520,34 @@ class TabulatorGrid extends FormField
         return parent::setValue($value, $data);
     }
 
+    public function getModularName()
+    {
+        return 'SSTabulator.createTabulator';
+    }
+
+    public function getModularSelector()
+    {
+        return '.tabulatorgrid';
+    }
+
+    public function getModularConfigName()
+    {
+        return str_replace('-', '_', $this->ID()) . '_config';
+    }
+
+    public function getModularConfig()
+    {
+        $JsonOptions = $this->JsonOptions();
+        $configName = $this->getModularConfigName();
+        $script = "var $configName = $JsonOptions";
+        return $script;
+    }
+
     public function Field($properties = [])
     {
         $this->addExtraClass(self::config()->theme);
         if ($this->lazyInit) {
-            $this->addExtraClass("lazy-loadable");
+            $this->setModularLazy($this->lazyInit);
         }
         if (self::config()->enable_requirements) {
             self::requirements();
@@ -557,10 +583,14 @@ class TabulatorGrid extends FormField
             $configLink .= "?t=" . time();
             // This cannot be loaded as a js module
             Requirements::javascript($configLink, ['type' => 'application/javascript', 'defer' => 'true']);
-        } else {
+        } elseif ($this->useInitScript) {
             Requirements::customScript($this->getInitScript());
         }
 
+        // Skip modular behaviour
+        if ($this->useConfigProvider || $this->useInitScript) {
+            return FormField::Field($properties);
+        }
         return parent::Field($properties);
     }
 
@@ -995,6 +1025,11 @@ class TabulatorGrid extends FormField
         $request->getSession()->set("TabulatorState[$stateKey]", $state);
     }
 
+    /**
+     * Deprecated in favor of modular behaviour
+     * @deprecated
+     * @return string
+     */
     public function getInitScript(): string
     {
         $JsonOptions = $this->JsonOptions();
@@ -1009,11 +1044,16 @@ class TabulatorGrid extends FormField
      * This is really useful in the context of the admin as it will be served over
      * ajax
      *
+     * Deprecated in favor of modular behaviour
+     * @deprecated
      * @param HTTPRequest $request
      * @return HTTPResponse
      */
     public function configProvider(HTTPRequest $request)
     {
+        if (!$this->useConfigProvider) {
+            return $this->httpError(404);
+        }
         $response = new HTTPResponse($this->getInitScript());
         $response->addHeader('Content-Type', 'application/script');
         return $response;
@@ -2065,6 +2105,23 @@ class TabulatorGrid extends FormField
     public function setUseConfigProvider(bool $useConfigProvider): self
     {
         $this->useConfigProvider = $useConfigProvider;
+        return $this;
+    }
+
+    /**
+     * Get the value of useInitScript
+     */
+    public function getUseInitScript(): bool
+    {
+        return $this->useConfigProvider;
+    }
+
+    /**
+     * Set the value of useInitScript
+     */
+    public function setUseInitScript(bool $useInitScript): self
+    {
+        $this->useInitScript = $useInitScript;
         return $this;
     }
 

@@ -47,24 +47,34 @@ This module scaffold some default columns based on summary and searchable fields
 
 For more advanced usage, please define a `tabulatorColumns` method that returns all the columns according to [Tabulator definitions](http://tabulator.info/docs/5.2/columns).
 
-## JS requirements
-
-To use in the SilverStripe admin, you need to enable lazy load behaviour. See `admin.js` file for this. It is NOT
-automatically included, it's up to you to enable this if you plan to use Tabulator in the admin.
-Also see: https://github.com/silverstripe/silverstripe-admin/issues/1308
-
 ## JS Init
 
-Tabulator supports two mode of init. One using js include (the default mode) which works will in the SilverStripe
+By default, Tabulator will init through [modular behaviour](https://github.com/lekoala/silverstripe-modular-behaviour). This allows a consistent init
+process in the frontend and in the backend, while supporting lazy init out of the box (eg: when the grid is in a hidden tab).
+
+If you don't want to use Modular Behaviour, you have the following options:
+
+### Using the config provider
+
+One using js include (the default mode) which works will in the SilverStripe
 admin during ajax navigation, as the init script with its options is served as a distinct script.
+
+```php
+$grid->setUseConfigProvider(true);
+```
+
+NOTE: this may not be supported in future versions
+
+### Using an inline script
 
 This might not always be convenient in the frontend where ajax might not be used or x-include-js handled. In this
 case, you can disable the configProvider and simply use a regular inline script.
 
 ```php
-$grid->setControllerFunction(__FUNCTION__);
-$grid->setUseConfigProvider(false);
+$grid->setUseInitScript(true);
 ```
+
+NOTE: this may not be supported in future versions
 
 ## Options
 

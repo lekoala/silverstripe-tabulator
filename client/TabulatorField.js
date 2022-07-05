@@ -187,47 +187,6 @@
     }
 
     /**
-     * @param {string} selector
-     * @returns {Promise}
-     */
-    function waitForElem(selector) {
-        return new Promise((resolve) => {
-            let el = document.querySelector(selector);
-            // let timer;
-            if (el) {
-                resolve(el);
-                return;
-            }
-            const observer = new MutationObserver((mutations) => {
-                for (var i = 0; i < mutations.length; i++) {
-                    var mutation = mutations[i];
-                    if (mutation.addedNodes.length > 0) {
-                        el = document.querySelector(selector);
-                        if (el) {
-                            // clearTimeout(timer);
-                            resolve(el);
-                            observer.disconnect();
-                        }
-                    }
-                }
-            });
-
-            // timer = setTimeout(() => {
-            //     let el = document.querySelector(selector);
-            //     if (el) {
-            //         resolve(el);
-            //         observer.disconnect();
-            //     }
-            // }, 300);
-
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-            });
-        });
-    }
-
-    /**
      * @typedef {Object} MoneyResult
      * @property {string} input - Source string
      * @property {string} locale - Locale used
@@ -446,45 +405,8 @@
             }
         }
     };
-    var pendingInit = {};
-    var initElement = function (el, options) {
-        let selector = "#" + el.getAttribute("id");
-        pendingInit[selector] = false;
-        if (el.classList.contains("lazy-loadable") && isHidden(el)) {
-            el.addEventListener(
-                "lazyload",
-                (e) => {
-                    createTabulator(selector, options);
-                },
-                {
-                    once: true,
-                }
-            );
-        } else {
-            createTabulator(selector, options);
-        }
-    };
     var init = function (selector, options) {
-        if (pendingInit[selector]) {
-            console.warn("Init is already pending for this element", selector);
-            return;
-        }
-        pendingInit[selector] = true;
-        waitForElem(selector).then((el) => {
-            if (el.classList.contains("tabulatorgrid-created")) {
-                el.remove();
-                // It's already there from a previous request and content hasn't been refreshed yet
-                waitForElem(selector).then((el) => {
-                    initElement(el, options);
-                    // Trigger lazy load if visible
-                    if (!isHidden(el)) {
-                        el.dispatchEvent(new Event("lazyload"));
-                    }
-                });
-            } else {
-                initElement(el, options);
-            }
-        });
+        createTabulator(document.querySelector(selector), options);
     };
     var dataAjaxResponse = function (url, params, response) {
         if (!response.data) {
@@ -799,22 +721,21 @@
                 notify(message, "bad");
             });
     };
-    var createTabulator = function (selector, options) {
-        let el = document.querySelector(selector);
+    var createTabulator = function (el, options) {
         if (el.classList.contains("tabulatorgrid-created")) {
             return;
         }
         let dataset = el.dataset;
         el.classList.add("tabulatorgrid-created");
 
-        if (dataset.useCustomPaginationIcons) {
+        if (dataset.useCustomPaginationIcons && options.locale) {
             options.langs[options.locale].pagination.first = iconFirst;
             options.langs[options.locale].pagination.last = iconLast;
             options.langs[options.locale].pagination.next = iconNext;
             options.langs[options.locale].pagination.prev = iconPrev;
         }
 
-        var tabulator = new Tabulator(selector, options);
+        var tabulator = new Tabulator(el, options);
 
         // Add desktop or mobile class
         let navigatorClass = "desktop";
@@ -961,6 +882,7 @@
         getGroupForCell,
         getLoader,
         rowMoved,
+        createTabulator,
         init,
     };
 
