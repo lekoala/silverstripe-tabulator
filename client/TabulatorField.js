@@ -93,14 +93,6 @@
     }
 
     /**
-     * @param {HTMLElement} el
-     * @returns {boolean}
-     */
-    function isHidden(el) {
-        return el.offsetHeight <= 0 && el.offsetWidth <= 0;
-    }
-
-    /**
      * @param {string} msg
      * @param {string} type
      * @param {Tabulator} table

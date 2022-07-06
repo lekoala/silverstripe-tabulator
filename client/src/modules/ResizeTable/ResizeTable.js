@@ -42,7 +42,7 @@ class ResizeTable extends Module{
 						var nodeHeight = Math.floor(entry[0].contentRect.height);
 						var nodeWidth = Math.floor(entry[0].contentRect.width);
 
-						if(this.tableHeight != nodeHeight || this.tableWidth != nodeWidth){
+						if((this.table.rowManager.fixedHeight && this.tableHeight != nodeHeight) || this.tableWidth != nodeWidth){
 							this.tableHeight = nodeHeight;
 							this.tableWidth = nodeWidth;
 
