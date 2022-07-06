@@ -8,6 +8,7 @@ class ResizeTable extends Module{
 		this.binding = false;
 		this.observer = false;
 		this.containerObserver = false;
+        this.blockRedraw = false;
 
 		this.tableHeight = 0;
 		this.tableWidth = 0;
@@ -37,12 +38,13 @@ class ResizeTable extends Module{
 				this.autoResize = true;
 
 				this.observer = new ResizeObserver((entry) => {
+                    if(this.blockRedraw) return;
 					if(!table.browserMobile || (table.browserMobile &&!table.modules.edit.currentCell)){
 
 						var nodeHeight = Math.floor(entry[0].contentRect.height);
 						var nodeWidth = Math.floor(entry[0].contentRect.width);
 
-						if((this.table.rowManager.fixedHeight && this.tableHeight != nodeHeight) || this.tableWidth != nodeWidth){
+						if(this.tableHeight != nodeHeight || this.tableWidth != nodeWidth){
 							this.tableHeight = nodeHeight;
 							this.tableWidth = nodeWidth;
 

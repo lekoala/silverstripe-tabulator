@@ -25,9 +25,13 @@ export default function(cell, formatterParams, onRendered){
 
 	el.addEventListener("click", function(e){
 		e.stopImmediatePropagation();
+        cell.getTable().modules.resizeTable.blockRedraw = true;
 		toggleList(!config.open);
         cell.getRow()._row.dispatch("row-responsive-toggled", cell.getRow(), config.open);
         cell.getTable().rowManager.adjustTableSize();
+        setTimeout(() => {
+            cell.getTable().modules.resizeTable.blockRedraw = false;
+        }, 0);
 	});
 
 	toggleList(config.open);
