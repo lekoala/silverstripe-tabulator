@@ -31,7 +31,7 @@ export default function(cell, formatterParams, onRendered){
         cell.getTable().rowManager.adjustTableSize();
         setTimeout(() => {
             cell.getTable().modules.resizeTable.blockRedraw = false;
-        }, 0);
+        }, 100);
 	});
 
 	toggleList(config.open);
