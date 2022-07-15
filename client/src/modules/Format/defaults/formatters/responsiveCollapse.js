@@ -12,29 +12,25 @@ export default function(cell, formatterParams, onRendered){
 
 		config.open = isOpen;
 
-        if(config.open){
-            el.classList.add("open");
-        }else{
-            el.classList.remove("open");
-        }
+		if(collapseEl){
 
-        if(collapseEl){
-            collapseEl.style.display = isOpen ? "" : "none";
-        }
+			if(config.open){
+				el.classList.add("open");
+				collapseEl.style.display = '';
+			}else{
+				el.classList.remove("open");
+				collapseEl.style.display = 'none';
+			}
+		}
 	}
 
 	el.addEventListener("click", function(e){
 		e.stopImmediatePropagation();
-        cell.getTable().modules.resizeTable.blockRedraw = true;
 		toggleList(!config.open);
-        cell.getRow()._row.dispatch("row-responsive-toggled", cell.getRow(), config.open);
-        cell.getTable().rowManager.adjustTableSize();
-        setTimeout(() => {
-            cell.getTable().modules.resizeTable.blockRedraw = false;
-        }, 100);
+		cell.getTable().rowManager.adjustTableSize();
 	});
 
 	toggleList(config.open);
 
 	return el;
-};
+}

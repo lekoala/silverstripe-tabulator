@@ -23,9 +23,6 @@ class ResponsiveLayout extends Module{
 
 	//generate responsive columns list
 	initialize(){
-		var self = this,
-		columns = [];
-
 		if(this.table.options.responsiveLayout){
 			this.subscribe("column-layout", this.initializeColumn.bind(this));
 			this.subscribe("column-show", this.updateColumnVisibility.bind(this));
@@ -38,13 +35,8 @@ class ResponsiveLayout extends Module{
 			this.subscribe("table-redrawing", this.tableRedraw.bind(this));
 
 			if(this.table.options.responsiveLayout === "collapse"){
-                this.subscribe("row-data-changed", this.generateCollapsedRowContent.bind(this));
 				this.subscribe("row-init", this.initializeRow.bind(this));
 				this.subscribe("row-layout", this.layoutRow.bind(this));
-			}
-			if(this.table.options.responsiveLayout === "flexCollapse"){
-				this.subscribe("row-init", this.initializeRow.bind(this));
-				this.subscribe("row-responsive-toggled", this.toggleFlexRow.bind(this));
 			}
 		}
 	}
@@ -72,7 +64,7 @@ class ResponsiveLayout extends Module{
 					column.modules.responsive.index = i;
 					columns.push(column);
 
-					if(!column.visible && (this.mode === "collapse" || this.mode === "flexCollapse")){
+					if(!column.visible && this.mode === "collapse"){
 						this.hiddenColumns.push(column);
 					}
 				}
@@ -116,50 +108,19 @@ class ResponsiveLayout extends Module{
 		column.modules.responsive = {order: typeof def.responsive === "undefined" ? 1 : def.responsive, visible:def.visible === false ? false : true};
 	}
 
-    toggleFlexRow(row, isOpen){
-        if(isOpen){
-            row.getElement().classList.add("tabulator-responsive-flex-open");
-            row.getCells().forEach(function(cell) {
-                var el = cell.getElement();
-                var title = cell.getColumn().getDefinition().title;
-                if(el.style.display === "none") {
-                    el.style.display = 'block';
-                    el.style.width = "100%";
-                    if(title && typeof title !== "undefined"){
-                        el.dataset.label = title;
-                    }
-                    el.classList.add("tabulator-responsive-flex-cell");
-                }
-            });
-        }
-        else {
-            row.getElement().classList.remove("tabulator-responsive-flex-open");
-            row.getCells().forEach(function(cell) {
-                var el = cell.getElement();
-                if(!el.classList.contains("tabulator-responsive-flex-cell")){
-                    return;
-                }
-                el.style.display = 'none';
-                el.classList.remove("tabulator-responsive-flex-cell");
-            });
-        }
-    }
-
 	initializeRow(row){
 		var el;
 
 		if(row.type !== "calc"){
-            if(this.table.options.responsiveLayout === "collapse"){
-                el = document.createElement("div");
-                el.classList.add("tabulator-responsive-collapse");
-            }
+			el = document.createElement("div");
+			el.classList.add("tabulator-responsive-collapse");
 
 			row.modules.responsiveLayout = {
 				element:el,
 				open:this.collapseStartOpen,
 			};
 
-			if(this.collapseStartOpen){
+			if(!this.collapseStartOpen){
 				el.style.display = 'none';
 			}
 		}
@@ -187,11 +148,9 @@ class ResponsiveLayout extends Module{
 
 		column.hide(false, true);
 
-		if(this.mode === "collapse" || this.mode === "flexCollapse"){
+		if(this.mode === "collapse"){
 			this.hiddenColumns.unshift(column);
-            if(this.mode === "collapse"){
-                this.generateCollapsedContent();
-            }
+			this.generateCollapsedContent();
 
 			if(this.collapseHandleColumn && !colCount){
 				this.collapseHandleColumn.show();
@@ -206,22 +165,14 @@ class ResponsiveLayout extends Module{
 		//set column width to prevent calculation loops on uninitialized columns
 		column.setWidth(column.getWidth());
 
-		if(this.mode === "collapse" || this.mode === "flexCollapse"){
+		if(this.mode === "collapse"){
 			index = this.hiddenColumns.indexOf(column);
 
 			if(index > -1){
 				this.hiddenColumns.splice(index, 1);
 			}
 
-            if(this.mode === "collapse"){
-                this.generateCollapsedContent();
-            }
-            if(this.mode === "flexCollapse"){
-                column.getCells().forEach(function(cell) {
-                    var el = cell.getElement();
-                    el.classList.remove("tabulator-responsive-flex-cell");
-                });
-            }
+			this.generateCollapsedContent();
 
 			if(this.collapseHandleColumn && !this.hiddenColumns.length){
 				this.collapseHandleColumn.hide();
@@ -292,9 +243,6 @@ class ResponsiveLayout extends Module{
 
 		if(row.modules.responsiveLayout){
 			el = row.modules.responsiveLayout.element;
-            if(!el){
-                return;
-            }
 
 			while(el.firstChild) el.removeChild(el.firstChild);
 

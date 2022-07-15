@@ -1,6 +1,5 @@
 import Module from '../../core/Module.js';
 
-import GroupComponent from './GroupComponent.js';
 import Group from './Group.js';
 
 class GroupRows extends Module{
@@ -46,7 +45,6 @@ class GroupRows extends Module{
 	//initialize group configuration
 	initialize(){
 		if(this.table.options.groupBy){
-
 			if(this.table.options.groupUpdateOnCellEdit){
 				this.subscribe("cell-value-updated", this.cellUpdated.bind(this));
 				this.subscribe("row-data-changed", this.reassignRowToGroup.bind(this), 0);
@@ -95,7 +93,7 @@ class GroupRows extends Module{
 
 			this.groupIDLookups = [];
 
-			if(Array.isArray(groupBy) || groupBy){
+			if(Array.isArray(groupBy)){
 				if(this.table.modExists("columnCalcs") && this.table.options.columnCalcs != "table" && this.table.options.columnCalcs != "both"){
 					this.table.modules.columnCalcs.removeCalcs();
 				}
@@ -161,6 +159,9 @@ class GroupRows extends Module{
 			if(groupHeader){
 				this.headerGenerator = Array.isArray(groupHeader) ? groupHeader : [groupHeader];
 			}
+		}else{
+			this.groupList = [];
+			this.groups = {};
 		}
 	}
 
@@ -225,11 +226,12 @@ class GroupRows extends Module{
 
 	setGroupBy(groups){
 		this.table.options.groupBy = groups;
+
 		if(!this.initialized){
 			this.initialize();
-		}else{
-			this.configureGroupSetup();
 		}
+
+		this.configureGroupSetup();
 
 		this.refreshData();
 
@@ -277,7 +279,7 @@ class GroupRows extends Module{
 	// get grouped table data in the same format as getData()
 	userGetGroupedData(){
 		return this.table.options.groupBy ?
-		this.getGroupedData() : this.getData()
+			this.getGroupedData() : this.getData();
 	}
 
 
@@ -425,7 +427,7 @@ class GroupRows extends Module{
 			}
 		});
 
-		return groupListData
+		return groupListData;
 	}
 
 	getGroupedData(){
@@ -515,10 +517,10 @@ class GroupRows extends Module{
 			var oldRowGroup = row.modules.group,
 			oldGroupPath = oldRowGroup.getPath(),
 			newGroupPath = this.getExpectedPath(row),
-			samePath = true;
+			samePath;
 
 			// figure out if new group path is the same as old group path
-			var samePath = (oldGroupPath.length == newGroupPath.length) && oldGroupPath.every((element, index) => {
+			samePath = (oldGroupPath.length == newGroupPath.length) && oldGroupPath.every((element, index) => {
 				return element === newGroupPath[index];
 			});
 
@@ -542,8 +544,7 @@ class GroupRows extends Module{
 	}
 
 	updateGroupRows(force){
-		var output = [],
-		oldRowCount;
+		var output = [];
 
 		this.groupList.forEach((group) => {
 			output = output.concat(group.getHeadersAndRows());
