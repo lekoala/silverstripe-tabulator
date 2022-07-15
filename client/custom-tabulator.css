@@ -304,15 +304,15 @@
 .tabulator-row.tabulator-row-edited .edited-only {
     visibility: visible;
 }
-.tabulator-row .tabulator-cell-editable {
+.tabulator-row .tabulator-editable {
     cursor: text;
 }
-.tabulator-row .tabulator-cell-editable > span {
+.tabulator-row .tabulator-editable > span {
     display: inline-block;
     margin: 12px;
 }
 
-.tabulator-row .tabulator-cell-editable > input[type="checkbox"] {
+.tabulator-row .tabulator-editable > input[type="checkbox"] {
     position: absolute;
     width: 16px;
     height: 16px;
@@ -322,16 +322,16 @@
 
 .tabulator:not(.tabulator-table-editing)
     .tabulator-row:hover
-    .tabulator-cell-editable,
+    .tabulator-editable,
 .tabulator.tabulator-table-editing
     .tabulator-row-editing
-    .tabulator-cell-editable {
+    .tabulator-editable {
     background: var(--tabulator-highlight-color);
 }
-.tabulator-row.tabulator-row-invalid .tabulator-cell-editable {
+.tabulator-row.tabulator-row-invalid .tabulator-editable {
     background: var(--tabulator-invalid-color);
 }
-.tabulator-row.tabulator-row-valid .tabulator-cell-editable {
+.tabulator-row.tabulator-row-valid .tabulator-editable {
     background: var(--tabulator-valid-color);
 }
 
