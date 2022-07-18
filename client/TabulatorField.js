@@ -346,6 +346,11 @@
         var formatted = "";
         if (v || formatterParams["notNull"]) {
             formatted = getGlobalHandler(formatterParams["function"])(v);
+        } else if (
+            formatterParams["editPlaceholder"] &&
+            cell.getElement().classList.contains("tabulator-editable")
+        ) {
+            formatted = `<em class="tabulator-value-placeholder">${formatterParams["editPlaceholder"]}</em>`;
         } else if (formatterParams["placeholder"]) {
             formatted = `<em class="tabulator-value-placeholder">${formatterParams["placeholder"]}</em>`;
         }
