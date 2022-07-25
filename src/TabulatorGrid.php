@@ -114,7 +114,7 @@ class TabulatorGrid extends ModularFormField
     /**
      * @config
      */
-    private static string $version = '5.3.0';
+    private static string $version = '5.3.1';
 
     /**
      * @config
