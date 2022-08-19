@@ -8,7 +8,8 @@
   },
   "scripts": {
     "cdn": "php bin/download-cdn-files.php",
-    "build": "esbuild --bundle --minify --format=iife client/custom-tabulator.js --outfile=client/custom-tabulator.min.js"
+    "build": "esbuild --bundle --minify --format=iife client/custom-tabulator.js --outfile=client/custom-tabulator.min.js",
+    "watch": "npm run build -- --watch"
   },
   "keywords": []
 }
