@@ -604,81 +604,82 @@ export default class RowManager extends CoreFeature{
 		index = 0,
 		cascadeOrder = ["all", "dataPipeline", "display", "displayPipeline", "end"];
 		
-		
-		if(typeof handler === "function"){
-			index = this.dataPipeline.findIndex((item) => {
-				return item.handler === handler;
-			});
-			
-			if(index > -1){
-				stage = "dataPipeline";
-				
-				if(skipStage){
-					if(index == this.dataPipeline.length - 1){
-						stage = "display";
-					}else{
-						index++;
-					}
-				}
-			}else{
-				index = this.displayPipeline.findIndex((item) => {
+		if(!this.table.destroyed){
+			if(typeof handler === "function"){
+				index = this.dataPipeline.findIndex((item) => {
 					return item.handler === handler;
 				});
 				
 				if(index > -1){
-					stage = "displayPipeline";
+					stage = "dataPipeline";
 					
 					if(skipStage){
-						if(index == this.displayPipeline.length - 1){
-							stage = "end";
+						if(index == this.dataPipeline.length - 1){
+							stage = "display";
 						}else{
 							index++;
 						}
 					}
 				}else{
-					console.error("Unable to refresh data, invalid handler provided", handler);
-					return;
-				}
-			}
-		}else{
-			stage = handler || "all";
-			index = 0;
-		}
-		
-		if(this.redrawBlock){
-			if(!this.redrawBlockRestoreConfig || (this.redrawBlockRestoreConfig && ((this.redrawBlockRestoreConfig.stage === stage && index < this.redrawBlockRestoreConfig.index) || (cascadeOrder.indexOf(stage) < cascadeOrder.indexOf(this.redrawBlockRestoreConfig.stage))))){
-				this.redrawBlockRestoreConfig = {
-					handler: handler,
-					skipStage: skipStage,
-					renderInPosition: renderInPosition,
-					stage:stage,
-					index:index,
-				};
-			}
-			
-			return;
-		}else{
-			if(Helpers.elVisible(this.element)){
-				if(renderInPosition){
-					this.reRenderInPosition(this.refreshPipelines.bind(this, handler, stage, index, renderInPosition));
-				}else{
-					this.refreshPipelines(handler, stage, index, renderInPosition);
+					index = this.displayPipeline.findIndex((item) => {
+						return item.handler === handler;
+					});
 					
-					if(!handler){
-						this.table.columnManager.renderer.renderColumns();
-					}
-					
-					this.renderTable();
-					
-					if(table.options.layoutColumnsOnNewData){
-						this.table.columnManager.redraw(true);
+					if(index > -1){
+						stage = "displayPipeline";
+						
+						if(skipStage){
+							if(index == this.displayPipeline.length - 1){
+								stage = "end";
+							}else{
+								index++;
+							}
+						}
+					}else{
+						console.error("Unable to refresh data, invalid handler provided", handler);
+						return;
 					}
 				}
 			}else{
-				this.refreshPipelines(handler, stage, index, renderInPosition);
+				stage = handler || "all";
+				index = 0;
 			}
 			
-			this.dispatch("data-refreshed");
+			if(this.redrawBlock){
+				if(!this.redrawBlockRestoreConfig || (this.redrawBlockRestoreConfig && ((this.redrawBlockRestoreConfig.stage === stage && index < this.redrawBlockRestoreConfig.index) || (cascadeOrder.indexOf(stage) < cascadeOrder.indexOf(this.redrawBlockRestoreConfig.stage))))){
+					this.redrawBlockRestoreConfig = {
+						handler: handler,
+						skipStage: skipStage,
+						renderInPosition: renderInPosition,
+						stage:stage,
+						index:index,
+					};
+				}
+				
+				return;
+			}else{
+				if(Helpers.elVisible(this.element)){
+					if(renderInPosition){
+						this.reRenderInPosition(this.refreshPipelines.bind(this, handler, stage, index, renderInPosition));
+					}else{
+						this.refreshPipelines(handler, stage, index, renderInPosition);
+						
+						if(!handler){
+							this.table.columnManager.renderer.renderColumns();
+						}
+						
+						this.renderTable();
+						
+						if(table.options.layoutColumnsOnNewData){
+							this.table.columnManager.redraw(true);
+						}
+					}
+				}else{
+					this.refreshPipelines(handler, stage, index, renderInPosition);
+				}
+				
+				this.dispatch("data-refreshed");
+			}
 		}
 	}
 	
@@ -711,7 +712,7 @@ export default class RowManager extends CoreFeature{
 			case "displayPipeline":
 				for(let i = index; i < this.displayPipeline.length; i++){
 					let result = this.displayPipeline[i].handler((i ? this.getDisplayRows(i - 1) : this.activeRows).slice(0), renderInPosition);
-					
+
 					this.setDisplayRows(result || this.getDisplayRows(i - 1).slice(0), i);
 				}
 			
@@ -748,28 +749,13 @@ export default class RowManager extends CoreFeature{
 		this.displayRowsCount = this.displayRows[0].length;
 	}
 	
-	getNextDisplayIndex(){
-		return this.displayRows.length;
-	}
-	
 	//set display row pipeline data
 	setDisplayRows(displayRows, index){
-		
-		var output = true;
-		
-		if(index && typeof this.displayRows[index] != "undefined"){
-			this.displayRows[index] = displayRows;
-			output = true;
-		}else{
-			this.displayRows.push(displayRows);
-			output = index = this.displayRows.length -1;
-		}
-		
+		this.displayRows[index] = displayRows;
+
 		if(index == this.displayRows.length -1){
 			this.displayRowsCount = this.displayRows[this.displayRows.length -1].length;
 		}
-		
-		return output;
 	}
 	
 	getDisplayRows(index){

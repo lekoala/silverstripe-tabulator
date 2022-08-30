@@ -207,7 +207,7 @@ class Column extends CoreFeature{
 		if (def.maxInitialWidth) {
 			this.maxInitialWidth = parseInt(def.maxInitialWidth);
 		}
-
+		
 		if(def.maxWidth){
 			this.setMaxWidth(parseInt(def.maxWidth));
 		}
@@ -487,13 +487,13 @@ class Column extends CoreFeature{
 		if(traverse){
 			this.columns.forEach((column) => {
 				columns.push(column);
-
+					
 				columns = columns.concat(column.getColumns(true));
 			});
 		}else{
 			columns = this.columns;
 		}
-
+		
 		return columns;
 	}
 

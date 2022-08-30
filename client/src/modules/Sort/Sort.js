@@ -169,7 +169,6 @@ class Sort extends Module{
 						}
 					}
 
-
 					if (this.table.options.columnHeaderSortMulti && (e.shiftKey || e.ctrlKey)) {
 						sorters = this.getSort();
 
@@ -180,11 +179,9 @@ class Sort extends Module{
 						if(match > -1){
 							sorters[match].dir = dir;
 
-							if(match != sorters.length -1){
-								match = sorters.splice(match, 1)[0];
-								if(dir != "none"){
-									sorters.push(match);
-								}
+							match = sorters.splice(match, 1)[0];
+							if(dir != "none"){
+								sorters.push(match);
 							}
 						}else{
 							if(dir != "none"){
@@ -399,7 +396,7 @@ class Sort extends Module{
 		var sortEl = column.modules.sort.element,
 		arrowEl;
 
-		if(typeof this.table.options.headerSortElement === "function"){
+		if(column.definition.headerSort && typeof this.table.options.headerSortElement === "function"){
 			while(sortEl.firstChild) sortEl.removeChild(sortEl.firstChild);
 
 			arrowEl = this.table.options.headerSortElement.call(this.table, column.getComponent(), dir);
