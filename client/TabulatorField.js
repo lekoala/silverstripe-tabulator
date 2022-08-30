@@ -206,8 +206,8 @@
         do {
             fmt = fmt.replace(/(\.|,)(\d{2,3})(\.|,)/, "$2$3");
         } while (fmt.match(/(\.|,)(\d{2,3})(\.|,)/));
-        // Remaining separators are decimals separators
-        fmt = fmt.replace(/(,|\.)/, ".");
+        // Remaining , separators are decimals separators
+        fmt = fmt.replace(",", ".");
 
         // Deal with decimals
         const pts = fmt.split(".");
