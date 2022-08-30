@@ -198,10 +198,11 @@
      */
     function parseMoney(input, locale = "en-US", currency = "USD") {
         let fmt = String(input);
-        // Remove space thousands separators
-        fmt = fmt.replace(" ", "");
-        // Remove thousands separators (followed by exactly 3 numbers and a potential decimal separator)
-        fmt = fmt.replace(/(\.|,)([0-9]{3})(\.|,)/g, "$2$3");
+        const neg = fmt[0] === "-";
+        // Remove any invalid character
+        fmt = fmt.replace(/[^\d\.,]/g, "");
+        // Remove thousands separators
+        fmt = fmt.replace(/(\.|,)(\d{3})(\.|,)/g, "$2$3");
         // Remaining separators are decimals separators
         fmt = fmt.replace(/(,|\.)/, ".");
 
@@ -211,6 +212,10 @@
             // If zero or blank, consider decimal, otherwise join
             if (+pts[0] === 0) fmt = pts.join(".");
             else if (pts[1].length === 3) fmt = pts.join("");
+        }
+
+        if (neg) {
+            fmt = "-" + fmt;
         }
         const number = Number(fmt);
         const isValid = isFinite(number);
