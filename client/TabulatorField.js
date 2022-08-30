@@ -191,7 +191,7 @@
 
     /**
      * Parse value to currency
-     * @link https://jsfiddle.net/3pg081wv/2/
+     * @link https://jsfiddle.net/3pg081wv/5/
      * @param {number|string} input - Given input
      * @param {string} locale - Desired locale i.e: "en-US" "hr-HR"
      * @param {string} currency - Currency to use "USD" "EUR" "HRK"
