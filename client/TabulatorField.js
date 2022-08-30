@@ -191,7 +191,7 @@
 
     /**
      * Parse value to currency
-     * @link https://jsfiddle.net/3pg081wv/5/
+     * @link https://jsfiddle.net/3pg081wv/6/
      * @param {number|string} input - Given input
      * @param {string} locale - Desired locale i.e: "en-US" "hr-HR"
      * @param {string} currency - Currency to use "USD" "EUR" "HRK"
@@ -199,7 +199,8 @@
      */
     function parseMoney(input, locale = "en-US", currency = "USD") {
         let fmt = String(input);
-        const neg = fmt[0] === "-";
+        // Check for negative numbers (using - or formatted utf8 sign)
+        const neg = fmt[0] === "-" || fmt[0] === "−";
         // Remove invalid characters
         fmt = fmt.replace(/[^\d\.,]/g, "");
         // Remove thousands separators (indian included), one at a time
