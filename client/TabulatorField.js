@@ -200,10 +200,12 @@
     function parseMoney(input, locale = "en-US", currency = "USD") {
         let fmt = String(input);
         const neg = fmt[0] === "-";
-        // Remove any invalid character
+        // Remove invalid characters
         fmt = fmt.replace(/[^\d\.,]/g, "");
-        // Remove thousands separators
-        fmt = fmt.replace(/(\.|,)(\d{3})(\.|,)/g, "$2$3");
+        // Remove thousands separators (indian included), one at a time
+        do {
+            fmt = fmt.replace(/(\.|,)(\d{2,3})(\.|,)/, "$2$3");
+        } while (fmt.match(/(\.|,)(\d{2,3})(\.|,)/));
         // Remaining separators are decimals separators
         fmt = fmt.replace(/(,|\.)/, ".");
 
