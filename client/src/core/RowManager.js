@@ -786,23 +786,24 @@ export default class RowManager extends CoreFeature{
 	
 	//return only actual rows (not group headers etc)
 	getRows(type){
-		var rows;
-		
-		switch(type){
-			case "active":
-				rows = this.activeRows;
-				break;
-			
-			case "display":
-				rows = this.table.rowManager.getDisplayRows();
-				break;
+		var rows = [];
+
+		if(!type){
+			rows = this.chain("rows-retrieve", type, null, this.rows) || this.rows;
+		}else{
+			switch(type){
+				case "active":
+					rows = this.activeRows;
+					break;
 				
-			case "visible":
-				rows = this.getVisibleRows(false, true);
-				break;
-				
-			default:
-				rows = this.chain("rows-retrieve", type, null, this.rows) || this.rows;
+				case "display":
+					rows = this.table.rowManager.getDisplayRows();
+					break;
+					
+				case "visible":
+					rows = this.getVisibleRows(false, true);
+					break;
+			}
 		}
 		
 		return rows;
@@ -911,9 +912,6 @@ export default class RowManager extends CoreFeature{
 		
 		this.scrollTop = 0;
 		this.scrollLeft = 0;
-
-		// clear empty table placeholder min
-		this.tableElement.style.minWidth = "";
 		
 		this.renderer.clearRows();
 	}
@@ -930,6 +928,9 @@ export default class RowManager extends CoreFeature{
 	_clearPlaceholder(){
 		if(this.placeholder && this.placeholder.parentNode){
 			this.placeholder.parentNode.removeChild(this.placeholder);
+			
+			// clear empty table placeholder min
+			this.tableElement.style.minWidth = "";
 		}
 	}
 	
