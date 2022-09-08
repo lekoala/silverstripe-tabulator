@@ -416,7 +416,7 @@ em.tabulator-value-placeholder {
 
 /* Improve data tree ui */
 
-.tabulator-distinct-tree .tabulator-tree-level-1 ~ .tabulator-tree-level-0 {
+.tabulator-distinct-tree .tabulator-tree-level-1 + .tabulator-tree-level-0 {
     border-top: 1px solid #666;
 }
 
