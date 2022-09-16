@@ -137,7 +137,7 @@ class DataTree extends Module{
 
 		if(force){
 			rows = this.table.rowManager.getRows();
-			
+
 			rows.forEach((row) => {
 				this.reinitializeRowChildren(row);
 			});
@@ -149,7 +149,7 @@ class DataTree extends Module{
 
 		this.elementField = this.table.options.dataTreeElementColumn || (firstCol ? firstCol.field : false);
 	}
-	
+
 	getRowChildren(row){
 		return this.getTreeChildren(row, true);
 	}
