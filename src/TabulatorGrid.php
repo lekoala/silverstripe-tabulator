@@ -1448,7 +1448,7 @@ class TabulatorGrid extends ModularFormField
             ];
             $nested = [];
             foreach ($this->columns as $col) {
-                $field = $col['field'] ?? null; // actions don't have field
+                $field = $col['field'] ?? ''; // actions don't have field
                 if (strpos($field, '.') !== false) {
                     $parts = explode('.', $field);
                     if ($singleton->getRelationClass($parts[0])) {
