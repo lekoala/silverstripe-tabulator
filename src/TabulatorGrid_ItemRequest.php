@@ -22,6 +22,7 @@ use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 use SilverStripe\ORM\DB;
+use Symfony\Component\Translation\Dumper\QtFileDumper;
 
 /**
  * Endpoint for actions related to a specific record
@@ -603,6 +604,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         $form->sessionMessage($message, 'good', ValidationResult::CAST_HTML);
 
+
         // Redirect after save
         return $this->redirectAfterSave($isNewRecord);
     }
@@ -674,16 +676,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $url = $this->appendHash($this->Link());
             // In Ajax, response content is discarded and hash is not used
             return $controller->redirect($url);
-        } elseif ($this->tabulatorGrid->hasArrayList() && $this->tabulatorGrid->getArrayList()->byID($this->record->ID)) {
+        } elseif ($this->tabulatorGrid->hasByIDList() && $this->tabulatorGrid->getByIDList()->byID($this->record->ID)) {
             // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
             // to the same URL (it assumes that its content is already current, and doesn't reload)
             return $this->edit($controller->getRequest());
         } else {
-            // We might be able to redirect to open the record in a different view
-            if ($redirectDest = $this->component->getLostRecordRedirection($this->tabulatorGrid, $controller->getRequest(), $this->record->ID)) {
-                return $controller->redirect($redirectDest, 302);
-            }
-
             // Changes to the record properties might've excluded the record from
             // a filtered list, so return back to the main view if it can't be found
             $url = $controller->getRequest()->getURL();

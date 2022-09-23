@@ -1302,6 +1302,20 @@ class TabulatorGrid extends ModularFormField
         return $this->list instanceof DataList;
     }
 
+    /**
+     * A properly typed on which you can call byID
+     * @return ArrayList|DataList
+     */
+    public function getByIDList()
+    {
+        return $this->list;
+    }
+
+    public function hasByIDList(): bool
+    {
+        return $this->hasDataList() || $this->hasArrayList();
+    }
+
     public function getDataList(): DataList
     {
         if (!$this->list instanceof DataList) {
