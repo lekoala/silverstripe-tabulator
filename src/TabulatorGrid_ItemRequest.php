@@ -592,22 +592,28 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         }
 
         // Save from form data
-        $this->saveFormIntoRecord($data, $form);
+        $error = false;
+        try {
+            $this->saveFormIntoRecord($data, $form);
 
-        $link = '<a href="' . $this->Link('edit') . '">"'
-            . htmlspecialchars($this->record->Title, ENT_QUOTES)
-            . '"</a>';
-        $message = _t(
-            'SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Saved',
-            'Saved {name} {link}',
-            [
-                'name' => $this->record->i18n_singular_name(),
-                'link' => $link
-            ]
-        );
+            $link = '<a href="' . $this->Link('edit') . '">"'
+                . htmlspecialchars($this->record->Title, ENT_QUOTES)
+                . '"</a>';
+            $message = _t(
+                'SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Saved',
+                'Saved {name} {link}',
+                [
+                    'name' => $this->record->i18n_singular_name(),
+                    'link' => $link
+                ]
+            );
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            $error = true;
+        }
 
         $controller = $this->getToplevelController();
-        $this->sessionMessage($controller, $form, $message);
+        $this->sessionMessage($controller, $form, $message, $error);
 
         // Redirect after save
         return $this->redirectAfterSave($isNewRecord);
