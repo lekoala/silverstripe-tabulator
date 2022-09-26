@@ -371,13 +371,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $response;
         }
 
-        $target = $this->ItemEditForm();
-        if ($controller->hasMethod('sessionMessage')) {
-            $target = $controller;
-        }
-        if ($target) {
-            $target->sessionMessage($result, $error ? "bad" : "good");
-        }
+        $form = $this->ItemEditForm();
+        $this->sessionMessage($controller, $form, $result, $error);
 
         $url = $this->getBackURL()
             ?: $this->getReturnReferer()
@@ -386,6 +381,15 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $url = $this->appendHash($url);
 
         return $controller->redirect($url);
+    }
+
+    protected function sessionMessage(Controller $controller, Form $form, $message, $error = false)
+    {
+        if ($controller->hasMethod('sessionMessage')) {
+            $controller->sessionMessage($message, $error ? "bad" : "good");
+        } elseif ($form) {
+            $form->sessionMessage($message, $error ? "bad" : "good");
+        }
     }
 
     protected function appendHash($url): string
@@ -602,8 +606,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ]
         );
 
-        $form->sessionMessage($message, 'good', ValidationResult::CAST_HTML);
-
+        $controller = $this->getToplevelController();
+        $this->sessionMessage($controller, $form, $message);
 
         // Redirect after save
         return $this->redirectAfterSave($isNewRecord);
@@ -677,9 +681,12 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             // In Ajax, response content is discarded and hash is not used
             return $controller->redirect($url);
         } elseif ($this->tabulatorGrid->hasByIDList() && $this->tabulatorGrid->getByIDList()->byID($this->record->ID)) {
-            // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
-            // to the same URL (it assumes that its content is already current, and doesn't reload)
-            return $this->edit($controller->getRequest());
+            if (Director::is_ajax()) {
+                // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
+                // to the same URL (it assumes that its content is already current, and doesn't reload)
+                return $this->edit($controller->getRequest());
+            }
+            return $controller->redirectBack();
         } else {
             // Changes to the record properties might've excluded the record from
             // a filtered list, so return back to the main view if it can't be found
@@ -757,13 +764,12 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ]
         );
 
+        $backForm = $form;
         $toplevelController = $this->getToplevelController();
         if ($toplevelController && $toplevelController instanceof \SilverStripe\Admin\LeftAndMain) {
             $backForm = $toplevelController->getEditForm();
-            $backForm->sessionMessage($message, 'good', ValidationResult::CAST_HTML);
-        } else {
-            $form->sessionMessage($message, 'good', ValidationResult::CAST_HTML);
         }
+        $this->sessionMessage($toplevelController, $backForm, $message);
 
         //when an item is deleted, redirect to the parent controller
         $controller = $this->getToplevelController();
