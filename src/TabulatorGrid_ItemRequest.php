@@ -783,12 +783,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $controller = $this->getToplevelController();
 
         if ($this->isSilverStripeAdmin($toplevelController)) {
-            return $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
+            $controller->getRequest()->addHeader('X-Pjax', 'Content');
         }
-
-        $url = $controller->getRequest()->getURL();
-        $noActionURL = $controller->removeAction($url);
-        return $controller->redirect($noActionURL, 302);
+        return $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
     }
 
     public function isSilverStripeAdmin($controller)
