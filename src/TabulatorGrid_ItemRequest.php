@@ -698,7 +698,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             // a filtered list, so return back to the main view if it can't be found
             $url = $controller->getRequest()->getURL();
             $noActionURL = $controller->removeAction($url);
-            $controller->getRequest()->addHeader('X-Pjax', 'Content');
+            if ($this->isSilverStripeAdmin($controller)) {
+                $controller->getRequest()->addHeader('X-Pjax', 'Content');
+            }
             return $controller->redirect($noActionURL, 302);
         }
     }
@@ -772,16 +774,29 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         $backForm = $form;
         $toplevelController = $this->getToplevelController();
-        if ($toplevelController && $toplevelController instanceof \SilverStripe\Admin\LeftAndMain) {
+        if ($this->isSilverStripeAdmin($toplevelController)) {
             $backForm = $toplevelController->getEditForm();
         }
         $this->sessionMessage($toplevelController, $backForm, $message);
 
         //when an item is deleted, redirect to the parent controller
         $controller = $this->getToplevelController();
-        $controller->getRequest()->addHeader('X-Pjax', 'Content'); // Force a content refresh
 
-        return $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
+        if ($this->isSilverStripeAdmin($toplevelController)) {
+            return $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
+        }
+
+        $url = $controller->getRequest()->getURL();
+        $noActionURL = $controller->removeAction($url);
+        return $controller->redirect($noActionURL, 302);
+    }
+
+    public function isSilverStripeAdmin($controller)
+    {
+        if ($controller) {
+            return is_subclass_of($controller, \SilverStripe\Admin\LeftAndMain::class);
+        }
+        return false;
     }
 
     /**
