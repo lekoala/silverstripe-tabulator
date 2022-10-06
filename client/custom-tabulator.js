@@ -1,3 +1,3 @@
-import TabulatorFull from "./src/core/TabulatorFull.js";
+import TabulatorFull from "./custom/TabulatorFull.js";
 
 window["Tabulator"] = TabulatorFull;

@@ -269,7 +269,7 @@
     align-items: center;
 }
 
-.tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle {
+/* .tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle {
     color: #fff;
     cursor: pointer;
     height: 20px;
@@ -278,7 +278,7 @@
 
 .tabulator-row .tabulator-cell .tabulator-responsive-collapse-toggle > span {
     margin-top: -0.2em;
-}
+} */
 
 .tabulator
     .tabulator-header
