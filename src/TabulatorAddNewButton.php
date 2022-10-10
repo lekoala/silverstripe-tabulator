@@ -2,7 +2,6 @@
 
 namespace LeKoala\Tabulator;
 
-use SilverStripe\Control\Controller;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\View\ArrayData;

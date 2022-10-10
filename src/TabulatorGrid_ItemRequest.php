@@ -16,13 +16,11 @@ use SilverStripe\ORM\RelationList;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
-use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 use SilverStripe\ORM\DB;
-use Symfony\Component\Translation\Dumper\QtFileDumper;
 
 /**
  * Endpoint for actions related to a specific record
