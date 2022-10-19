@@ -1081,7 +1081,9 @@ class TabulatorGrid extends ModularFormField
             return $this->httpError(403, "Invalid column");
         }
 
-        $term = '%' . $request->getVar('term') . '%';
+        // Don't use % term as it prevents use of indexes
+        $term = $request->getVar('term') . '%';
+        $term = str_replace(' ', '%', $term);
 
         $parts = explode(".", $name);
         if (count($parts) > 2) {

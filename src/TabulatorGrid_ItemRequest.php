@@ -3,6 +3,7 @@
 namespace LeKoala\Tabulator;
 
 use Exception;
+use SilverStripe\ORM\DB;
 use SilverStripe\Forms\Form;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\View\SSViewer;
@@ -16,11 +17,11 @@ use SilverStripe\ORM\RelationList;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
+use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
-use SilverStripe\ORM\DB;
 
 /**
  * Endpoint for actions related to a specific record
@@ -369,8 +370,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $response;
         }
 
-        $form = $this->ItemEditForm();
-        $this->sessionMessage($controller, $form, $result, $error);
+        $this->sessionMessage($result, ValidationResult::TYPE_ERROR);
 
         $url = $this->getBackURL()
             ?: $this->getReturnReferer()
@@ -381,12 +381,16 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         return $controller->redirect($url);
     }
 
-    protected function sessionMessage(Controller $controller, Form $form, $message, $error = false)
+    public function sessionMessage($message, $type = ValidationResult::TYPE_ERROR, $cast = ValidationResult::CAST_TEXT)
     {
+        $controller = $this->getToplevelController();
         if ($controller->hasMethod('sessionMessage')) {
-            $controller->sessionMessage($message, $error ? "bad" : "good");
-        } elseif ($form) {
-            $form->sessionMessage($message, $error ? "bad" : "good");
+            $controller->sessionMessage($message, $type);
+        } else {
+            $form = $this->ItemEditForm();
+            if ($form) {
+                $form->sessionMessage($message, $type);
+            }
         }
     }
 
@@ -610,8 +614,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $error = true;
         }
 
-        $controller = $this->getToplevelController();
-        $this->sessionMessage($controller, $form, $message, $error);
+        $this->sessionMessage($message, ValidationResult::TYPE_ERROR);
 
         // Redirect after save
         return $this->redirectAfterSave($isNewRecord);
@@ -775,7 +778,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         if ($this->isSilverStripeAdmin($toplevelController)) {
             $backForm = $toplevelController->getEditForm();
         }
-        $this->sessionMessage($toplevelController, $backForm, $message);
+        $this->sessionMessage($message, ValidationResult::TYPE_GOOD);
 
         //when an item is deleted, redirect to the parent controller
         $controller = $this->getToplevelController();
