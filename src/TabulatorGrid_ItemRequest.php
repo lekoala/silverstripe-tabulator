@@ -614,7 +614,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $error = true;
         }
 
-        $this->sessionMessage($message, ValidationResult::TYPE_ERROR);
+        $this->sessionMessage($message, ValidationResult::TYPE_GOOD);
 
         // Redirect after save
         return $this->redirectAfterSave($isNewRecord);
