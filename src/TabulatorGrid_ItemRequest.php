@@ -370,7 +370,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $response;
         }
 
-        $this->sessionMessage($result, ValidationResult::TYPE_ERROR);
+        $this->sessionMessage($result, $error ? "error" : "good");
 
         $url = $this->getBackURL()
             ?: $this->getReturnReferer()
@@ -614,7 +614,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $error = true;
         }
 
-        $this->sessionMessage($message, ValidationResult::TYPE_GOOD);
+        $this->sessionMessage($message, $error ? "error" : "good");
 
         // Redirect after save
         return $this->redirectAfterSave($isNewRecord);
@@ -762,6 +762,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
                 _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.DeletePermissionsFailure', "No delete permissions")
             );
         }
+
         $this->record->delete();
 
         $message = _t(
@@ -773,12 +774,13 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ]
         );
 
+
         $backForm = $form;
         $toplevelController = $this->getToplevelController();
         if ($this->isSilverStripeAdmin($toplevelController)) {
             $backForm = $toplevelController->getEditForm();
         }
-        $this->sessionMessage($message, ValidationResult::TYPE_GOOD);
+        $this->sessionMessage($message, "good");
 
         //when an item is deleted, redirect to the parent controller
         $controller = $this->getToplevelController();
