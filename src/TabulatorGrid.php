@@ -159,7 +159,6 @@ class TabulatorGrid extends ModularFormField
         'index' => "ID", // http://tabulator.info/docs/5.4/data#row-index
         'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.4/layout#layout
         'height' => '100%', // http://www.tabulator.info/docs/5.4/layout#height-fixed
-        // 'maxHeight' => "100%",
         'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.4/layout#responsive
         'rowFormatter' => "SSTabulator.simpleRowFormatter", // http://tabulator.info/docs/5.4/format#row
     ];

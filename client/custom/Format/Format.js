@@ -11,6 +11,6 @@ MyFormat.moduleName = "format";
 MyFormat.formatters = defaultFormatters;
 
 //replace responsive collapse
-MyFormat.formatters['responsiveCollapse'] = myResponsiveCollapse;
+MyFormat.formatters["responsiveCollapse"] = myResponsiveCollapse;
 
 export default MyFormat;
