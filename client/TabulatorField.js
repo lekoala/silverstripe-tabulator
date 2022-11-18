@@ -1,6 +1,7 @@
 (() => {
     // Private methods
-
+    var DT = window.DateTime || luxon.DateTime;
+    console.log(DT);
     const iconPlus =
         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><line y1="4" x1="12" y2="20" x2="12" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>';
     const iconMinus =
