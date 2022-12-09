@@ -4,7 +4,7 @@
   "author": "LeKoala",
   "license": "MIT",
   "dependencies": {
-    "tabulator-tables": "^5.4.2"
+    "tabulator-tables": "^5.4.3"
   },
   "scripts": {
     "cdn": "php bin/download-cdn-files.php",
