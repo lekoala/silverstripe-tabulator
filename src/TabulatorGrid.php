@@ -1687,6 +1687,7 @@ class TabulatorGrid extends ModularFormField
      * @param string $field (Required) this is the key for this column in the data array
      * @param string $title (Required) This is the title that will be displayed in the header for this column
      * @param array $opts Other options to merge in
+     * @return $this
      */
     public function addColumn(string $field, string $title = null, array $opts = []): self
     {
@@ -1704,6 +1705,21 @@ class TabulatorGrid extends ModularFormField
         }
 
         $this->columns[$field] = $baseOpts;
+        return $this;
+    }
+
+    /**
+     * @link http://www.tabulator.info/docs/5.4/columns#definition
+     * @param array $opts Other options to merge in
+     * @return $this
+     */
+    public function addColumnFromArray(array $opts = [])
+    {
+        if (empty($opts['field']) || !isset($opts['title'])) {
+            throw new Exception("Missing field or title key");
+        }
+        $field = $opts['field'];
+        $this->columns[$field] = $opts;
         return $this;
     }
 
