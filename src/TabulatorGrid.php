@@ -438,7 +438,10 @@ class TabulatorGrid extends ModularFormField
         // - Tools
         $this->tools = [];
         if ($singl->canCreate()) {
-            $this->addTool(self::POS_START, new TabulatorAddNewButton($this));
+            $this->addTool(self::POS_START, new TabulatorAddNewButton($this), 'add_new');
+        }
+        if (class_exists(\LeKoala\ExcelImportExport\ExcelImportExport::class)) {
+            $this->addTool(self::POS_END, new TabulatorExportButton($this), 'export');
         }
 
         // - Custom actions are forwarded to the model itself
@@ -1272,6 +1275,35 @@ class TabulatorGrid extends ModularFormField
         return $tool;
     }
 
+    /**
+     * Get the value of a named field  on the given record.
+     *
+     * Use of this method ensures that any special rules around the data for this gridfield are
+     * followed.
+     *
+     * @param DataObject $record
+     * @param string $fieldName
+     *
+     * @return mixed
+     */
+    public function getDataFieldValue($record, $fieldName)
+    {
+        if ($record->hasMethod('relField')) {
+            return $record->relField($fieldName);
+        }
+
+        if ($record->hasMethod($fieldName)) {
+            return $record->$fieldName();
+        }
+
+        return $record->$fieldName;
+    }
+
+    public function getManipulatedList(): SS_List
+    {
+        return $this->list;
+    }
+
     public function getList(): SS_List
     {
         return $this->list;
@@ -1818,6 +1850,7 @@ class TabulatorGrid extends ModularFormField
     public function addTool(string $pos, AbstractTabulatorTool $tool, string $name = ''): self
     {
         $tool->setTabulatorGrid($this);
+        $tool->setName($name);
 
         $this->tools[] = [
             'position' => $pos,

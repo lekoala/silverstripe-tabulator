@@ -11,6 +11,8 @@ class AbstractTabulatorTool extends RequestHandler
 {
     protected TabulatorGrid $tabulatorGrid;
 
+    protected string $name;
+
     /**
      * Get the value of tabulatorGrid
      */
@@ -26,5 +28,21 @@ class AbstractTabulatorTool extends RequestHandler
     {
         $this->tabulatorGrid = $tabulatorGrid;
         return $this;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName($name): self
+    {
+        $this->name = $name;
+        return $this;
+    }
+
+    public function Link($action = null)
+    {
+        return $this->tabulatorGrid->Link('tool/' . $this->name);
     }
 }
