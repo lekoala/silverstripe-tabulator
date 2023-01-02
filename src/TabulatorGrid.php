@@ -119,7 +119,7 @@ class TabulatorGrid extends ModularFormField
     /**
      * @config
      */
-    private static string $luxon_version = '2.3';
+    private static string $luxon_version = '3';
 
     /**
      * @config
@@ -152,6 +152,11 @@ class TabulatorGrid extends ModularFormField
     private static bool $enable_requirements = true;
 
     /**
+     * @config
+     */
+    private static bool $enable_js_modules = true;
+
+    /**
      * @link http://www.tabulator.info/docs/5.4/options
      * @config
      */
@@ -159,7 +164,6 @@ class TabulatorGrid extends ModularFormField
         'index' => "ID", // http://tabulator.info/docs/5.4/data#row-index
         'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.4/layout#layout
         'height' => '100%', // http://www.tabulator.info/docs/5.4/layout#height-fixed
-        // 'maxHeight' => "100%",
         'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.4/layout#responsive
         'rowFormatter' => "SSTabulator.simpleRowFormatter", // http://tabulator.info/docs/5.4/format#row
     ];
@@ -477,6 +481,12 @@ class TabulatorGrid extends ModularFormField
         $enable_luxon = self::config()->enable_luxon;
         $last_icon_version = self::config()->last_icon_version;
         $enable_last_icon = self::config()->enable_last_icon;
+        $enable_js_modules = self::config()->enable_js_modules;
+
+        $jsOpts = [];
+        if ($enable_js_modules) {
+            $jsOpts['type'] = 'module';
+        }
 
         if ($use_cdn) {
             $baseDir = "https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist";
@@ -486,22 +496,24 @@ class TabulatorGrid extends ModularFormField
         }
 
         if ($luxon_version && $enable_luxon) {
+            // Do not load as module or we would get undefined luxon global var
             Requirements::javascript("https://cdn.jsdelivr.net/npm/luxon@$luxon_version/build/global/luxon.min.js");
         }
         if ($last_icon_version && $enable_last_icon) {
             Requirements::css("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.css");
+            // Do not load as module even if asked to ensure load speed
             Requirements::javascript("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.js");
         }
         if ($use_custom_build) {
             // if (Director::isDev() && !Director::is_ajax()) {
             //     Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.js");
             // } else {
-            Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js");
+            Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js", $jsOpts);
             // }
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', $jsOpts);
         } else {
-            Requirements::javascript("$baseDir/js/tabulator.min.js");
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js');
+            Requirements::javascript("$baseDir/js/tabulator.min.js", $jsOpts);
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', $jsOpts);
         }
 
         if ($theme) {
@@ -1707,6 +1719,7 @@ class TabulatorGrid extends ModularFormField
      * @param string $field (Required) this is the key for this column in the data array
      * @param string $title (Required) This is the title that will be displayed in the header for this column
      * @param array $opts Other options to merge in
+     * @return $this
      */
     public function addColumn(string $field, string $title = null, array $opts = []): self
     {
@@ -1724,6 +1737,21 @@ class TabulatorGrid extends ModularFormField
         }
 
         $this->columns[$field] = $baseOpts;
+        return $this;
+    }
+
+    /**
+     * @link http://www.tabulator.info/docs/5.4/columns#definition
+     * @param array $opts Other options to merge in
+     * @return $this
+     */
+    public function addColumnFromArray(array $opts = [])
+    {
+        if (empty($opts['field']) || !isset($opts['title'])) {
+            throw new Exception("Missing field or title key");
+        }
+        $field = $opts['field'];
+        $this->columns[$field] = $opts;
         return $this;
     }
 
