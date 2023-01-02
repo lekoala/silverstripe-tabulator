@@ -1508,7 +1508,10 @@ class TabulatorGrid extends ModularFormField
             ];
             $nested = [];
             foreach ($this->columns as $col) {
-                $field = $col['field'] ?? ''; // actions don't have field
+                if (empty($col['field'])) {
+                    continue;
+                }
+                $field = $col['field'];
                 if (strpos($field, '.') !== false) {
                     $parts = explode('.', $field);
                     if ($singleton->getRelationClass($parts[0])) {
@@ -1519,10 +1522,11 @@ class TabulatorGrid extends ModularFormField
                 $item[$field] = $record->getField($field);
             }
             foreach ($nested as $nestedClass => $nestedColumns) {
+                /** @var DataObject $relObject */
                 $relObject = $record->relObject($nestedClass);
                 $nestedData = [];
                 foreach ($nestedColumns as $nestedColumn) {
-                    $nestedData[$nestedColumn] = $relObject->getField($nestedColumn);
+                    $nestedData[$nestedColumn] = $relObject->relField($nestedColumn);
                 }
                 $item[$nestedClass] = $nestedData;
             }
