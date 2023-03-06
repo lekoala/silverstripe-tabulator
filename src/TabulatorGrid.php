@@ -1526,7 +1526,7 @@ class TabulatorGrid extends ModularFormField
                 $relObject = $record->relObject($nestedClass);
                 $nestedData = [];
                 foreach ($nestedColumns as $nestedColumn) {
-                    $nestedData[$nestedColumn] = $relObject->relField($nestedColumn);
+                    $nestedData[$nestedColumn] = $this->getDataFieldValue($relObject, $nestedColumn);
                 }
                 $item[$nestedClass] = $nestedData;
             }

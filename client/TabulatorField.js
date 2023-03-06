@@ -358,13 +358,11 @@
     };
     var externalFormatter = function (cell, formatterParams, onRendered) {
         var v = cell.getValue();
+        var editable = cell.getRow().getData()._editable || false;
         var formatted = "";
         if (v || formatterParams["notNull"]) {
             formatted = getGlobalHandler(formatterParams["function"])(v);
-        } else if (
-            formatterParams["editPlaceholder"] &&
-            cell.getElement().classList.contains("tabulator-editable")
-        ) {
+        } else if (formatterParams["editPlaceholder"] && editable) {
             formatted = `<em class="tabulator-value-placeholder">${formatterParams["editPlaceholder"]}</em>`;
         } else if (formatterParams["placeholder"]) {
             formatted = `<em class="tabulator-value-placeholder">${formatterParams["placeholder"]}</em>`;
