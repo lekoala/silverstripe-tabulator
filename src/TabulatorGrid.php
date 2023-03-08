@@ -280,6 +280,15 @@ class TabulatorGrid extends ModularFormField
     }
 
     /**
+     * This helps if some third party code expects the TabulatorGrid to be a GridField
+     * Only works to a really basic extent
+     */
+    public function setConfig($config)
+    {
+        // ignore
+    }
+
+    /**
      * Temporary link that will be replaced by a real link by processLinks
      *
      * @param string $action
