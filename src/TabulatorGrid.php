@@ -1420,8 +1420,15 @@ class TabulatorGrid extends ModularFormField
                 // Nested sort
                 if (strpos($field, '.') !== false) {
                     $parts = explode(".", $field);
+
+                    // Resolve relation only once in case of multiples similar keys
                     if (!isset($resolutionMap[$parts[0]])) {
-                        $resolutionMap[$parts[0]] = singleton($dataClass)->relObject($parts[0]);
+                        $resolutionMap[$parts[0]] = $singleton->relObject($parts[0]);
+                    }
+                    // Not matching anything (maybe a formatting .Nice ?)
+                    if (!$resolutionMap[$parts[0]] || !($resolutionMap[$parts[0]] instanceof DataList)) {
+                        $field = $parts[0];
+                        continue;
                     }
                     $relatedObject = get_class($resolutionMap[$parts[0]]);
                     $tableName = $schema->tableForField($relatedObject, $parts[1]);
