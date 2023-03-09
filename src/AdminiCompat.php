@@ -72,7 +72,7 @@ class AdminiCompat implements CompatLayerInterface
                 $oneLevelUp = $crumbs->offsetGet($crumbs->count() - 2);
                 $text = sprintf(
                     "<a class=\"%s\" href=\"%s\">%s</a>",
-                    "crumb btn btn-secondary cms-panel-link", // CSS classes
+                    "ms-auto btn btn-default", // CSS classes
                     $oneLevelUp->Link, // url
                     _t('SilverStripe\\Forms\\GridField\\GridFieldDetailForm.CancelBtn', 'Cancel') // label
                 );
