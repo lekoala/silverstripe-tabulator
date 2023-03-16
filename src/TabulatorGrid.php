@@ -330,6 +330,9 @@ class TabulatorGrid extends ModularFormField
         if (!$gridField) {
             return;
         }
+        if ($gridField instanceof TabulatorGrid) {
+            return $gridField;
+        }
         $tabulatorGrid = new TabulatorGrid($name, $gridField->Title(), $gridField->getList());
         // In the cms, this is mostly never happening
         if ($gridField->getForm()) {
@@ -359,7 +362,16 @@ class TabulatorGrid extends ModularFormField
 
         // Mock some base columns using SilverStripe built-in methods
         $columns = [];
+
         foreach ($singl->summaryFields() as $field => $title) {
+            // Deal with this in load() instead
+            // if (strpos($field, '.') !== false) {
+            // $fieldParts = explode(".", $field);
+
+            // It can be a relation Users.Count or a field Field.Nice
+            // $classOrField = $fieldParts[0];
+            // $relationOrMethod = $fieldParts[1];
+            // }
             $title = str_replace(".", " ", $title);
             $columns[$field] = [
                 'field' => $field,
@@ -862,18 +874,26 @@ class TabulatorGrid extends ModularFormField
         return $this;
     }
 
+    /**
+     * @link https://tabulator.info/docs/5.4/layout#responsive
+     * @param boolean $startOpen
+     * @param string $mode collapse|hide|flexCollapse
+     * @return self
+     */
     public function wizardResponsiveCollapse(bool $startOpen = false, string $mode = "collapse"): self
     {
         $this->setOption("responsiveLayout", $mode);
         $this->setOption("responsiveLayoutCollapseStartOpen", $startOpen);
-        $this->columns = array_merge([
-            'ui_responsive_collapse' => [
-                "cssClass" => 'tabulator-cell-btn',
-                'formatter' => 'responsiveCollapse',
-                'headerSort' => false,
-                'width' => 40,
-            ]
-        ], $this->columns);
+        if ($mode != "hide") {
+            $this->columns = array_merge([
+                'ui_responsive_collapse' => [
+                    "cssClass" => 'tabulator-cell-btn',
+                    'formatter' => 'responsiveCollapse',
+                    'headerSort' => false,
+                    'width' => 40,
+                ]
+            ], $this->columns);
+        }
         return $this;
     }
 
@@ -1530,13 +1550,28 @@ class TabulatorGrid extends ModularFormField
                 $field = $col['field'];
                 if (strpos($field, '.') !== false) {
                     $parts = explode('.', $field);
-                    if ($singleton->getRelationClass($parts[0])) {
-                        $nested[$parts[0]][] = $parts[1];
+                    $classOrField = $parts[0];
+                    $relationOrMethod = $parts[1];
+                    // For relations, like Users.count
+                    if ($singleton->getRelationClass($classOrField)) {
+                        $nested[$classOrField][] = $relationOrMethod;
                         continue;
+                    } else {
+                        // For fields, like SomeValue.Nice
+                        $dbObject = $record->dbObject($classOrField);
+                        if ($dbObject) {
+                            $item[$classOrField] = [
+                                $relationOrMethod => $dbObject->$relationOrMethod()
+                            ];
+                            continue;
+                        }
                     }
                 }
-                $item[$field] = $record->getField($field);
+                if (!isset($item[$field])) {
+                    $item[$field] = $record->getField($field);
+                }
             }
+            // Fill in nested data, like Users.count
             foreach ($nested as $nestedClass => $nestedColumns) {
                 /** @var DataObject $relObject */
                 $relObject = $record->relObject($nestedClass);
@@ -1841,6 +1876,21 @@ class TabulatorGrid extends ModularFormField
     public function setColumn(string $key, array $col): self
     {
         $this->columns[$key] = $col;
+        return $this;
+    }
+
+    /**
+     * Update column details
+     *
+     * @param string $key
+     * @param array $col
+     */
+    public function updateColumn(string $key, array $col): self
+    {
+        $data = $this->getColumn($key);
+        if ($data) {
+            $this->setColumn($key, array_merge($data, $col));
+        }
         return $this;
     }
 
