@@ -1599,7 +1599,11 @@ class TabulatorGrid extends ModularFormField
                     }
                 }
                 if (!isset($item[$field])) {
-                    $item[$field] = $record->getField($field);
+                    if ($record->hasMethod($field)) {
+                        $item[$field] = $record->$field();
+                    } else {
+                        $item[$field] = $record->getField($field);
+                    }
                 }
             }
             // Fill in nested data, like Users.count
