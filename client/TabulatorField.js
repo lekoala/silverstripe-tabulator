@@ -820,19 +820,33 @@
             el.getAttribute("id") + "-search"
         );
         if (globalSearch) {
+            var collectFilters = (wildcard, quick) => {
+                var obj = [];
+                if (wildcard) {
+                    obj.push({ field: "*", type: "=", value: wildcard.value });
+                }
+                if (quick) {
+                    obj.push({
+                        field: "__quickfilter",
+                        type: "=",
+                        value: quick.value,
+                    });
+                }
+                return obj;
+            };
             var globalSearchInput = globalSearch.querySelector("input");
+            var quickFilterSelect = globalSearch.querySelector("select");
             var debouncedSearchFunc = debounce(() => {
-                tabulator.setFilter("*", "=", globalSearchInput.value);
+                tabulator.setFilter(
+                    collectFilters(globalSearchInput, quickFilterSelect)
+                );
             });
             globalSearchInput.addEventListener("input", debouncedSearchFunc);
 
-            var quickFilterSelect = globalSearch.querySelector("select");
             if (quickFilterSelect) {
                 quickFilterSelect.addEventListener("change", () => {
                     tabulator.setFilter(
-                        "__quickfilter",
-                        "=",
-                        quickFilterSelect.value
+                        collectFilters(globalSearchInput, quickFilterSelect)
                     );
                 });
             }
