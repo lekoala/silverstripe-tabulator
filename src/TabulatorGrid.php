@@ -252,6 +252,12 @@ class TabulatorGrid extends ModularFormField
 
     protected string $bulkUrl = "";
 
+    protected bool $globalSearch = false;
+
+    protected array $wildcardFields = [];
+
+    protected array $quickFilters = [];
+
     /**
      * @param string $fieldName
      * @param string|null|bool $title
@@ -1466,15 +1472,18 @@ class TabulatorGrid extends ModularFormField
 
         // Filtering is an array of field/type/value arrays
         $where = [];
+        $anyWhere = [];
         if ($filter) {
             foreach ($filter as $filterValues) {
                 $cols = array_keys($this->columns);
                 $field = $filterValues['field'];
-                if (!in_array($field, $cols)) {
+                if ($field != "*" && $field != "__quickfilter" && !in_array($field, $cols)) {
                     throw new Exception("Invalid sort field: $field");
                 }
                 $value = $filterValues['value'];
                 $type = $filterValues['type'];
+
+                $rawValue = $value;
 
                 // Strict value
                 if ($value === "true") {
@@ -1485,7 +1494,14 @@ class TabulatorGrid extends ModularFormField
 
                 switch ($type) {
                     case "=":
-                        $where["$field"] = $value;
+                        // It's a wildcard search
+                        if ($field === "*") {
+                            $anyWhere = $this->createWildcardFilters($rawValue);
+                        } elseif ($field === "__quickfilter") {
+                            $this->createQuickFilter($rawValue, $dataList);
+                        } else {
+                            $where["$field"] = $value;
+                        }
                         break;
                     case "!=":
                         $where["$field:not"] = $value;
@@ -1527,6 +1543,9 @@ class TabulatorGrid extends ModularFormField
         }
         if (!empty($where)) {
             $dataList = $dataList->filter($where);
+        }
+        if (!empty($anyWhere)) {
+            $dataList = $dataList->filterAny($anyWhere);
         }
 
         $lastRow = $dataList->count();
@@ -1591,6 +1610,94 @@ class TabulatorGrid extends ModularFormField
         ];
 
         return $result;
+    }
+
+    public function QuickFiltersList()
+    {
+        $list = new ArrayList();
+        foreach ($this->quickFilters as $k => $v) {
+            $list->push([
+                'Value' => $k,
+                'Label' => $v['label'],
+            ]);
+        }
+        return $list;
+    }
+
+    protected function createQuickFilter($filter, &$list)
+    {
+        $qf = $this->quickFilters[$filter] ?? null;
+        if (!$qf) {
+            return;
+        }
+
+        $callback = $qf['callback'] ?? null;
+        if (!$callback) {
+            return;
+        }
+
+        $callback($list);
+    }
+
+    protected function createWildcardFilters(string $value)
+    {
+        $wildcardFields = $this->wildcardFields;
+
+        // Create from model
+        if (empty($wildcardFields)) {
+            /** @var DataObject $singl */
+            $singl = singleton($this->modelClass);
+            $searchableFields = $singl->searchableFields();
+
+            foreach ($searchableFields as $k => $v) {
+                $general = $v['general'] ?? true;
+                if (!$general) {
+                    continue;
+                }
+                $wildcardFields[] = $k;
+            }
+        }
+
+        // Queries can have the format s: ... or e:... or =:....
+        $filter = 'PartialMatch';
+        if (strpos($value, ':') === 1) {
+            $parts = explode(":", $value);
+            $shortcut = array_shift($parts);
+            $value = implode(":", $parts);
+            switch ($shortcut) {
+                case 's':
+                    $filter = 'StartsWith';
+                    break;
+                case 'e':
+                    $filter = 'EndsWith';
+                    break;
+                case '=':
+                    $filter = 'ExactMatch';
+                    break;
+            }
+        }
+
+        // Process value
+        $baseValue = $value;
+        $value = str_replace(" ", "%", $value);
+        $value = str_replace(['.', '_', '-'], ' ', $value);
+
+        // Create filters
+        $anyWhere = [];
+        foreach ($wildcardFields as $f) {
+            if (!$value) {
+                continue;
+            }
+            $key = $f . ":" . $filter;
+            $anyWhere[$key] = $value;
+
+            // also look on unfiltered data
+            if ($value != $baseValue) {
+                $anyWhere[$key] = $baseValue;
+            }
+        }
+
+        return $anyWhere;
     }
 
     public function getModelClass(): ?string
@@ -2320,6 +2427,63 @@ class TabulatorGrid extends ModularFormField
     public function setBulkUrl(string $bulkUrl): self
     {
         $this->bulkUrl = $bulkUrl;
+        return $this;
+    }
+
+    /**
+     * Get the value of globalSearch
+     */
+    public function getGlobalSearch(): bool
+    {
+        return $this->globalSearch;
+    }
+
+    /**
+     * Set the value of globalSearch
+     *
+     * @param bool $globalSearch
+     */
+    public function setGlobalSearch($globalSearch): self
+    {
+        $this->globalSearch = $globalSearch;
+        return $this;
+    }
+
+    /**
+     * Get the value of wildcardFields
+     */
+    public function getWildcardFields(): array
+    {
+        return $this->wildcardFields;
+    }
+
+    /**
+     * Set the value of wildcardFields
+     *
+     * @param array $wildcardFields
+     */
+    public function setWildcardFields($wildcardFields): self
+    {
+        $this->wildcardFields = $wildcardFields;
+        return $this;
+    }
+
+    /**
+     * Get the value of quickFilters
+     */
+    public function getQuickFilters(): array
+    {
+        return $this->quickFilters;
+    }
+
+    /**
+     * Set the value of quickFilters
+     *
+     * @param array $quickFilters
+     */
+    public function setQuickFilters($quickFilters): self
+    {
+        $this->quickFilters = $quickFilters;
         return $this;
     }
 }

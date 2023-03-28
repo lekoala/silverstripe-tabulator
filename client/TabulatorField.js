@@ -24,6 +24,16 @@
 
     // helper functions
 
+    function debounce(func, timeout = 300) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                func.apply(this, args);
+            }, timeout);
+        };
+    }
+
     function defaultActionHandler(json, table) {
         if (json.reload) {
             table.setData();
@@ -803,6 +813,29 @@
                     firstBtn.click();
                 }
             });
+        }
+
+        // Global search
+        var globalSearch = document.getElementById(
+            el.getAttribute("id") + "-search"
+        );
+        if (globalSearch) {
+            var globalSearchInput = globalSearch.querySelector("input");
+            var debouncedSearchFunc = debounce(() => {
+                tabulator.setFilter("*", "=", globalSearchInput.value);
+            });
+            globalSearchInput.addEventListener("input", debouncedSearchFunc);
+
+            var quickFilterSelect = globalSearch.querySelector("select");
+            if (quickFilterSelect) {
+                quickFilterSelect.addEventListener("change", () => {
+                    tabulator.setFilter(
+                        "__quickfilter",
+                        "=",
+                        quickFilterSelect.value
+                    );
+                });
+            }
         }
 
         // Bulk support
