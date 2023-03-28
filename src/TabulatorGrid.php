@@ -1561,6 +1561,18 @@ class TabulatorGrid extends ModularFormField
             $item = [
                 'ID' => $record->ID,
             ];
+
+            // Add row class
+            if ($record->hasMethod('TabulatorRowClass')) {
+                $item['_class'] = $record->TabulatorRowClass();
+            } elseif ($record->hasMethod('getRowClass')) {
+                $item['_class'] = $record->getRowClass();
+            }
+            // Add row color
+            if ($record->hasMethod('TabulatorRowColor')) {
+                $item['_color'] = $record->TabulatorRowColor();
+            }
+
             $nested = [];
             foreach ($this->columns as $col) {
                 if (empty($col['field'])) {
