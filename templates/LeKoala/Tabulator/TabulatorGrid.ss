@@ -17,7 +17,7 @@ $ShowTools
             />
           </svg>
     </span>
-    <input type="search" name="$ID_wildcardsearch" class="form-control" placeholder="Search anything" />
+    <input type="search" name="$ID_wildcardsearch" class="form-control" placeholder="Search anything" value="$StateValue(filter,__wildcard)" />
     <% if QuickFiltersList.count > 0 %>
     <span class="input-group-text">
       Quick filter
@@ -25,7 +25,7 @@ $ShowTools
     <select class="form-select" name="$ID_quickfilters" aria-label="Default select example" style="max-width:200px">
         <option selected>Select a filter</option>
         <% loop QuickFiltersList %>
-        <option value="$Value">$Label</option>
+        <option value="$Value"<% if $Selected %>  selected="selected"<% end_if %>>$Label</option>
         <% end_loop %>
     </select>
     <% end_if %>

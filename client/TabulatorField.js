@@ -755,7 +755,23 @@
             options.langs[options.locale].pagination.prev = iconPrev;
         }
 
+        const state = options["_state"];
+        delete options["_state"];
+
+        const ajaxURL = options["ajaxURL"];
+
         var tabulator = new Tabulator(el, options);
+
+        tabulator.on("tableBuilt", () => {
+            if (state.limit) {
+                tabulator.setPageSize(state.limit);
+            }
+            if (state.page > 1) {
+                tabulator.setPage(state.page);
+            }
+            // Delay loading
+            tabulator.setData(ajaxURL);
+        });
 
         // Add desktop or mobile class
         let navigatorClass = "desktop";
@@ -823,7 +839,11 @@
             var collectFilters = (wildcard, quick) => {
                 var obj = [];
                 if (wildcard) {
-                    obj.push({ field: "*", type: "=", value: wildcard.value });
+                    obj.push({
+                        field: "__wildcard",
+                        type: "=",
+                        value: wildcard.value,
+                    });
                 }
                 if (quick) {
                     obj.push({

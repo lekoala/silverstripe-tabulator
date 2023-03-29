@@ -13,6 +13,7 @@ use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\View\ArrayData;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Control\Director;
@@ -296,6 +297,7 @@ class TabulatorGrid extends ModularFormField
 
     /**
      * Temporary link that will be replaced by a real link by processLinks
+     * TODO: not really happy with this, find a better way
      *
      * @param string $action
      * @return string
@@ -755,6 +757,30 @@ class TabulatorGrid extends ModularFormField
             $locale => $translations
         ];
 
+        // Apply state
+        $state = $this->getState();
+        if (!empty($state['filter'])) {
+            // @link https://tabulator.info/docs/5.4/filter#initial
+            // We need to split between global filters and header filters
+            $allFilters = $state['filter'] ?? [];
+            $globalFilters = [];
+            $headerFilters = [];
+            foreach ($allFilters as $allFilter) {
+                if (strpos($allFilter['field'], '__') === 0) {
+                    $globalFilters[] = $allFilter;
+                } else {
+                    $headerFilters[] = $allFilter;
+                }
+            }
+            $opts['initialFilter'] = $globalFilters;
+            $opts['initialHeaderFilter'] = $headerFilters;
+        }
+        if (!empty($state['sort'])) {
+            // @link https://tabulator.info/docs/5.4/sort#initial
+            $opts['initialSort'] = $state['sort'];
+        }
+        $opts['_state'] = $state;
+
         $format = Director::isDev() ? JSON_PRETTY_PRINT : 0;
         $json = json_encode($opts, $format);
 
@@ -1054,11 +1080,27 @@ class TabulatorGrid extends ModularFormField
 
     public function getStateKey()
     {
-        return $this->getName();
+        $i = 0;
+        $form = $this->getForm();
+        if ($form) {
+            $controller = $form->getController();
+            while ($controller instanceof TabulatorGrid_ItemRequest) {
+                $controller = $controller->getController();
+                $i++;
+            }
+        }
+        return $this->getName() . '-' . $i;
     }
 
-    public function getState(HTTPRequest $request)
+    /**
+     * @param HTTPRequest|null $request
+     * @return array{'page': int, 'limit': int, 'sort': array, 'filter': array}
+     */
+    public function getState(HTTPRequest $request = null)
     {
+        if ($request === null) {
+            $request = Controller::curr()->getRequest();
+        }
         $stateKey = $this->getName();
         $state = $request->getSession()->get("TabulatorState[$stateKey]");
         return $state ?? [
@@ -1073,6 +1115,18 @@ class TabulatorGrid extends ModularFormField
     {
         $stateKey = $this->getName();
         $request->getSession()->set("TabulatorState[$stateKey]", $state);
+    }
+
+    public function StateValue($key, $field): ?string
+    {
+        $state = $this->getState();
+        $arr = $state[$key] ?? [];
+        foreach ($arr as $s) {
+            if ($s['field'] === $field) {
+                return $s['value'];
+            }
+        }
+        return null;
     }
 
     /**
@@ -1477,8 +1531,8 @@ class TabulatorGrid extends ModularFormField
             foreach ($filter as $filterValues) {
                 $cols = array_keys($this->columns);
                 $field = $filterValues['field'];
-                if ($field != "*" && $field != "__quickfilter" && !in_array($field, $cols)) {
-                    throw new Exception("Invalid sort field: $field");
+                if (strpos($field, '__') !== 0 && !in_array($field, $cols)) {
+                    throw new Exception("Invalid filter field: $field");
                 }
                 $value = $filterValues['value'];
                 $type = $filterValues['type'];
@@ -1495,7 +1549,7 @@ class TabulatorGrid extends ModularFormField
                 switch ($type) {
                     case "=":
                         // It's a wildcard search
-                        if ($field === "*") {
+                        if ($field === "__wildcard") {
                             $anyWhere = $this->createWildcardFilters($rawValue);
                         } elseif ($field === "__quickfilter") {
                             $this->createQuickFilter($rawValue, $dataList);
@@ -1630,11 +1684,13 @@ class TabulatorGrid extends ModularFormField
 
     public function QuickFiltersList()
     {
+        $current = $this->StateValue('filter', '__quickfilter');
         $list = new ArrayList();
         foreach ($this->quickFilters as $k => $v) {
             $list->push([
                 'Value' => $k,
                 'Label' => $v['label'],
+                'Selected' => $k == $current
             ]);
         }
         return $list;
