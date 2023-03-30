@@ -1080,16 +1080,31 @@ class TabulatorGrid extends ModularFormField
 
     public function getStateKey()
     {
-        $i = 0;
+        $nested = [];
         $form = $this->getForm();
+        $scope = "default";
         if ($form) {
             $controller = $form->getController();
+            // We are in a nested form, track by id since each records needs it own state
             while ($controller instanceof TabulatorGrid_ItemRequest) {
+                $record = $controller->getRecord();
+                $nested[str_replace('_', '\\', get_class($record))] = $record->ID;
+
+                // Move to parent controller
                 $controller = $controller->getController();
-                $i++;
             }
+
+            // Scope by top controller class
+            $scope = str_replace('_', '\\', get_class($controller));
         }
-        return $this->getName() . '-' . $i;
+
+        $prefix = "TabulatorState";
+        $name = $this->getName();
+        $key = "$prefix.$scope.$name";
+        foreach ($nested as $k => $v) {
+            $key .= "$k.$v";
+        }
+        return $key;
     }
 
     /**
@@ -1101,8 +1116,8 @@ class TabulatorGrid extends ModularFormField
         if ($request === null) {
             $request = Controller::curr()->getRequest();
         }
-        $stateKey = $this->getName();
-        $state = $request->getSession()->get("TabulatorState[$stateKey]");
+        $stateKey = $this->getStateKey();
+        $state = $request->getSession()->get($stateKey);
         return $state ?? [
             'page' => 1,
             'limit' => $this->pageSize,
@@ -1113,8 +1128,36 @@ class TabulatorGrid extends ModularFormField
 
     public function setState(HTTPRequest $request, $state)
     {
-        $stateKey = $this->getName();
-        $request->getSession()->set("TabulatorState[$stateKey]", $state);
+        $stateKey = $this->getStateKey();
+        $request->getSession()->set($stateKey, $state);
+        // If we are in a new controller, we can clear other states
+        $matches = [];
+        preg_match_all('/\.(.*?)\./', $stateKey, $matches);
+        $scope = $matches[1][0] ?? null;
+        if ($scope) {
+            self::clearAllStates($scope);
+        }
+    }
+
+    public function clearState(HTTPRequest $request)
+    {
+        $stateKey = $this->getStateKey();
+        $request->getSession()->clear($stateKey);
+    }
+
+    public static function clearAllStates(string $exceptScope = null)
+    {
+        $request = Controller::curr()->getRequest();
+        $allStates = $request->getSession()->get('TabulatorState');
+        if (!$allStates) {
+            return;
+        }
+        foreach ($allStates as $scope => $data) {
+            if ($exceptScope && $scope == $exceptScope) {
+                continue;
+            }
+            $request->getSession()->clear("TabulatorState.$scope");
+        }
     }
 
     public function StateValue($key, $field): ?string
