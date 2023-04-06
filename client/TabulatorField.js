@@ -758,7 +758,9 @@
         const state = options["_state"];
         delete options["_state"];
 
+        // Delay loading
         const ajaxURL = options["ajaxURL"];
+        delete options["ajaxURL"];
 
         var tabulator = new Tabulator(el, options);
 
