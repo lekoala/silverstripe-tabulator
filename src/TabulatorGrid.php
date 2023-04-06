@@ -1085,6 +1085,12 @@ class TabulatorGrid extends ModularFormField
         $scope = "default";
         if ($form) {
             $controller = $form->getController();
+            // Track by record
+            if ($controller->hasMethod('getRecord')) {
+                $record = $controller->getRecord();
+                $nested[str_replace('_', '\\', get_class($record))] = $record->ID;
+            }
+
             // We are in a nested form, track by id since each records needs it own state
             while ($controller instanceof TabulatorGrid_ItemRequest) {
                 $record = $controller->getRecord();
