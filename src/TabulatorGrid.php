@@ -25,6 +25,7 @@ use SilverStripe\ORM\FieldType\DBEnum;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
+use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBBoolean;
 use LeKoala\ModularBehaviour\ModularFormField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
@@ -293,6 +294,11 @@ class TabulatorGrid extends ModularFormField
     public function setConfig($config)
     {
         // ignore
+    }
+
+    public function saveInto(DataObjectInterface $record)
+    {
+        // noop
     }
 
     /**

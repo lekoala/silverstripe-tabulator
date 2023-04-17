@@ -598,8 +598,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         try {
             $this->saveFormIntoRecord($data, $form);
 
+            $title = $this->record->Title ?? '';
             $link = '<a href="' . $this->Link('edit') . '">"'
-                . htmlspecialchars($this->record->Title, ENT_QUOTES)
+                . htmlspecialchars($title, ENT_QUOTES)
                 . '"</a>';
             $message = _t(
                 'SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Saved',
