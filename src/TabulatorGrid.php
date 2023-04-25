@@ -260,6 +260,10 @@ class TabulatorGrid extends ModularFormField
 
     protected array $quickFilters = [];
 
+    protected bool $groupLayout = false;
+
+    protected bool $enableGridManipulation = false;
+
     /**
      * @param string $fieldName
      * @param string|null|bool $title
@@ -296,9 +300,30 @@ class TabulatorGrid extends ModularFormField
         // ignore
     }
 
+    /**
+     * @return string
+     */
+    public function getValueJson()
+    {
+        $v = $this->value ?? '';
+        if (is_array($v)) {
+            $v = json_encode($v);
+        }
+        if (strpos($v, '[') !== 0) {
+            return '[]';
+        }
+        return $v;
+    }
+
     public function saveInto(DataObjectInterface $record)
     {
-        // noop
+        if ($this->enableGridManipulation) {
+            $value = $this->dataValue();
+            if (is_array($value)) {
+                $this->value = json_encode(array_values($value));
+            }
+            parent::saveInto($record);
+        }
     }
 
     /**
@@ -564,6 +589,10 @@ class TabulatorGrid extends ModularFormField
 
     public function setValue($value, $data = null)
     {
+        // Allow set raw json as value
+        if ($value && is_string($value) && strpos($value, '[') === 0) {
+            $value = json_decode($value);
+        }
         if ($value instanceof DataList) {
             $this->configureFromDataObject($value->dataClass());
         }
@@ -819,6 +848,7 @@ class TabulatorGrid extends ModularFormField
         $attrs = parent::getAttributes();
         unset($attrs['type']);
         unset($attrs['name']);
+        unset($attrs['value']);
         return $attrs;
     }
 
@@ -1734,6 +1764,10 @@ class TabulatorGrid extends ModularFormField
             'data' => $data,
         ];
 
+        if (Director::isDev()) {
+            $result['sql'] = $dataList->sql();
+        }
+
         return $result;
     }
 
@@ -2611,6 +2645,44 @@ class TabulatorGrid extends ModularFormField
     public function setQuickFilters($quickFilters): self
     {
         $this->quickFilters = $quickFilters;
+        return $this;
+    }
+
+    /**
+     * Get the value of groupLayout
+     */
+    public function getGroupLayout(): bool
+    {
+        return $this->groupLayout;
+    }
+
+    /**
+     * Set the value of groupLayout
+     *
+     * @param bool $groupLayout
+     */
+    public function setGroupLayout($groupLayout): self
+    {
+        $this->groupLayout = $groupLayout;
+        return $this;
+    }
+
+    /**
+     * Get the value of enableGridManipulation
+     */
+    public function getEnableGridManipulation(): bool
+    {
+        return $this->enableGridManipulation;
+    }
+
+    /**
+     * Set the value of enableGridManipulation
+     *
+     * @param bool $enableGridManipulation
+     */
+    public function setEnableGridManipulation($enableGridManipulation): self
+    {
+        $this->enableGridManipulation = $enableGridManipulation;
         return $this;
     }
 }

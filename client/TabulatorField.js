@@ -623,10 +623,18 @@
         return editor;
     };
     var disableCallback = false;
+    var hiddenInput = null;
+    function updateHiddenInput(tabulator) {
+        if (hiddenInput) {
+            hiddenInput.value = JSON.stringify(tabulator.getData());
+        }
+    }
     var cellEditedCallback = function (cell) {
         if (disableCallback) {
             return;
         }
+
+        updateHiddenInput(cell.getTable());
         var value = cell.getValue();
         var column = cell.getColumn().getField();
         var data = cell.getRow().getData();
@@ -759,9 +767,10 @@
         delete options["_state"];
 
         // Delay loading
-        const ajaxURL = options["ajaxURL"];
+        const ajaxURL = options["ajaxURL"] || null;
         delete options["ajaxURL"];
 
+        var parent = el.parentElement;
         var tabulator = new Tabulator(el, options);
 
         tabulator.on("tableBuilt", () => {
@@ -772,7 +781,11 @@
                 tabulator.setPage(state.page);
             }
             // Delay loading
-            tabulator.setData(ajaxURL);
+            if (ajaxURL) {
+                tabulator.setData(ajaxURL);
+            } else if (hiddenInput) {
+                tabulator.setData(JSON.parse(hiddenInput.value));
+            }
         });
 
         // Add desktop or mobile class
@@ -926,6 +939,28 @@
                     window.location =
                         endpoint + "?records=" + records.join(",");
                 }
+            });
+        }
+
+        // Grid manipulation support
+        hiddenInput = parent.querySelector(".tabulator-hidden-value");
+        const addRow = parent.querySelector(".tabulator-add-row");
+        const removeRow = parent.querySelector(".tabulator-remove-selected");
+        if (addRow) {
+            addRow.addEventListener("click", (event) => {
+                tabulator.addRow({});
+            });
+        }
+        if (removeRow) {
+            if (!options.selectable) {
+                removeRow.setAttribute("hidden", "");
+            }
+            removeRow.addEventListener("click", (event) => {
+                var selectedRows = tabulator.getSelectedRows();
+                selectedRows.forEach((row) => {
+                    row.delete();
+                    updateHiddenInput(tabulator);
+                });
             });
         }
 
