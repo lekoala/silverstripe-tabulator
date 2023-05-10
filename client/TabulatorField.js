@@ -80,7 +80,8 @@
         return fetch(url, options).then((response) => {
             return response.text().then((text) => {
                 // Make sure we have JSON content
-                const data = text && JSON.parse(text);
+                const data =
+                    text && ["[", "{"].includes(text[0]) && JSON.parse(text);
 
                 if (!response.ok) {
                     // Use json error message if any or HTTP status text
@@ -109,8 +110,10 @@
     function notify(msg, type, table = null) {
         if (typeof SSTabulator.notify !== "undefined") {
             SSTabulator.notify(msg, type);
-        }
-        if (typeof jQuery.noticeAdd !== "undefined") {
+        } else if (
+            typeof jQuery !== "undefined" &&
+            typeof jQuery.noticeAdd !== "undefined"
+        ) {
             jQuery.noticeAdd({
                 text: msg,
                 type: type,
@@ -120,8 +123,12 @@
                     opacity: "show",
                 },
             });
-        } else if (typeof window.admini.toaster !== "undefined") {
-            window.admini.toaster({
+        } else if (
+            typeof window.admini.toaster !== "undefined" ||
+            typeof window.toaster !== "undefined"
+        ) {
+            const toaster = window.admini.toaster || window.toaster;
+            toaster({
                 body: msg,
                 className: "border-0 bg-" + type + " text-white",
             });
@@ -130,7 +137,7 @@
         } else if (table) {
             table.alert(msg, type);
         } else {
-            console.log(type + " " + msg);
+            console.log(type, msg);
         }
     }
 
@@ -735,7 +742,7 @@
 
         var formData = new FormData();
         formData.append("SecurityID", getSecurityID());
-        formData.append("Data", data);
+        formData.append("Data", JSON.stringify(data));
         formData.append("Sort", index);
 
         fetchWrapper(moveUrl, {

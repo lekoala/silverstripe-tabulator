@@ -996,7 +996,7 @@ class TabulatorGrid extends ModularFormField
         return $this;
     }
 
-    public function wizardMoveable(string $callback = "SSTabulator.rowMoved"): self
+    public function wizardMoveable(string $callback = "SSTabulator.rowMoved", $field = "Sort"): self
     {
         $this->moveUrl = $this->TempLink("item/{ID}/ajaxMove", false);
         $this->setOption("movableRows", true);
@@ -1010,7 +1010,12 @@ class TabulatorGrid extends ModularFormField
                 'headerSort' => false,
                 'frozen' => true,
                 'width' => 40,
-            ]
+            ],
+            // We need a hidden sort column
+            'ui_sort' => [
+                "field" => $field,
+                'visible' => false,
+            ],
         ], $this->columns);
         return $this;
     }

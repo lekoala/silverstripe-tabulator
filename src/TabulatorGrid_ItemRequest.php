@@ -249,16 +249,19 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $sortField = 'Sort';
 
         $Data = $request->postVar("Data");
+        if (is_string($Data)) {
+            $Data = json_decode($Data, JSON_OBJECT_AS_ARRAY);
+        }
         $Sort = $request->postVar("Sort");
 
-        if (!isset($data[$sortField])) {
+        if (!isset($Data[$sortField])) {
             return $this->httpError(403, _t(
                 __CLASS__ . '.UnableToResolveSort',
                 'Unable to resolve previous sort order'
             ));
         }
 
-        $prevSort = $data[$sortField];
+        $prevSort = $Data[$sortField];
 
         $error = null;
         try {
