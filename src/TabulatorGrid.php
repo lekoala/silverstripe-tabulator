@@ -271,9 +271,11 @@ class TabulatorGrid extends ModularFormField
      */
     public function __construct($name, $title = null, $value = null)
     {
-        parent::__construct($name, $title, $value);
+        // Set options and defaults first
         $this->options = self::config()->default_options ?? [];
         $this->columnDefaults = self::config()->default_column_options ?? [];
+
+        parent::__construct($name, $title, $value);
         $this->setLazyInit(self::config()->default_lazy_init);
 
         // We don't want regular setValue for this since it would break with loadFrom logic
@@ -384,7 +386,7 @@ class TabulatorGrid extends ModularFormField
         return $tabulatorGrid;
     }
 
-    public function configureFromDataObject($className = null, bool $clear = true): void
+    public function configureFromDataObject($className = null): void
     {
         $this->columns = [];
 
@@ -1979,7 +1981,6 @@ class TabulatorGrid extends ModularFormField
             "width" => 70,
             "hozAlign" => "center",
             "headerSort" => false,
-
         ];
         return $opts;
     }
