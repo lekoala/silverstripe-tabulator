@@ -12,6 +12,7 @@
     0% {
         opacity: 0;
     }
+
     100% {
         opacity: 1;
     }
@@ -51,18 +52,21 @@
     scrollbar-color: #c1c1c1 transparent;
     scrollbar-width: thin;
 }
+
 .tabulator-navigator-desktop .tabulator-tableholder::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
+
 .tabulator-navigator-desktop .tabulator-tableholder::-webkit-scrollbar-track {
     background: var(--bs-gray-100, #f8f9f9);
 }
+
 .tabulator-navigator-desktop .tabulator-tableholder::-webkit-scrollbar-thumb {
     background: #c1c1c1;
 }
-.tabulator-navigator-desktop
-    .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+
+.tabulator-navigator-desktop .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
     background: #a1a1a1;
 }
 
@@ -80,20 +84,17 @@
 
 .tabulator-sticky .tabulator-header {
     z-index: 2;
-    position: -webkit-sticky; /* Safari */
+    position: -webkit-sticky;
+    /* Safari */
     position: sticky;
     top: 0;
-    background: #fff; /* Sticky headers need a background */
+    background: #fff;
+    /* Sticky headers need a background */
 }
 
 /* Accessible sortable icon */
 
-.tabulator
-    .tabulator-header
-    .tabulator-col
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow {
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter .tabulator-arrow {
     --sorter-size: 4px;
     --sorter-active: var(--tabulator-primary-color, #666px);
     border: 0;
@@ -102,18 +103,8 @@
     margin-top: var(--sorter-size);
 }
 
-.tabulator
-    .tabulator-header
-    .tabulator-col
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow::before,
-.tabulator
-    .tabulator-header
-    .tabulator-col
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow::after {
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter .tabulator-arrow::before,
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter .tabulator-arrow::after {
     content: "";
     width: 0;
     height: 0;
@@ -123,61 +114,32 @@
     border-right: var(--sorter-size) solid transparent;
 }
 
-.tabulator
-    .tabulator-header
-    .tabulator-col
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow::before {
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter .tabulator-arrow::before {
     top: calc(var(--sorter-size) * -1 - 1px);
     border-top: none;
     border-bottom: var(--sorter-size) solid #bbb;
 }
-.tabulator
-    .tabulator-header
-    .tabulator-col
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow::after {
+
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter .tabulator-arrow::after {
     bottom: calc(var(--sorter-size) * -1 - 1px);
     border-bottom: none;
     border-top: var(--sorter-size) solid #bbb;
 }
 
-.tabulator
-    .tabulator-header
-    .tabulator-col.tabulator-sortable[aria-sort="ascending"]
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow:before {
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="ascending"] .tabulator-col-content .tabulator-col-sorter .tabulator-arrow:before {
     border-bottom-color: var(--sorter-active);
     top: 0;
 }
 
-.tabulator
-    .tabulator-header
-    .tabulator-col.tabulator-sortable[aria-sort="ascending"]
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow:after {
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="ascending"] .tabulator-col-content .tabulator-col-sorter .tabulator-arrow:after {
     border: none;
 }
 
-.tabulator
-    .tabulator-header
-    .tabulator-col.tabulator-sortable[aria-sort="descending"]
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow:before {
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="descending"] .tabulator-col-content .tabulator-col-sorter .tabulator-arrow:before {
     border: none;
 }
 
-.tabulator
-    .tabulator-header
-    .tabulator-col.tabulator-sortable[aria-sort="descending"]
-    .tabulator-col-content
-    .tabulator-col-sorter
-    .tabulator-arrow:after {
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="descending"] .tabulator-col-content .tabulator-col-sorter .tabulator-arrow:after {
     border-top-color: var(--sorter-active);
     bottom: 0;
     bottom: calc(var(--sorter-size) / 2);
@@ -216,8 +178,13 @@
     background: var(--bs-gray-100, #f8f9f9);
 }
 
-.tabulator-cell-btn .btn > * {
-    pointer-events: none; /* Avoid events on icons */
+.tabulator-row.tabulator-row-even.tabulator-selected {
+    background: #9abcea;
+}
+
+.tabulator-cell-btn .btn>* {
+    pointer-events: none;
+    /* Avoid events on icons */
 }
 
 .tabulator-row .tabulator-cell.tabulator-cell-btn {
@@ -226,6 +193,7 @@
     align-items: center;
     justify-content: center;
 }
+
 .tabulator-row .tabulator-cell.tabulator-cell-btn .btn {
     width: 100%;
     height: 100%;
@@ -235,6 +203,7 @@
     align-items: center;
     justify-content: center;
 }
+
 .tabulator-row .tabulator-cell.tabulator-cell-btn input[type="checkbox"] {
     margin: 0;
 }
@@ -280,11 +249,7 @@
     margin-top: -0.2em;
 } */
 
-.tabulator
-    .tabulator-header
-    .tabulator-col
-    .tabulator-header-filter
-    input:focus {
+.tabulator .tabulator-header .tabulator-col .tabulator-header-filter input:focus {
     border-color: var(--tabulator-primary-hover-color);
 }
 
@@ -295,24 +260,29 @@
 .tabulator-row .editing-only {
     visibility: hidden;
 }
+
 .tabulator-row.tabulator-row-editing .editing-only {
     visibility: visible;
 }
+
 .tabulator-row .edited-only {
     visibility: hidden;
 }
+
 .tabulator-row.tabulator-row-edited .edited-only {
     visibility: visible;
 }
+
 .tabulator-row .tabulator-editable {
     cursor: text;
 }
-.tabulator-row .tabulator-editable > span {
+
+.tabulator-row .tabulator-editable>span {
     display: inline-block;
     margin: 12px;
 }
 
-.tabulator-row .tabulator-editable > input[type="checkbox"] {
+.tabulator-row .tabulator-editable>input[type="checkbox"] {
     position: absolute;
     width: 16px;
     height: 16px;
@@ -320,17 +290,15 @@
     margin-top: 12px !important;
 }
 
-.tabulator:not(.tabulator-table-editing)
-    .tabulator-row:hover
-    .tabulator-editable,
-.tabulator.tabulator-table-editing
-    .tabulator-row-editing
-    .tabulator-editable {
+.tabulator:not(.tabulator-table-editing) .tabulator-row:hover .tabulator-editable,
+.tabulator.tabulator-table-editing .tabulator-row-editing .tabulator-editable {
     background: var(--tabulator-highlight-color);
 }
+
 .tabulator-row.tabulator-row-invalid .tabulator-editable {
     background: var(--tabulator-invalid-color);
 }
+
 .tabulator-row.tabulator-row-valid .tabulator-editable {
     background: var(--tabulator-valid-color);
 }
@@ -347,6 +315,7 @@ em.tabulator-value-placeholder {
 .tabulator-cell-right {
     text-align: right;
 }
+
 .tabulator-cell-right input {
     text-align: right;
 }
@@ -360,10 +329,12 @@ em.tabulator-value-placeholder {
     display: flex;
     flex-wrap: wrap;
 }
+
 .tabulator-responsive-flex-cell {
     order: 9999;
     text-align: left !important;
 }
+
 .tabulator-responsive-flex-cell[data-label]::before {
     content: attr(data-label);
     width: 100px;
@@ -373,16 +344,14 @@ em.tabulator-value-placeholder {
     text-align: left !important;
     font-size: 12px !important;
 }
+
 .tabulator-editing.tabulator-responsive-flex-cell::before {
     display: none;
 }
 
 /* Improve handle ui */
 
-.tabulator-row
-    .tabulator-cell.tabulator-row-handle
-    .tabulator-row-handle-box
-    .tabulator-row-handle-bar {
+.tabulator-row .tabulator-cell.tabulator-row-handle .tabulator-row-handle-box .tabulator-row-handle-bar {
     height: 2px;
 }
 
@@ -402,7 +371,8 @@ em.tabulator-value-placeholder {
     border-right: 0;
     border-left: 6px solid #666;
     vertical-align: middle;
-    animation: transform ease-in-out 0.2s; /* Doesn't work because node is replaced */
+    animation: transform ease-in-out 0.2s;
+    /* Doesn't work because node is replaced */
 }
 
 .tabulator-row.tabulator-group.tabulator-group-visible .tabulator-arrow {
@@ -416,7 +386,7 @@ em.tabulator-value-placeholder {
 
 /* Improve data tree ui */
 
-.tabulator-distinct-tree .tabulator-tree-level-1 + .tabulator-tree-level-0 {
+.tabulator-distinct-tree .tabulator-tree-level-1+.tabulator-tree-level-0 {
     border-top: 1px solid #666;
 }
 
@@ -447,12 +417,17 @@ em.tabulator-value-placeholder {
     justify-content: flex-end;
 }
 
+.tabulator-grid-manipulation {
+    padding: 1em 0;
+}
+
 /* CMS specific styles */
 
 .cms .tabulatorgrid {
     margin-left: -1.5385rem;
     margin-right: -1.5385rem;
 }
+
 .admini .tabulatorgrid {
     margin-left: -1rem;
     margin-right: -1rem;
