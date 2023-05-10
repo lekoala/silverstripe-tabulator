@@ -1381,6 +1381,7 @@ class TabulatorGrid extends ModularFormField
 
         $offset = ($page - 1) * $limit;
         $data = $this->getManipulatedData($limit, $offset, $sort, $filter);
+        $data['state'] = $state;
 
         $encodedData = json_encode($data);
         if (!$encodedData) {
