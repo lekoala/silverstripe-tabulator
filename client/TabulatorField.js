@@ -149,17 +149,7 @@
         if (typeof handler === "function") {
             return handler;
         }
-        if (handler.indexOf(".") !== -1) {
-            var parts = handler.split(".");
-            var namespace = window[parts[0]];
-            var func = parts[1];
-            if (!namespace) {
-                console.warn("Undefined namespace", parts[0]);
-                return;
-            }
-            return namespace[func];
-        }
-        return window[handler];
+        return handler.split(".").reduce((r, p) => r[p], window);
     }
 
     /**
@@ -799,11 +789,11 @@
         // @link https://github.com/olifolkerd/tabulator/issues/4155
         tabulator.on("renderStarted", () => {
             tabulator.element.style.minHeight =
-            tabulator.element.offsetHeight + "px";
+                tabulator.element.offsetHeight + "px";
         });
         tabulator.on("renderComplete", () => {
             tabulator.element.style.minHeight =
-            tabulator.element.querySelector(".tabulator-tableholder")
+                tabulator.element.querySelector(".tabulator-tableholder")
                     .offsetHeight + "px";
         });
 
