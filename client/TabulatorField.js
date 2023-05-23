@@ -795,6 +795,18 @@
             }
         });
 
+        // Fix table size on full redraw
+        // @link https://github.com/olifolkerd/tabulator/issues/4155
+        tabulator.on("renderStarted", () => {
+            tabulator.element.style.minHeight =
+            tabulator.element.offsetHeight + "px";
+        });
+        tabulator.on("renderComplete", () => {
+            tabulator.element.style.minHeight =
+            tabulator.element.querySelector(".tabulator-tableholder")
+                    .offsetHeight + "px";
+        });
+
         // Add desktop or mobile class
         let navigatorClass = "desktop";
         if (tabulator.browserMobile) {

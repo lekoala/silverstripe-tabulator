@@ -34,23 +34,17 @@ export default function (cell, formatterParams, onRendered) {
     el.addEventListener("click", function (e) {
         e.stopImmediatePropagation();
 
-        // prevent redraw due to size change
-        cell.getTable().modules.resizeTable.blockRedraw();
-
+        // open class show/hide generated content visibility (collapse mode)
         toggleList(!config.open);
 
-        // dispatch event for flexCollapse
+        // dispatch event for flexCollapse mode
         cell.getRow()._row.dispatch(
             "row-responsive-toggled",
             cell.getRow(),
             config.open
         );
 
-        // prevent redraw due to size change
-        setTimeout(() => {
-            cell.getTable().modules.resizeTable.restoreRedraw();
-            cell.getTable().rowManager.adjustTableSize();
-        }, 100);
+        cell.getTable().rowManager.adjustTableSize();
     });
 
     toggleList(config.open);

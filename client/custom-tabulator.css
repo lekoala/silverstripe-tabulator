@@ -290,6 +290,10 @@
     margin-top: 12px !important;
 }
 
+.tabulator-row .tabulator-cell.tabulator-editing {
+    border: 0;
+}
+
 .tabulator:not(.tabulator-table-editing) .tabulator-row:hover .tabulator-editable,
 .tabulator.tabulator-table-editing .tabulator-row-editing .tabulator-editable {
     background: var(--tabulator-highlight-color);

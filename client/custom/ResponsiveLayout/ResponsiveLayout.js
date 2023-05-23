@@ -5,14 +5,12 @@ class MyResponsiveLayout extends ResponsiveLayout {
     //generate responsive columns list
     initialize() {
         super.initialize();
-        if (this.table.options.responsiveLayout) {
-            if (this.table.options.responsiveLayout === "flexCollapse") {
-                this.subscribe("row-init", this.initializeRow.bind(this));
-                this.subscribe(
-                    "row-responsive-toggled",
-                    this.toggleFlexRow.bind(this)
-                );
-            }
+        if (this.table.options.responsiveLayout === "flexCollapse") {
+            this.subscribe("row-init", this.initializeRow.bind(this));
+            this.subscribe(
+                "row-responsive-toggled",
+                this.toggleFlexRow.bind(this)
+            );
         }
     }
 

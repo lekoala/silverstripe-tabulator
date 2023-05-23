@@ -899,6 +899,8 @@ class TabulatorGrid extends ModularFormField
         $this->setRemoteSource($url, $params);
         if (!$pageSize) {
             $pageSize = $this->pageSize;
+        } else {
+            $this->pageSize = $pageSize;
         }
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);
@@ -926,6 +928,8 @@ class TabulatorGrid extends ModularFormField
         }
         if (!$pageSize) {
             $pageSize = $this->pageSize;
+        } else {
+            $this->pageSize = $pageSize;
         }
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);

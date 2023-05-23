@@ -2,9 +2,8 @@ export { default as AccessorModule } from "../../node_modules/tabulator-tables/s
 export { default as AjaxModule } from "../../node_modules/tabulator-tables/src/js/modules/Ajax/Ajax.js";
 export { default as ClipboardModule } from "../../node_modules/tabulator-tables/src/js/modules/Clipboard/Clipboard.js";
 export { default as ColumnCalcsModule } from "../../node_modules/tabulator-tables/src/js/modules/ColumnCalcs/ColumnCalcs.js";
-// export {default as DataTreeModule} from '../../node_modules/tabulator-tables/src/js/modules/DataTree/DataTree.js';
-export { default as DataTreeModule } from "./DataTree/DataTree.js";
-export { default as DownloadModule } from "../../node_modules/tabulator-tables/src/js/modules/Download/Download.js";
+export { default as DataTreeModule } from "../../node_modules/tabulator-tables/src/js/modules/DataTree/DataTree.js";
+// export { default as DownloadModule } from "../../node_modules/tabulator-tables/src/js/modules/Download/Download.js";
 export { default as EditModule } from "../../node_modules/tabulator-tables/src/js/modules/Edit/Edit.js";
 export { default as ExportModule } from "../../node_modules/tabulator-tables/src/js/modules/Export/Export.js";
 export { default as FilterModule } from "../../node_modules/tabulator-tables/src/js/modules/Filter/Filter.js";
@@ -14,7 +13,7 @@ export { default as FrozenColumnsModule } from "../../node_modules/tabulator-tab
 export { default as FrozenRowsModule } from "../../node_modules/tabulator-tables/src/js/modules/FrozenRows/FrozenRows.js";
 export { default as GroupRowsModule } from "../../node_modules/tabulator-tables/src/js/modules/GroupRows/GroupRows.js";
 export { default as HistoryModule } from "../../node_modules/tabulator-tables/src/js/modules/History/History.js";
-export { default as HtmlTableImportModule } from "../../node_modules/tabulator-tables/src/js/modules/HtmlTableImport/HtmlTableImport.js";
+// export { default as HtmlTableImportModule } from "../../node_modules/tabulator-tables/src/js/modules/HtmlTableImport/HtmlTableImport.js";
 export { default as ImportModule } from "../../node_modules/tabulator-tables/src/js/modules/Import/Import.js";
 export { default as InteractionModule } from "../../node_modules/tabulator-tables/src/js/modules/Interaction/Interaction.js";
 export { default as KeybindingsModule } from "../../node_modules/tabulator-tables/src/js/modules/Keybindings/Keybindings.js";
@@ -29,8 +28,7 @@ export { default as PrintModule } from "../../node_modules/tabulator-tables/src/
 export { default as ReactiveDataModule } from "../../node_modules/tabulator-tables/src/js/modules/ReactiveData/ReactiveData.js";
 export { default as ResizeColumnsModule } from "../../node_modules/tabulator-tables/src/js/modules/ResizeColumns/ResizeColumns.js";
 export { default as ResizeRowsModule } from "../../node_modules/tabulator-tables/src/js/modules/ResizeRows/ResizeRows.js";
-// export {default as ResizeTableModule} from '../../node_modules/tabulator-tables/src/js/modules/ResizeTable/ResizeTable.js';
-export { default as ResizeTableModule } from "./ResizeTable/ResizeTable.js";
+export { default as ResizeTableModule } from "../../node_modules/tabulator-tables/src/js/modules/ResizeTable/ResizeTable.js";
 // export {default as ResponsiveLayoutModule} from '../../node_modules/tabulator-tables/src/js/modules/ResponsiveLayout/ResponsiveLayout.js';
 export { default as ResponsiveLayoutModule } from "./ResponsiveLayout/ResponsiveLayout.js";
 export { default as SelectRowModule } from "../../node_modules/tabulator-tables/src/js/modules/SelectRow/SelectRow.js";
