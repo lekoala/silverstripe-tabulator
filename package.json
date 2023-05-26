@@ -4,13 +4,7 @@
   "author": "LeKoala",
   "license": "MIT",
   "dependencies": {
-    "tabulator-tables": "5.4.4"
-  },
-  "scripts": {
-    "cdn": "php bin/download-cdn-files.php",
-    "build": "esbuild --bundle --minify --format=iife client/custom-tabulator.js --outfile=client/custom-tabulator.min.js",
-    "build-dev": "esbuild --bundle --format=iife client/custom-tabulator.js --outfile=client/custom-tabulator.min.js",
-    "watch": "npm run build-dev -- --watch"
+    "formidable-elements": "^1"
   },
   "keywords": []
 }

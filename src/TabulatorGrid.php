@@ -27,9 +27,7 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBBoolean;
-use LeKoala\ModularBehaviour\ModularFormField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
-use SilverStripe\Core\Manifest\ModuleResourceLoader;
 
 /**
  * This is a replacement for most GridField usages in SilverStripe
@@ -37,12 +35,12 @@ use SilverStripe\Core\Manifest\ModuleResourceLoader;
  *
  * @link http://www.tabulator.info/
  */
-class TabulatorGrid extends ModularFormField
+class TabulatorGrid extends FormField
 {
     const POS_START = 'start';
     const POS_END = 'end';
 
-    // @link http://www.tabulator.info/examples/5.4?#fittodata
+    // @link http://www.tabulator.info/examples/5.5?#fittodata
     const LAYOUT_FIT_DATA = "fitData";
     const LAYOUT_FIT_DATA_FILL = "fitDataFill";
     const LAYOUT_FIT_DATA_STRETCH = "fitDataStretch";
@@ -52,7 +50,7 @@ class TabulatorGrid extends ModularFormField
     const RESPONSIVE_LAYOUT_HIDE = "hide";
     const RESPONSIVE_LAYOUT_COLLAPSE = "collapse";
 
-    // @link http://www.tabulator.info/docs/5.4/format
+    // @link http://www.tabulator.info/docs/5.5/format
     const FORMATTER_PLAINTEXT = 'plaintext';
     const FORMATTER_TEXTAREA = 'textarea';
     const FORMATTER_HTML = 'html';
@@ -71,17 +69,12 @@ class TabulatorGrid extends ModularFormField
     const FORMATTER_BUTTON_CROSS = 'buttonCross';
     const FORMATTER_ROWNUM = 'rownum';
     const FORMATTER_HANDLE = 'handle';
-    // @link http://www.tabulator.info/docs/5.4/format#format-module
+    // @link http://www.tabulator.info/docs/5.5/format#format-module
     const FORMATTER_ROW_SELECTION = 'rowSelection';
     const FORMATTER_RESPONSIVE_COLLAPSE = 'responsiveCollapse';
 
     // our built in functions
-    const JS_FLAG_FORMATTER = 'SSTabulator.flagFormatter';
-    const JS_BUTTON_FORMATTER = 'SSTabulator.buttonFormatter';
-    const JS_CUSTOM_TICK_CROSS_FORMATTER = 'SSTabulator.customTickCrossFormatter';
     const JS_BOOL_GROUP_HEADER = 'SSTabulator.boolGroupHeader';
-    const JS_SIMPLE_ROW_FORMATTER = 'SSTabulator.simpleRowFormatter';
-    const JS_EXPAND_TOOLTIP = 'SSTabulator.expandTooltip';
     const JS_DATA_AJAX_RESPONSE = 'SSTabulator.dataAjaxResponse';
 
     /**
@@ -111,12 +104,7 @@ class TabulatorGrid extends ModularFormField
     /**
      * @config
      */
-    private static string $theme = 'bootstrap5';
-
-    /**
-     * @config
-     */
-    private static string $version = '5.4';
+    private static bool $load_styles = true;
 
     /**
      * @config
@@ -132,11 +120,6 @@ class TabulatorGrid extends ModularFormField
      * @config
      */
     private static bool $use_cdn = false;
-
-    /**
-     * @config
-     */
-    private static bool $use_custom_build = true;
 
     /**
      * @config
@@ -159,32 +142,25 @@ class TabulatorGrid extends ModularFormField
     private static bool $enable_js_modules = true;
 
     /**
-     * @link http://www.tabulator.info/docs/5.4/options
+     * @link http://www.tabulator.info/docs/5.5/options
      * @config
      */
     private static array $default_options = [
-        'index' => "ID", // http://tabulator.info/docs/5.4/data#row-index
-        'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.4/layout#layout
-        'height' => '100%', // http://www.tabulator.info/docs/5.4/layout#height-fixed
-        'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.4/layout#responsive
-        'rowFormatter' => "SSTabulator.simpleRowFormatter", // http://tabulator.info/docs/5.4/format#row
+        'index' => "ID", // http://tabulator.info/docs/5.5/data#row-index
+        'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.5/layout#layout
+        'height' => '100%', // http://www.tabulator.info/docs/5.5/layout#height-fixed
+        'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.5/layout#responsive
     ];
 
     /**
-     * @link http://tabulator.info/docs/5.4/columns#defaults
+     * @link http://tabulator.info/docs/5.5/columns#defaults
      * @config
      */
     private static array $default_column_options = [
         'resizable' => false,
-        'tooltip' => 'SSTabulator.expandTooltip',
     ];
 
     private static bool $enable_ajax_init = true;
-
-    /**
-     * @config
-     */
-    private static array $custom_pagination_icons = [];
 
     /**
      * @config
@@ -197,17 +173,17 @@ class TabulatorGrid extends ModularFormField
     protected ?SS_List $list;
 
     /**
-     * @link http://www.tabulator.info/docs/5.4/columns
+     * @link http://www.tabulator.info/docs/5.5/columns
      */
     protected array $columns = [];
 
     /**
-     * @link http://tabulator.info/docs/5.4/columns#defaults
+     * @link http://tabulator.info/docs/5.5/columns#defaults
      */
     protected array $columnDefaults = [];
 
     /**
-     * @link http://www.tabulator.info/docs/5.4/options
+     * @link http://www.tabulator.info/docs/5.5/options
      */
     protected array $options = [];
 
@@ -232,10 +208,6 @@ class TabulatorGrid extends ModularFormField
 
     protected array $listeners = [];
 
-    protected array $jsNamespaces = [
-        'SSTabulator'
-    ];
-
     protected array $linksOptions = [
         'ajaxURL'
     ];
@@ -243,10 +215,6 @@ class TabulatorGrid extends ModularFormField
     protected array $dataAttributes = [];
 
     protected string $controllerFunction = "";
-
-    protected bool $useConfigProvider = false;
-
-    protected bool $useInitScript = false;
 
     protected string $editUrl = "";
 
@@ -422,7 +390,7 @@ class TabulatorGrid extends ModularFormField
             $dbObject = $singl->dbObject($field);
             if ($dbObject) {
                 if ($dbObject instanceof DBBoolean) {
-                    $columns[$field]['formatter'] = "SSTabulator.customTickCrossFormatter";
+                    $columns[$field]['formatter'] = "customTickCross";
                 }
             }
         }
@@ -535,10 +503,7 @@ class TabulatorGrid extends ModularFormField
 
     public static function requirements(): void
     {
-        $use_cdn = self::config()->use_cdn;
-        $use_custom_build = self::config()->use_custom_build;
-        $theme = self::config()->theme; // simple, midnight, modern or framework
-        $version = self::config()->version;
+        $load_styles = self::config()->load_styles;
         $luxon_version = self::config()->luxon_version;
         $enable_luxon = self::config()->enable_luxon;
         $last_icon_version = self::config()->last_icon_version;
@@ -550,13 +515,6 @@ class TabulatorGrid extends ModularFormField
             $jsOpts['type'] = 'module';
         }
 
-        if ($use_cdn) {
-            $baseDir = "https://cdn.jsdelivr.net/npm/tabulator-tables@$version/dist";
-        } else {
-            $asset = ModuleResourceLoader::resourceURL('lekoala/silverstripe-tabulator:client/cdn/js/tabulator.min.js');
-            $baseDir = dirname(dirname($asset));
-        }
-
         if ($luxon_version && $enable_luxon) {
             // Do not load as module or we would get undefined luxon global var
             Requirements::javascript("https://cdn.jsdelivr.net/npm/luxon@$luxon_version/build/global/luxon.min.js");
@@ -566,26 +524,14 @@ class TabulatorGrid extends ModularFormField
             // Do not load as module even if asked to ensure load speed
             Requirements::javascript("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.js");
         }
-        if ($use_custom_build) {
-            // if (Director::isDev() && !Director::is_ajax()) {
-            //     Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.js");
-            // } else {
-            Requirements::javascript("lekoala/silverstripe-tabulator:client/custom-tabulator.min.js", $jsOpts);
-            // }
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', $jsOpts);
-        } else {
-            Requirements::javascript("$baseDir/js/tabulator.min.js", $jsOpts);
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', $jsOpts);
-        }
 
-        if ($theme) {
-            Requirements::css("$baseDir/css/tabulator_$theme.min.css");
+        Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', $jsOpts);
+        if ($load_styles) {
+            Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.min.js', $jsOpts);
         } else {
-            Requirements::css("$baseDir/css/tabulator.min.css");
-        }
-
-        if ($theme && $theme == "bootstrap5") {
-            Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.min.css');
+            // you must load th css yourself based on your preferences
+            Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.raw.min.js', $jsOpts);
         }
     }
 
@@ -601,35 +547,8 @@ class TabulatorGrid extends ModularFormField
         return parent::setValue($value, $data);
     }
 
-    public function getModularName()
-    {
-        return 'SSTabulator.createTabulator';
-    }
-
-    public function getModularSelector()
-    {
-        return '.tabulatorgrid';
-    }
-
-    public function getModularConfigName()
-    {
-        return str_replace('-', '_', $this->ID()) . '_config';
-    }
-
-    public function getModularConfig()
-    {
-        $JsonOptions = $this->JsonOptions();
-        $configName = $this->getModularConfigName();
-        $script = "var $configName = $JsonOptions";
-        return $script;
-    }
-
     public function Field($properties = [])
     {
-        $this->addExtraClass(self::config()->theme);
-        if ($this->lazyInit) {
-            $this->setModularLazy($this->lazyInit);
-        }
         if (self::config()->enable_requirements) {
             self::requirements();
         }
@@ -642,8 +561,6 @@ class TabulatorGrid extends ModularFormField
 
         // Data attributes for our custom behaviour
         $this->setDataAttribute("row-click-triggers-action", $this->rowClickTriggersAction);
-        $customIcons = self::config()->custom_pagination_icons;
-        $this->setDataAttribute("use-custom-pagination-icons", empty($customIcons));
 
         $this->setDataAttribute("listeners", $this->listeners);
         if ($this->editUrl) {
@@ -659,19 +576,6 @@ class TabulatorGrid extends ModularFormField
             $this->setDataAttribute("bulk-url", $url);
         }
 
-        if ($this->useConfigProvider) {
-            $configLink = "/" . ltrim($this->Link("configProvider"), "/");
-            $configLink .= "?t=" . time();
-            // This cannot be loaded as a js module
-            Requirements::javascript($configLink, ['type' => 'application/javascript', 'defer' => 'true']);
-        } elseif ($this->useInitScript) {
-            Requirements::customScript($this->getInitScript());
-        }
-
-        // Skip modular behaviour
-        if ($this->useConfigProvider || $this->useInitScript) {
-            return FormField::Field($properties);
-        }
         return parent::Field($properties);
     }
 
@@ -758,14 +662,6 @@ class TabulatorGrid extends ModularFormField
             "next_title" =>  _t("TabulatorPagination.next_title", "Next Page"),
             "all" =>  _t("TabulatorPagination.all", "All"),
         ];
-        // This will always default to last icon if present
-        $customIcons = self::config()->custom_pagination_icons;
-        if (!empty($customIcons)) {
-            $paginationTranslations['first'] = $customIcons['first'] ?? "<<";
-            $paginationTranslations['last'] = $customIcons['last'] ?? ">>";
-            $paginationTranslations['prev'] = $customIcons['prev'] ?? "<";
-            $paginationTranslations['next'] = $customIcons['next'] ?? ">";
-        }
         $dataTranslations = [
             "loading" => _t("TabulatorData.loading", "Loading"),
             "error" => _t("TabulatorData.error", "Error"),
@@ -797,7 +693,7 @@ class TabulatorGrid extends ModularFormField
         // Apply state
         $state = $this->getState();
         if (!empty($state['filter'])) {
-            // @link https://tabulator.info/docs/5.4/filter#initial
+            // @link https://tabulator.info/docs/5.5/filter#initial
             // We need to split between global filters and header filters
             $allFilters = $state['filter'] ?? [];
             $globalFilters = [];
@@ -813,20 +709,23 @@ class TabulatorGrid extends ModularFormField
             $opts['initialHeaderFilter'] = $headerFilters;
         }
         if (!empty($state['sort'])) {
-            // @link https://tabulator.info/docs/5.4/sort#initial
+            // @link https://tabulator.info/docs/5.5/sort#initial
             $opts['initialSort'] = $state['sort'];
         }
+
+        // Restore state from server
         $opts['_state'] = $state;
 
+        // Add our extension initCallback
+        $opts['_initCallback'] = ['__fn' => 'SSTabulator.initCallback'];
+
+        unset($opts['height']);
         $format = Director::isDev() ? JSON_PRETTY_PRINT : 0;
         $json = json_encode($opts, $format);
 
-        // Escape functions by namespace (see TabulatorField.js)
-        foreach ($this->jsNamespaces as $ns) {
-            $json = preg_replace('/"(' . $ns . '\.[a-zA-Z]*)"/', "$1", $json);
-            // Keep static namespaces
-            $json = str_replace("*" . $ns, $ns, $json);
-        }
+        // Escape '
+        $json = str_replace("'", '&#39;', $json);
+
 
         return $json;
     }
@@ -865,6 +764,21 @@ class TabulatorGrid extends ModularFormField
         return $this;
     }
 
+    public function getRowHeight(): int
+    {
+        return $this->getOption('rowHeight');
+    }
+
+    /**
+     * Prevent row height automatic computation
+     * @link https://tabulator.info/docs/5.5/layout#height-row
+     */
+    public function setRowHeight(int $v): self
+    {
+        $this->setOption('rowHeight', $v);
+        return $this;
+    }
+
     public function makeHeadersSticky(): self
     {
         $this->addExtraClass("tabulator-sticky");
@@ -880,13 +794,13 @@ class TabulatorGrid extends ModularFormField
         $this->setOption("ajaxParams", $params);
         // Accept response where data is nested under the data key
         if ($dataResponse) {
-            $this->setOption("ajaxResponse", self::JS_DATA_AJAX_RESPONSE);
+            $this->setOption("ajaxResponse", ['__fn' => self::JS_DATA_AJAX_RESPONSE]);
         }
         return $this;
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.4/page#remote
+     * @link http://www.tabulator.info/docs/5.5/page#remote
      * @param string $url
      * @param array $params
      * @param integer $pageSize
@@ -904,15 +818,15 @@ class TabulatorGrid extends ModularFormField
         }
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);
-        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.4/page#counter
+        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.5/page#counter
         return $this;
     }
 
     public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $params = []): self
     {
         $this->setRemotePagination($this->TempLink('load', false), $params, $pageSize, $initialPage);
-        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.4/sort#ajax-sort
-        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.4/filter#ajax-filter
+        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.5/sort#ajax-sort
+        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.5/filter#ajax-filter
         return $this;
     }
 
@@ -933,7 +847,7 @@ class TabulatorGrid extends ModularFormField
         }
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);
-        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.4/page#counter
+        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.5/page#counter
         return $this;
     }
 
@@ -943,13 +857,13 @@ class TabulatorGrid extends ModularFormField
             'SecurityID' => SecurityToken::getSecurityID()
         ], $extraParams);
         $this->setProgressiveLoad($this->TempLink('load', false), $params, $pageSize, $initialPage, $mode, $scrollMargin);
-        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.4/sort#ajax-sort
-        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.4/filter#ajax-filter
+        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.5/sort#ajax-sort
+        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.5/filter#ajax-filter
         return $this;
     }
 
     /**
-     * @link https://tabulator.info/docs/5.4/layout#responsive
+     * @link https://tabulator.info/docs/5.5/layout#responsive
      * @param boolean $startOpen
      * @param string $mode collapse|hide|flexCollapse
      * @return self
@@ -993,7 +907,6 @@ class TabulatorGrid extends ModularFormField
                 'titleFormatter' => 'rowSelection',
                 'headerSort' => false,
                 'width' => 40,
-                'cellClick' => 'SSTabulator.forwardClick',
             ]
         ], $this->columns);
         $this->setBulkActions($actions);
@@ -1035,7 +948,7 @@ class TabulatorGrid extends ModularFormField
         $this->setOption("groupBy", $field);
         $this->setOption("groupToggleElement", $toggleElement);
         if ($isBool) {
-            $this->setOption("groupHeader", self::JS_BOOL_GROUP_HEADER);
+            $this->setOption("groupHeader", ['_fn' => self::JS_BOOL_GROUP_HEADER]);
         }
     }
 
@@ -1221,40 +1134,6 @@ class TabulatorGrid extends ModularFormField
     }
 
     /**
-     * Deprecated in favor of modular behaviour
-     * @deprecated
-     * @return string
-     */
-    public function getInitScript(): string
-    {
-        $JsonOptions = $this->JsonOptions();
-        $ID = $this->ID();
-        $script = "SSTabulator.init(\"#$ID\", $JsonOptions);";
-        return $script;
-    }
-
-    /**
-     * Provides the configuration for this instance
-     *
-     * This is really useful in the context of the admin as it will be served over
-     * ajax
-     *
-     * Deprecated in favor of modular behaviour
-     * @deprecated
-     * @param HTTPRequest $request
-     * @return HTTPResponse
-     */
-    public function configProvider(HTTPRequest $request)
-    {
-        if (!$this->useConfigProvider) {
-            return $this->httpError(404);
-        }
-        $response = new HTTPResponse($this->getInitScript());
-        $response->addHeader('Content-Type', 'application/script');
-        return $response;
-    }
-
-    /**
      * Provides autocomplete lists
      *
      * @param HTTPRequest $request
@@ -1391,7 +1270,7 @@ class TabulatorGrid extends ModularFormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.4/page#remote-response
+     * @link http://www.tabulator.info/docs/5.5/page#remote-response
      * @param HTTPRequest $request
      * @return HTTPResponse
      */
@@ -1615,6 +1494,11 @@ class TabulatorGrid extends ModularFormField
                 }
 
                 $sortSql[] = $field . ' ' . $dir;
+            }
+        } else {
+            // If we have a sort column
+            if (isset($this->columns['ui_sort'])) {
+                $sortSql[] = $this->columns['ui_sort']['field'] . ' ASC';
             }
         }
         if (!empty($sortSql)) {
@@ -1980,13 +1864,13 @@ class TabulatorGrid extends ModularFormField
             "responsive" => 0,
             "cssClass" => 'tabulator-cell-btn',
             "tooltip" => $title,
-            "formatter" => "SSTabulator.buttonFormatter",
+            "formatter" => "button",
             "formatterParams" => [
                 "icon" => $icon,
                 "title" => $title,
                 "url" => $this->TempLink($urlOrAction), // On the controller by default
             ],
-            "cellClick" => "SSTabulator.buttonHandler",
+            "cellClick" => ["__fn" => "SSTabulator.buttonHandler"],
             "width" => 70,
             "hozAlign" => "center",
             "headerSort" => false,
@@ -2049,7 +1933,7 @@ class TabulatorGrid extends ModularFormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.4/columns#definition
+     * @link http://www.tabulator.info/docs/5.5/columns#definition
      * @param string $field (Required) this is the key for this column in the data array
      * @param string $title (Required) This is the title that will be displayed in the header for this column
      * @param array $opts Other options to merge in
@@ -2075,7 +1959,7 @@ class TabulatorGrid extends ModularFormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.4/columns#definition
+     * @link http://www.tabulator.info/docs/5.5/columns#definition
      * @param array $opts Other options to merge in
      * @return $this
      */
@@ -2370,29 +2254,6 @@ class TabulatorGrid extends ModularFormField
         return $this;
     }
 
-    public function getJsNamespaces(): array
-    {
-        return $this->jsNamespaces;
-    }
-
-    public function setJsNamespaces(array $jsNamespaces): self
-    {
-        $this->jsNamespaces = $jsNamespaces;
-        return $this;
-    }
-
-    public function registerJsNamespace(string $ns): self
-    {
-        $this->jsNamespaces[] = $ns;
-        return $this;
-    }
-
-    public function unregisterJsNamespace(string $ns): self
-    {
-        $this->jsNamespaces = array_diff($this->jsNamespaces, [$ns]);
-        return $this;
-    }
-
     public function getLinksOptions(): array
     {
         return $this->linksOptions;
@@ -2514,40 +2375,6 @@ class TabulatorGrid extends ModularFormField
     public function setControllerFunction(string $controllerFunction): self
     {
         $this->controllerFunction = $controllerFunction;
-        return $this;
-    }
-
-    /**
-     * Get the value of useConfigProvider
-     */
-    public function getUseConfigProvider(): bool
-    {
-        return $this->useConfigProvider;
-    }
-
-    /**
-     * Set the value of useConfigProvider
-     */
-    public function setUseConfigProvider(bool $useConfigProvider): self
-    {
-        $this->useConfigProvider = $useConfigProvider;
-        return $this;
-    }
-
-    /**
-     * Get the value of useInitScript
-     */
-    public function getUseInitScript(): bool
-    {
-        return $this->useConfigProvider;
-    }
-
-    /**
-     * Set the value of useInitScript
-     */
-    public function setUseInitScript(bool $useInitScript): self
-    {
-        $this->useInitScript = $useInitScript;
         return $this;
     }
 

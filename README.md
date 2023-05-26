@@ -45,48 +45,22 @@ On the bad side, it can break because it most probably expect gridfields everywh
 
 This module scaffold some default columns based on summary and searchable fields.
 
-For more advanced usage, please define a `tabulatorColumns` method that returns all the columns according to [Tabulator definitions](http://tabulator.info/docs/5.2/columns).
+For more advanced usage, please define a `tabulatorColumns` method that returns all the columns according to [Tabulator definitions](http://tabulator.info/docs/5.5/columns).
 
 ## JS Init
 
-By default, Tabulator will init through [modular behaviour](https://github.com/lekoala/silverstripe-modular-behaviour). This allows a consistent init
-process in the frontend and in the backend, while supporting lazy init out of the box (eg: when the grid is in a hidden tab).
-
-If you don't want to use Modular Behaviour, you have the following options:
-
-### Using the config provider
-
-One using js include (the default mode) which works will in the SilverStripe
-admin during ajax navigation, as the init script with its options is served as a distinct script.
-
-```php
-$grid->setUseConfigProvider(true);
-```
-
-NOTE: this may not be supported in future versions
-
-### Using an inline script
-
-This might not always be convenient in the frontend where ajax might not be used or x-include-js handled. In this
-case, you can disable the configProvider and simply use a regular inline script.
-
-```php
-$grid->setUseInitScript(true);
-```
-
-NOTE: this may not be supported in future versions
+By default, Tabulator will init through a custom elements provided by [formidable elements](https://formidable-elements.vercel.app/)
 
 ## Options
 
-You can configure any of the [available options](http://tabulator.info/docs/5.2/options) using the `setOption` call.
+You can configure any of the [available options](http://tabulator.info/docs/5.5/options) using the `setOption` call.
 
 ### Dynamic callbacks
 
 For dynamic callbacks, you can specify a function available in the global namespace using a namespaced function to avoid scope pollution.
-This namespace must be registered using the `registerJsNamespace` function. The default `SSTabulator` is registered by default.
+These callbacks are the same as the one of [formidable elements](https://formidable-elements.vercel.app/) meaning they have a form of {"__fn" : "app.callback"}
 
-Any parameter in this namespace will be escaped by a regex from the json encoding when building the option array.
-Using this methodology is the only way to distinguish regular strings from actual function name.
+Some defaults callback are available under SSTabulator.
 
 For example:
 
@@ -95,27 +69,9 @@ $grid->registerJsNamespace('MyApp');
 $grid->addColumn('MyCell', 'My Cell', [
     'headerSort' => false,
     'editable' => '_editable',
-    'editor' => 'SSTabulator.externalEditor',
-    'mutatorEdit' => 'MyApp.mutateValue',
+    'editor' => ["__fn" => 'SSTabulator.externalEditor'],
+    'mutatorEdit' => ["__fn" => 'MyApp.mutateValue'],
 ]);
-```
-
-Will be converted to:
-
-```js
-{
-    "headerSort": false,
-    "editable": "_editable",
-    "editor": SSTabulator.externalEditor,
-    "mutatorEdit": MyApp.mutateValue,
-}
-```
-
-If for some reason you need to prevent espacing of a registered namespace, simply prefix with a *
-
-```php
-// Handler is specified as a data attribute on the btn, so we need to keep it as string
-$btn['formatterParams']['ajax'] = "*MyApp.handleAjax";
 ```
 
 ## Using wizards
@@ -237,22 +193,8 @@ Simply replace your instances of `HasOneButtonField` with `HasOneTabulatorField`
 
 ## Additionnal formaters and helpers
 
-- SSTabulator.flagFormatter: format a two char country code to a svg flag using Last Icon
-- SSTabulator.buttonFormatter: format buttons
-  - Allow showing alternative icons using `showAlt` and `showAltClause`
-- SSTabulator.externalFormatter: format with an external function
-- SSTabulator.customTickCross: nice alternative to the default tick cross formatter
 - SSTabulator.boolGroupHeader: useful to group by boolean values
-- SSTabulator.simpleRowFormatter: apply class or colors if the row contains `TabulatorRowColor` or `TabulatorRowClass`
-- SSTabulator.expandTooltip: show content in a tooltip if truncated
-- SSTabulator.moneyEditor: edit currencies
-- SSTabulator.externalEditor: edit with an external script
 - SSTabulator.isCellEditable: convention based callback to check if the row is editable
-
-## Custom build
-
-This module use a custom build of Tabulator with specific tweaks that might or might not be merged some day.
-You can use the cdn version by disabling `use_custom_build` config flag.
 
 ## Migrating from GridFields
 
@@ -263,7 +205,7 @@ As a convenience, Tabulator define a getConfig method that returns a blank GridF
 Another way is to use the TabulatorGrid::replaceGridfield method that tries its best to replace your GridField instance with
 an appropriate and configured TabulatorGrid.
 
-## Dependencies
+## Optional Dependencies
 
 - [Last Icon](https://github.com/lekoala/last-icon): for nice icons
 - [Luxon](https://moment.github.io/luxon/#/): for formatting dates

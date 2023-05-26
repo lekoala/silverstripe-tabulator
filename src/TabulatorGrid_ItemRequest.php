@@ -165,7 +165,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     {
         $SecurityID = $request->postVar('SecurityID');
         if (!SecurityToken::inst()->check($SecurityID)) {
-            return $this->httpError(404, "Invalid SecurityID: $SecurityID");
+            return $this->httpError(404, "Invalid SecurityID");
         }
         if (!$this->record->canEdit()) {
             return $this->httpError(403, _t(
@@ -235,7 +235,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     {
         $SecurityID = $request->postVar('SecurityID');
         if (!SecurityToken::inst()->check($SecurityID)) {
-            return $this->httpError(404, "Invalid SecurityID: $SecurityID");
+            return $this->httpError(404, "Invalid SecurityID");
         }
         if (!$this->record->canEdit()) {
             return $this->httpError(403, _t(
@@ -265,6 +265,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         $error = null;
         try {
+            // Just make sure you don't have 0 (except first record) or equal sorts
             if ($prevSort < $Sort) {
                 $set = "$sortField = $sortField - 1";
                 $where = "$sortField > $prevSort and $sortField <= $Sort";
@@ -272,7 +273,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
                 $set = "$sortField = $sortField + 1";
                 $where = "$sortField < $prevSort and $sortField >= $Sort";
             }
-            DB::query("UPDATE $table SET $set WHERE $where");
+            DB::query("UPDATE `$table` SET $set WHERE $where");
             $this->record->$sortField = $Sort;
             $this->record->write();
         } catch (Exception $e) {
@@ -373,7 +374,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $response;
         }
 
-        $this->sessionMessage($result, $error ? "error" : "good");
+        $this->sessionMessage($result, $error ? "error" : "good", "html");
 
         $url = $this->getBackURL()
             ?: $this->getReturnReferer()
@@ -388,11 +389,11 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     {
         $controller = $this->getToplevelController();
         if ($controller->hasMethod('sessionMessage')) {
-            $controller->sessionMessage($message, $type);
+            $controller->sessionMessage($message, $type, $cast);
         } else {
             $form = $this->ItemEditForm();
             if ($form) {
-                $form->sessionMessage($message, $type);
+                $form->sessionMessage($message, $type, $cast);
             }
         }
     }
@@ -618,7 +619,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             $error = true;
         }
 
-        $this->sessionMessage($message, $error ? "error" : "good");
+        $this->sessionMessage($message, $error ? "error" : "good", 'html');
 
         // Redirect after save
         return $this->redirectAfterSave($isNewRecord);

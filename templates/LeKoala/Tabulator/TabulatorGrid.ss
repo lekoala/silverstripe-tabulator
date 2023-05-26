@@ -31,11 +31,13 @@ $ShowTools
     <% end_if %>
 </div>
 <% end_if %>
-<div id="$ID" class="$extraClass" $dataAttributesHTML></div>
+<tabulator-grid data-config='$JsonOptions' $dataAttributesHTML <% if getLazyInit %>lazy<% end_if %>>
+<div id="$ID" class="$extraClass"></div>
 <% if enableGridManipulation %>
 <div class="tabulator-grid-manipulation">
 <input type="hidden" name="$Name" value="$getValueJson" class="tabulator-hidden-value" />
-<button class="btn btn-success tabulator-add-row">Add new row</button>
-<button class="btn btn-danger tabulator-remove-selected">Remove selection</button>
+<button type="button" class="btn btn-success tabulator-add-row">Add new row</button>
+<button type="button" class="btn btn-danger tabulator-remove-selected">Remove selection</button>
 </div>
 <% end_if %>
+</tabulator-grid>

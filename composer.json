@@ -19,8 +19,7 @@
     "require": {
         "php": "^7.4 || ^8.0",
         "silverstripe/recipe-plugin": "^1",
-        "silverstripe/framework": "^4.10",
-        "lekoala/silverstripe-modular-behaviour": "*"
+        "silverstripe/framework": "^4.10"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",
