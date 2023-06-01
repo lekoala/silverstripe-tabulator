@@ -781,6 +781,7 @@ class TabulatorGrid extends FormField
 
     public function makeHeadersSticky(): self
     {
+        // note: we could also use the "sticky" attribute on the custom element
         $this->addExtraClass("tabulator-sticky");
         return $this;
     }
