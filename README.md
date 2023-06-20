@@ -196,6 +196,42 @@ Simply replace your instances of `HasOneButtonField` with `HasOneTabulatorField`
 - SSTabulator.boolGroupHeader: useful to group by boolean values
 - SSTabulator.isCellEditable: convention based callback to check if the row is editable
 
+## Global search
+
+Searching by columns is not always possible or convenient. Maybe you want to have a global search feature.
+
+This is really easy, just do this. It will create a top search bar where you can type anything!
+
+```php
+   $grid->setGlobalSearch(true);
+```
+
+By default, it will make a PartialMatch against the string. For large tables, you might not want to do that to use your indexes properly.
+You can also use shortcut syntax for filters:
+
+- s:
+- e:
+- =:
+- %:
+
+You can set the search fields using `setWildcardFields`. Otherwise it will default to `searchableFields`.
+
+### Quick filters
+
+When global search is enabled, you can also provide a custom list of "quick filters".
+
+```php
+$grid->setQuickFilters([
+        'blacklist' => [
+            'label' => 'Blacklisted Companies',
+            'callback' => function (&$list) {
+                $blacklistedIDS = DB::query('SELECT ID FROM Company WHERE `Status` = \'Blacklisted\'')->column();
+                $list = $list->filter('ID', $blacklistedIDS);
+            }
+        ]
+    ]);
+```
+
 ## Migrating from GridFields
 
 If you are in a project currently using GridFields, there are a couple of ways you can slowly migrate to Tabulator.

@@ -28,6 +28,7 @@ use SilverStripe\Security\SecurityToken;
 use SilverStripe\ORM\DataObjectInterface;
 use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\Forms\GridField\GridFieldConfig;
+use SilverStripe\ORM\Filters\PartialMatchFilter;
 
 /**
  * This is a replacement for most GridField usages in SilverStripe
@@ -227,6 +228,8 @@ class TabulatorGrid extends FormField
     protected array $wildcardFields = [];
 
     protected array $quickFilters = [];
+
+    protected string $defaultFilter = 'PartialMatch';
 
     protected bool $groupLayout = false;
 
@@ -1716,8 +1719,8 @@ class TabulatorGrid extends FormField
             }
         }
 
-        // Queries can have the format s: ... or e:... or =:....
-        $filter = 'PartialMatch';
+        // Queries can have the format s:... or e:... or =:.... or %:....
+        $filter = $this->defaultFilter;
         if (strpos($value, ':') === 1) {
             $parts = explode(":", $value);
             $shortcut = array_shift($parts);
@@ -1731,6 +1734,9 @@ class TabulatorGrid extends FormField
                     break;
                 case '=':
                     $filter = 'ExactMatch';
+                    break;
+                case '%':
+                    $filter = 'PartialMatch';
                     break;
             }
         }
@@ -2522,6 +2528,25 @@ class TabulatorGrid extends FormField
     public function setEnableGridManipulation($enableGridManipulation): self
     {
         $this->enableGridManipulation = $enableGridManipulation;
+        return $this;
+    }
+
+    /**
+     * Get the value of defaultFilter
+     */
+    public function getDefaultFilter(): string
+    {
+        return $this->defaultFilter;
+    }
+
+    /**
+     * Set the value of defaultFilter
+     *
+     * @param string $defaultFilter
+     */
+    public function setDefaultFilter($defaultFilter): self
+    {
+        $this->defaultFilter = $defaultFilter;
         return $this;
     }
 }
