@@ -60,6 +60,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
      */
     protected $popupController;
 
+    protected string $hash = '';
+
     protected string $template = '';
 
     private static $url_handlers = [
@@ -376,13 +378,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         $this->sessionMessage($result, $error ? "error" : "good", "html");
 
-        $url = $this->getBackURL()
-            ?: $this->getReturnReferer()
-            ?: $this->AbsoluteLink();
-
-        $url = $this->appendHash($url);
-
-        return $controller->redirect($url);
+        $url = $this->getDefaultBackLink();
+        return $this->redirect($url);
     }
 
     public function sessionMessage($message, $type = ValidationResult::TYPE_ERROR, $cast = ValidationResult::CAST_TEXT)
@@ -396,15 +393,6 @@ class TabulatorGrid_ItemRequest extends RequestHandler
                 $form->sessionMessage($message, $type, $cast);
             }
         }
-    }
-
-    protected function appendHash($url): string
-    {
-        $hash = Cookie::get('hash');
-        if ($hash) {
-            $url .= '#' . ltrim($hash, '#');
-        }
-        return $url;
     }
 
     /**
@@ -536,6 +524,14 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         return $c;
     }
 
+    public function getDefaultBackLink(): string
+    {
+        $url = $this->getBackURL()
+            ?: $this->getReturnReferer()
+            ?: $this->AbsoluteLink();
+        return $url;
+    }
+
     public function getBackLink(): string
     {
         $backlink = '';
@@ -596,6 +592,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ));
             return null;
         }
+
+        // _activetab is used in cms-action
+        $this->hash = $data['_hash'] ?? $data['_activetab'] ?? '';
 
         // Save from form data
         $error = false;
@@ -689,16 +688,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     {
         $controller = $this->getToplevelController();
         if ($isNewRecord) {
-            $url = $this->appendHash($this->Link());
-            // In Ajax, response content is discarded and hash is not used
-            return $controller->redirect($url);
+            return $this->redirect($this->Link());
         } elseif ($this->tabulatorGrid->hasByIDList() && $this->tabulatorGrid->getByIDList()->byID($this->record->ID)) {
-            if (Director::is_ajax()) {
-                // Return new view, as we can't do a "virtual redirect" via the CMS Ajax
-                // to the same URL (it assumes that its content is already current, and doesn't reload)
-                return $this->edit($controller->getRequest());
-            }
-            return $controller->redirectBack();
+            return $this->redirect($this->getDefaultBackLink());
         } else {
             // Changes to the record properties might've excluded the record from
             // a filtered list, so return back to the main view if it can't be found
@@ -709,6 +701,44 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             }
             return $controller->redirect($noActionURL, 302);
         }
+    }
+
+    protected function getHashValue()
+    {
+        if ($this->hash) {
+            $hash = $this->hash;
+        } else {
+            $hash = Cookie::get('hash');
+        }
+        if ($hash) {
+            $hash = '#' . ltrim($hash, '#');
+        }
+        return $hash;
+    }
+
+    /**
+     * Redirect to the given URL.
+     *
+     * @param string $url
+     * @param int $code
+     * @return HTTPResponse
+     */
+    public function redirect($url, $code = 302)
+    {
+
+        $hash = $this->getHashValue();
+        if ($hash) {
+            $url .= $hash;
+        }
+        $response = parent::redirect($url, $code);
+
+        // if ($hash) {
+        // We also pass it as a hash
+        // @link https://github.com/whatwg/fetch/issues/1167
+        // $response = $response->addHeader('X-Hash', $hash);
+        // }
+
+        return $response;
     }
 
     public function httpError($errorCode, $errorMessage = null)
