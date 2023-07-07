@@ -1874,7 +1874,7 @@ class TabulatorGrid extends FormField
             "formatter" => "button",
             "formatterParams" => [
                 "icon" => $icon,
-                // "title" => $title,
+                "title" => $title,
                 "url" => $this->TempLink($urlOrAction), // On the controller by default
             ],
             "cellClick" => ["__fn" => "SSTabulator.buttonHandler"],
