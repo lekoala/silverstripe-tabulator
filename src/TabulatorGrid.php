@@ -723,8 +723,7 @@ class TabulatorGrid extends FormField
         $opts['_initCallback'] = ['__fn' => 'SSTabulator.initCallback'];
 
         unset($opts['height']);
-        $format = Director::isDev() ? JSON_PRETTY_PRINT : 0;
-        $json = json_encode($opts, $format);
+        $json = json_encode($opts);
 
         // Escape '
         $json = str_replace("'", '&#39;', $json);
