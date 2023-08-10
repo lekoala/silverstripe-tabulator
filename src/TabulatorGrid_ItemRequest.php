@@ -723,9 +723,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
      * @param int $code
      * @return HTTPResponse
      */
-    public function redirect($url, $code = 302)
+    public function redirect($url, $code = 302): HTTPResponse
     {
-
         $hash = $this->getHashValue();
         if ($hash) {
             $url .= $hash;
