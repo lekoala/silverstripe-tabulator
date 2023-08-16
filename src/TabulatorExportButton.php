@@ -13,6 +13,12 @@ use SilverStripe\View\ArrayData;
  */
 class TabulatorExportButton extends AbstractTabulatorTool
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->btn = new ExcelGridFieldExportButton();
+    }
+
     public function forTemplate()
     {
         $grid = $this->tabulatorGrid;
@@ -40,9 +46,13 @@ class TabulatorExportButton extends AbstractTabulatorTool
         return $this->renderWith($this->getViewerTemplates(), $data);
     }
 
+    public function getButton(): ExcelGridFieldExportButton
+    {
+        return $this->btn;
+    }
+
     public function index()
     {
-        $btn = new ExcelGridFieldExportButton();
-        return $btn->handleExport($this->tabulatorGrid);
+        return $this->btn->handleExport($this->tabulatorGrid);
     }
 }

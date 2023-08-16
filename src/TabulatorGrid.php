@@ -1095,6 +1095,9 @@ class TabulatorGrid extends FormField
         $stateKey = $this->getStateKey();
         $request->getSession()->set($stateKey, $state);
         // If we are in a new controller, we can clear other states
+        // Note: this would break tabbed navigation if you try to open multiple tabs with various grid
+        // in various controllers, see below for more info
+        // @link https://github.com/silverstripe/silverstripe-framework/issues/9556
         $matches = [];
         preg_match_all('/\.(.*?)\./', $stateKey, $matches);
         $scope = $matches[1][0] ?? null;
@@ -1210,7 +1213,7 @@ class TabulatorGrid extends FormField
             $searchCols = $col['editorParams']['customSearchCols'];
         }
 
-
+        // Note: we need to use the orm, even if it's slower, to make sure any extension is properly applied
         /** @var DataList $list */
         $list = $sng::get();
 
@@ -1459,6 +1462,7 @@ class TabulatorGrid extends FormField
 
         $schema = DataObject::getSchema();
         $dataClass = $dataList->dataClass();
+
         /** @var DataObject $singleton */
         $singleton = singleton($dataClass);
         $resolutionMap = [];
@@ -1532,10 +1536,11 @@ class TabulatorGrid extends FormField
 
                 switch ($type) {
                     case "=":
-                        // It's a wildcard search
                         if ($field === "__wildcard") {
+                            // It's a wildcard search
                             $anyWhere = $this->createWildcardFilters($rawValue);
                         } elseif ($field === "__quickfilter") {
+                            // It's a quickfilter search
                             $this->createQuickFilter($rawValue, $dataList);
                         } else {
                             $where["$field"] = $value;
@@ -1888,16 +1893,7 @@ class TabulatorGrid extends FormField
     {
         // Insert before given column
         if ($before) {
-            if (array_key_exists($before, $this->columns)) {
-                $new = [];
-                foreach ($this->columns as $k => $value) {
-                    if ($k === $before) {
-                        $new["action_$action"] = $opts;
-                    }
-                    $new[$k] = $value;
-                }
-                $this->columns = $new;
-            }
+            $this->addColumnBefore("action_$action", $opts, $before);
         } else {
             $this->columns["action_$action"] = $opts;
         }
@@ -1928,6 +1924,33 @@ class TabulatorGrid extends FormField
             }
         }
         return $this->addButton($action, $url, $icon, $title);
+    }
+
+    public function getActions(): array
+    {
+        $cols = [];
+        foreach ($this->columns as $name => $options) {
+            if (strpos($name, 'action_') === 0) {
+                $cols[$name] = $options;
+            }
+        }
+        return $cols;
+    }
+
+    public function getUiColumns(): array
+    {
+        $cols = [];
+        foreach ($this->columns as $name => $options) {
+            if (strpos($name, 'ui_') === 0) {
+                $cols[$name] = $options;
+            }
+        }
+        return $cols;
+    }
+
+    public function getSystemColumns(): array
+    {
+        return array_merge($this->getActions(), $this->getUiColumns());
     }
 
     public function removeButton(string $action): self
@@ -1967,16 +1990,37 @@ class TabulatorGrid extends FormField
     /**
      * @link http://www.tabulator.info/docs/5.5/columns#definition
      * @param array $opts Other options to merge in
+     * @param ?string $before
      * @return $this
      */
-    public function addColumnFromArray(array $opts = [])
+    public function addColumnFromArray(array $opts = [], $before = null)
     {
         if (empty($opts['field']) || !isset($opts['title'])) {
             throw new Exception("Missing field or title key");
         }
         $field = $opts['field'];
-        $this->columns[$field] = $opts;
+
+        if ($before) {
+            $this->addColumnBefore($field, $opts, $before);
+        } else {
+            $this->columns[$field] = $opts;
+        }
+
         return $this;
+    }
+
+    protected function addColumnBefore($field, $opts, $before)
+    {
+        if (array_key_exists($before, $this->columns)) {
+            $new = [];
+            foreach ($this->columns as $k => $value) {
+                if ($k === $before) {
+                    $new[$field] = $opts;
+                }
+                $new[$k] = $value;
+            }
+            $this->columns = $new;
+        }
     }
 
     public function makeColumnEditable(string $field, string $editor = "input", array $params = [])
@@ -2089,6 +2133,48 @@ class TabulatorGrid extends FormField
     {
         $this->columns = $columns;
         return $this;
+    }
+
+    public function clearColumns(bool $keepSystem = true): void
+    {
+        $sysNames = array_keys($this->getSystemColumns());
+        foreach ($this->columns as $k => $v) {
+            if ($keepSystem && in_array($k, $sysNames)) {
+                continue;
+            }
+            $this->removeColumn($k);
+        }
+    }
+
+    /**
+     * This should be the rough equivalent to GridFieldDataColumns::getDisplayFields
+     */
+    public function getDisplayFields(): array
+    {
+        $fields = [];
+        foreach ($this->columns as $col) {
+            if (empty($col['field'])) {
+                continue;
+            }
+            $fields[$col['field']] = $col['title'];
+        }
+        return $fields;
+    }
+
+    /**
+     * This should be the rough equivalent to GridFieldDataColumns::setDisplayFields
+     */
+    public function setDisplayFields(array $arr): void
+    {
+        $this->clearColumns();
+        $actions = array_keys($this->getActions());
+        $before = $actions[0] ?? null;
+        foreach ($arr as $k => $v) {
+            $this->addColumnFromArray([
+                'field' => $k,
+                'title' => $v,
+            ], $before);
+        }
     }
 
     /**
