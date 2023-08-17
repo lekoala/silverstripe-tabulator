@@ -716,6 +716,10 @@ class TabulatorGrid extends FormField
             $opts['initialSort'] = $state['sort'];
         }
 
+        if ($this->enableGridManipulation) {
+            // $opts['renderVertical'] = 'basic';
+        }
+
         // Restore state from server
         $opts['_state'] = $state;
 
@@ -727,7 +731,6 @@ class TabulatorGrid extends FormField
 
         // Escape '
         $json = str_replace("'", '&#39;', $json);
-
 
         return $json;
     }
