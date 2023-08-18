@@ -141,6 +141,18 @@
     }
 
     /**
+     * @returns {string}
+     */
+    function getTabID() {
+        let tabId = sessionStorage.getItem("tabulatorTabID");
+        if (!tabId) {
+            tabId = Math.round(Date.now()).toString(36);
+            sessionStorage.setItem("tabulatorTabID", tabId);
+        }
+        return tabId;
+    }
+
+    /**
      * This helps restoring the proper tabs if needed after navigation or actions
      */
     function persistHash() {
@@ -386,9 +398,10 @@
 
     function bulkSupport(el, tabulator, customEl) {
         // we should probably scope this better
-        var confirm = tabulator.element.parentElement.parentElement.querySelector(
-            ".tabulator-bulk-confirm"
-        );
+        var confirm =
+            tabulator.element.parentElement.parentElement.querySelector(
+                ".tabulator-bulk-confirm"
+            );
 
         if (!confirm) {
             return;
@@ -439,6 +452,13 @@
         });
     }
 
+    var configCallback = function (config) {
+        // Helps to get per tab server side session
+        // const tabId = getTabID();
+        // config.ajaxParams = config.ajaxParams || {};
+        // config.ajaxParams.TabID = tabId;
+    };
+
     var initCallback = function (tabulator, customEl) {
         var el = tabulator.element;
 
@@ -465,6 +485,8 @@
         rowMoved,
         getGlobalFn,
         initCallback,
+        configCallback,
+        getTabID,
     };
 
     // You can extend this with your own features

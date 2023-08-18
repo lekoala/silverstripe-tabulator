@@ -77,6 +77,8 @@ class TabulatorGrid extends FormField
     // our built in functions
     const JS_BOOL_GROUP_HEADER = 'SSTabulator.boolGroupHeader';
     const JS_DATA_AJAX_RESPONSE = 'SSTabulator.dataAjaxResponse';
+    const JS_INIT_CALLBACK = 'SSTabulator.initCallback';
+    const JS_CONFIG_CALLBACK = 'SSTabulator.configCallback';
 
     /**
      * @config
@@ -694,37 +696,41 @@ class TabulatorGrid extends FormField
         ];
 
         // Apply state
+        // TODO: finalize persistence on the client side instead of this when using TabID
         $state = $this->getState();
-        if (!empty($state['filter'])) {
-            // @link https://tabulator.info/docs/5.5/filter#initial
-            // We need to split between global filters and header filters
-            $allFilters = $state['filter'] ?? [];
-            $globalFilters = [];
-            $headerFilters = [];
-            foreach ($allFilters as $allFilter) {
-                if (strpos($allFilter['field'], '__') === 0) {
-                    $globalFilters[] = $allFilter;
-                } else {
-                    $headerFilters[] = $allFilter;
+        if ($state) {
+            if (!empty($state['filter'])) {
+                // @link https://tabulator.info/docs/5.5/filter#initial
+                // We need to split between global filters and header filters
+                $allFilters = $state['filter'] ?? [];
+                $globalFilters = [];
+                $headerFilters = [];
+                foreach ($allFilters as $allFilter) {
+                    if (strpos($allFilter['field'], '__') === 0) {
+                        $globalFilters[] = $allFilter;
+                    } else {
+                        $headerFilters[] = $allFilter;
+                    }
                 }
+                $opts['initialFilter'] = $globalFilters;
+                $opts['initialHeaderFilter'] = $headerFilters;
             }
-            $opts['initialFilter'] = $globalFilters;
-            $opts['initialHeaderFilter'] = $headerFilters;
-        }
-        if (!empty($state['sort'])) {
-            // @link https://tabulator.info/docs/5.5/sort#initial
-            $opts['initialSort'] = $state['sort'];
+            if (!empty($state['sort'])) {
+                // @link https://tabulator.info/docs/5.5/sort#initial
+                $opts['initialSort'] = $state['sort'];
+            }
+
+            // Restore state from server
+            $opts['_state'] = $state;
         }
 
         if ($this->enableGridManipulation) {
             // $opts['renderVertical'] = 'basic';
         }
 
-        // Restore state from server
-        $opts['_state'] = $state;
-
         // Add our extension initCallback
-        $opts['_initCallback'] = ['__fn' => 'SSTabulator.initCallback'];
+        $opts['_initCallback'] = ['__fn' => self::JS_INIT_CALLBACK];
+        $opts['_configCallback'] = ['__fn' => self::JS_CONFIG_CALLBACK];
 
         unset($opts['height']);
         $json = json_encode($opts);
@@ -1044,7 +1050,7 @@ class TabulatorGrid extends FormField
         return $handler;
     }
 
-    public function getStateKey()
+    public function getStateKey(string $TabID = null)
     {
         $nested = [];
         $form = $this->getForm();
@@ -1065,9 +1071,12 @@ class TabulatorGrid extends FormField
             $scope = str_replace('_', '\\', get_class($controller));
         }
 
-        $prefix = "TabulatorState";
+        $baseKey = 'TabulatorState';
+        if ($TabID) {
+            $baseKey .= '_' . $TabID;
+        }
         $name = $this->getName();
-        $key = "$prefix.$scope.$name";
+        $key = "$baseKey.$scope.$name";
         foreach ($nested as $k => $v) {
             $key .= "$k.$v";
         }
@@ -1083,7 +1092,8 @@ class TabulatorGrid extends FormField
         if ($request === null) {
             $request = Controller::curr()->getRequest();
         }
-        $stateKey = $this->getStateKey();
+        $TabID = $request->requestVar('TabID') ?? null;
+        $stateKey = $this->getStateKey($TabID);
         $state = $request->getSession()->get($stateKey);
         return $state ?? [
             'page' => 1,
@@ -1095,11 +1105,11 @@ class TabulatorGrid extends FormField
 
     public function setState(HTTPRequest $request, $state)
     {
-        $stateKey = $this->getStateKey();
+        $TabID = $request->requestVar('TabID') ?? null;
+        $stateKey = $this->getStateKey($TabID);
         $request->getSession()->set($stateKey, $state);
         // If we are in a new controller, we can clear other states
-        // Note: this would break tabbed navigation if you try to open multiple tabs with various grid
-        // in various controllers, see below for more info
+        // Note: this would break tabbed navigation if you try to open multiple tabs, see below for more info
         // @link https://github.com/silverstripe/silverstripe-framework/issues/9556
         $matches = [];
         preg_match_all('/\.(.*?)\./', $stateKey, $matches);
@@ -1111,14 +1121,19 @@ class TabulatorGrid extends FormField
 
     public function clearState(HTTPRequest $request)
     {
-        $stateKey = $this->getStateKey();
+        $TabID = $request->requestVar('TabID') ?? null;
+        $stateKey = $this->getStateKey($TabID);
         $request->getSession()->clear($stateKey);
     }
 
-    public static function clearAllStates(string $exceptScope = null)
+    public static function clearAllStates(string $exceptScope = null, string $TabID = null)
     {
         $request = Controller::curr()->getRequest();
-        $allStates = $request->getSession()->get('TabulatorState');
+        $baseKey = 'TabulatorState';
+        if ($TabID) {
+            $baseKey .= '_' . $TabID;
+        }
+        $allStates = $request->getSession()->get($baseKey);
         if (!$allStates) {
             return;
         }
