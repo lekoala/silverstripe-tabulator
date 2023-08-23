@@ -917,8 +917,8 @@ class TabulatorGrid extends FormField
                 "cssClass" => 'tabulator-cell-btn tabulator-cell-selector',
                 'formatter' => 'rowSelection',
                 'titleFormatter' => 'rowSelection',
-                'headerSort' => false,
                 'width' => 40,
+                'maxWidth' => 40,
             ]
         ], $this->columns);
         $this->setBulkActions($actions);
@@ -933,12 +933,13 @@ class TabulatorGrid extends FormField
         $this->columns = array_merge([
             'ui_move' => [
                 "hozAlign" => 'center',
-                "cssClass" => 'tabulator-cell-btn tabulator-cell-selector',
+                "cssClass" => 'tabulator-cell-btn tabulator-cell-selector tabulator-ui-sort',
                 'rowHandle' => true,
                 'formatter' => 'handle',
                 'headerSort' => false,
                 'frozen' => true,
                 'width' => 40,
+                'maxWidth' => 40,
             ],
             // We need a hidden sort column
             'ui_sort' => [
@@ -2193,6 +2194,16 @@ class TabulatorGrid extends FormField
                 'title' => $v,
             ], $before);
         }
+    }
+
+    /**
+     * Convenience method that get/set fields
+     */
+    public function addDisplayFields(array $arr): void
+    {
+        $fields = $this->getDisplayFields();
+        $fields = array_merge($fields, $arr);
+        $this->setDisplayFields($fields);
     }
 
     /**
