@@ -142,6 +142,15 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         ]);
     }
 
+    protected function editFailure(): HTTPResponse
+    {
+        return $this->httpError(403, _t(
+            __CLASS__ . '.EditPermissionsFailure',
+            'It seems you don\'t have the necessary permissions to edit "{ObjectTitle}"',
+            ['ObjectTitle' => $this->record->singular_name()]
+        ));
+    }
+
     /**
      * This is responsible to display an edit form, like GridFieldDetailForm, but much simpler
      *
@@ -150,11 +159,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     public function edit(HTTPRequest $request)
     {
         if (!$this->record->canEdit()) {
-            return $this->httpError(403, _t(
-                __CLASS__ . '.EditPermissionsFailure',
-                'It seems you don\'t have the necessary permissions to edit "{ObjectTitle}"',
-                ['ObjectTitle' => $this->record->singular_name()]
-            ));
+            return $this->editFailure();
         }
         $controller = $this->getToplevelController();
 
@@ -170,11 +175,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $this->httpError(404, "Invalid SecurityID");
         }
         if (!$this->record->canEdit()) {
-            return $this->httpError(403, _t(
-                __CLASS__ . '.EditPermissionsFailure',
-                'It seems you don\'t have the necessary permissions to edit "{ObjectTitle}"',
-                ['ObjectTitle' => $this->record->singular_name()]
-            ));
+            return $this->editFailure();
         }
 
         $preventEmpty = [];
@@ -190,6 +191,23 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $this->httpError(400, _t(__CLASS__ . '.ValueCannotBeEmpty', 'Value cannot be empty'));
         }
 
+        try {
+            $updatedValue = $this->executeEdit($Column, $Value);
+        } catch (Exception $e) {
+            return $this->httpError(400, $e->getMessage());
+        }
+
+        $response = new HTTPResponse(json_encode([
+            'success' => true,
+            'message' => _t(__CLASS__ . '.RecordEdited', 'Record edited'),
+            'value' => $updatedValue,
+        ]));
+        $response->addHeader('Content-Type', 'application/json');
+        return $response;
+    }
+
+    public function executeEdit(string $Column, $Value)
+    {
         $field = $Column;
         $rel = $relField = null;
         if (strpos($Column, ".") !== false) {
@@ -206,31 +224,14 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         }
 
         $this->record->$field = $Value;
-
-        $error = null;
-        try {
-            $this->record->write();
-            $updatedValue = $this->record->$field;
-            if ($rel) {
-                /** @var DataObject $relObject */
-                $relObject = $this->record->$rel();
-                $updatedValue = $relObject->relField($relField);
-            }
-        } catch (Exception $e) {
-            $error = $e->getMessage();
+        $this->record->write();
+        $updatedValue = $this->record->$field;
+        if ($rel) {
+            /** @var DataObject $relObject */
+            $relObject = $this->record->$rel();
+            $updatedValue = $relObject->relField($relField);
         }
-
-        if ($error) {
-            return $this->httpError(400, $error);
-        }
-
-        $response = new HTTPResponse(json_encode([
-            'success' => true,
-            'message' => _t(__CLASS__ . '.RecordEdited', 'Record edited'),
-            'value' => $updatedValue,
-        ]));
-        $response->addHeader('Content-Type', 'application/json');
-        return $response;
+        return $updatedValue;
     }
 
     public function ajaxMove(HTTPRequest $request)
@@ -240,21 +241,32 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $this->httpError(404, "Invalid SecurityID");
         }
         if (!$this->record->canEdit()) {
-            return $this->httpError(403, _t(
-                __CLASS__ . '.EditPermissionsFailure',
-                'It seems you don\'t have the necessary permissions to edit "{ObjectTitle}"',
-                ['ObjectTitle' => $this->record->singular_name()]
-            ));
+            return $this->editFailure();
         }
-
-        $table = DataObject::getSchema()->baseDataTable(get_class($this->record));
-        $sortField = 'Sort';
-
         $Data = $request->postVar("Data");
         if (is_string($Data)) {
             $Data = json_decode($Data, JSON_OBJECT_AS_ARRAY);
         }
         $Sort = $request->postVar("Sort");
+
+        try {
+            $updatedSort = $this->executeSort($Data, $Sort);
+        } catch (Exception $e) {
+            return $this->httpError(400, $e->getMessage());
+        }
+
+        $response = new HTTPResponse(json_encode([
+            'success' => true,
+            'message' => _t(__CLASS__ . '.RecordMove', 'Record moved'),
+            'value' => $updatedSort,
+        ]));
+        $response->addHeader('Content-Type', 'application/json');
+        return $response;
+    }
+
+    public function executeSort(array $Data, int $Sort, string $sortField = 'Sort'): int
+    {
+        $table = DataObject::getSchema()->baseDataTable(get_class($this->record));
 
         if (!isset($Data[$sortField])) {
             return $this->httpError(403, _t(
@@ -265,33 +277,19 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         $prevSort = $Data[$sortField];
 
-        $error = null;
-        try {
-            // Just make sure you don't have 0 (except first record) or equal sorts
-            if ($prevSort < $Sort) {
-                $set = "$sortField = $sortField - 1";
-                $where = "$sortField > $prevSort and $sortField <= $Sort";
-            } else {
-                $set = "$sortField = $sortField + 1";
-                $where = "$sortField < $prevSort and $sortField >= $Sort";
-            }
-            DB::query("UPDATE `$table` SET $set WHERE $where");
-            $this->record->$sortField = $Sort;
-            $this->record->write();
-        } catch (Exception $e) {
-            $error = $e->getMessage();
+        // Just make sure you don't have 0 (except first record) or equal sorts
+        if ($prevSort < $Sort) {
+            $set = "$sortField = $sortField - 1";
+            $where = "$sortField > $prevSort and $sortField <= $Sort";
+        } else {
+            $set = "$sortField = $sortField + 1";
+            $where = "$sortField < $prevSort and $sortField >= $Sort";
         }
+        DB::query("UPDATE `$table` SET $set WHERE $where");
+        $this->record->$sortField = $Sort;
+        $this->record->write();
 
-        if ($error) {
-            return $this->httpError(400, $error);
-        }
-
-        $response = new HTTPResponse(json_encode([
-            'success' => true,
-            'message' => _t(__CLASS__ . '.RecordMove', 'Record moved'),
-        ]));
-        $response->addHeader('Content-Type', 'application/json');
-        return $response;
+        return $this->record->Sort;
     }
 
     /**
@@ -585,12 +583,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         // Check permission
         if (!$this->record->canEdit()) {
-            $this->httpError(403, _t(
-                __CLASS__ . '.EditPermissionsFailure',
-                'It seems you don\'t have the necessary permissions to edit "{ObjectTitle}"',
-                ['ObjectTitle' => $this->record->singular_name()]
-            ));
-            return null;
+            return $this->editFailure();
         }
 
         // _activetab is used in cms-action

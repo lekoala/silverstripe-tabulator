@@ -331,7 +331,8 @@
             return;
         }
 
-        var index = row.getTable().rowManager.getRowIndex(row);
+        // Since it's 0 based, we need to add 1
+        var index = row.getTable().rowManager.getRowIndex(row) + 1;
 
         moveUrl = interpolate(moveUrl, data);
 
@@ -339,6 +340,8 @@
         formData.append("SecurityID", getSecurityID());
         formData.append("Data", JSON.stringify(data));
         formData.append("Sort", index);
+
+        // console.log(`moving # ${data.ID} from ${data.Sort} to ${index}`);
 
         fetchWrapper(moveUrl, {
             method: "POST",

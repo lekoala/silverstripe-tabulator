@@ -1,0 +1,17 @@
+'SilverStripe\Security\Member':
+  admin:
+    Email: admin@test.com
+  user1:
+    Email: user@test.com
+  user2:
+    Email: user2@test.com
+'SilverStripe\Security\Group':
+  group1:
+    Title: 'Group 1'
+    Sort: 1
+  group2:
+    Title: 'Group 2'
+    Sort: 2
+  group3:
+    Title: 'Group 3'
+    Sort: 3
