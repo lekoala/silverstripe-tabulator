@@ -43,14 +43,11 @@ class GenericBulkAction extends AbstractBulkAction
         }
 
         foreach ($records as $record) {
-            try {
-                $result = $this->callable($record, $this->tabulatorGrid);
-                if ($result) {
-                    $success++;
-                } elseif ($result === false) {
-                    $errors++;
-                }
-            } catch (\Throwable $th) {
+            $callable = $this->callable;
+            $result = $callable($record, $this->tabulatorGrid);
+            if ($result) {
+                $success++;
+            } elseif ($result === false) {
                 $errors++;
             }
             $i++;
