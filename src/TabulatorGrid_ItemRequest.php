@@ -36,6 +36,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         'ajaxEdit',
         'ajaxMove',
         'view',
+        'delete',
         'customAction',
         'ItemEditForm',
     ];
@@ -290,6 +291,46 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         $this->record->write();
 
         return $this->record->Sort;
+    }
+
+
+    /**
+     * Delete from the row level
+     *
+     * @param HTTPRequest $request
+     * @return void
+     */
+    public function delete(HTTPRequest $request)
+    {
+        if (!$this->record->canDelete()) {
+            return $this->httpError(403, _t(
+                __CLASS__ . '.DeletePermissionsFailure',
+                'It seems you don\'t have the necessary permissions to delete "{ObjectTitle}"',
+                ['ObjectTitle' => $this->record->singular_name()]
+            ));
+        }
+
+        $title = $this->record->getTitle();
+        $this->record->delete();
+
+        $message = _t(
+            'SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Deleted',
+            'Deleted {type} {name}',
+            [
+                'type' => $this->record->i18n_singular_name(),
+                'name' => htmlspecialchars($title, ENT_QUOTES)
+            ]
+        );
+
+        $this->sessionMessage($message, "good");
+
+        //when an item is deleted, redirect to the parent controller
+        $controller = $this->getToplevelController();
+
+        if ($this->isSilverStripeAdmin($controller)) {
+            $controller->getRequest()->addHeader('X-Pjax', 'Content');
+        }
+        return $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
     }
 
     /**
@@ -776,6 +817,8 @@ class TabulatorGrid_ItemRequest extends RequestHandler
     }
 
     /**
+     * Delete from ItemRequest action
+     *
      * @param array $data
      * @param Form $form
      * @return HTTPResponse

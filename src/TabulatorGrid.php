@@ -171,6 +171,11 @@ class TabulatorGrid extends FormField
     private static bool $default_lazy_init = false;
 
     /**
+     * @config
+     */
+    private static bool $show_row_delete = false;
+
+    /**
      * Data source.
      */
     protected ?SS_List $list;
@@ -367,6 +372,7 @@ class TabulatorGrid extends FormField
     {
         $itemUrl = $this->TempLink('item/{ID}', false);
         $this->removeButton('ui_edit');
+        $this->removeButton('ui_delete');
         $this->addButton("ui_view", $itemUrl, "visibility", "View");
         $this->removeTool(TabulatorAddNewButton::class);
     }
@@ -391,10 +397,16 @@ class TabulatorGrid extends FormField
         /** @var DataObject $singl */
         $singl = singleton($className);
 
+        $opts = [];
+        if ($singl->hasMethod('tabulatorOptions')) {
+            $opts = $singl->tabulatorOptions();
+        }
+
         // Mock some base columns using SilverStripe built-in methods
         $columns = [];
 
-        foreach ($singl->summaryFields() as $field => $title) {
+        $summaryFields = $opts['summaryFields'] ?? $singl->summaryFields();
+        foreach ($summaryFields as $field => $title) {
             // Deal with this in load() instead
             // if (strpos($field, '.') !== false) {
             // $fieldParts = explode(".", $field);
@@ -416,6 +428,7 @@ class TabulatorGrid extends FormField
                 }
             }
         }
+        $summaryFields = $opts['searchableFields'] ?? $singl->searchableFields();
         foreach ($singl->searchableFields() as $key => $searchOptions) {
             /*
             "filter" => "NameOfTheFilter"
@@ -473,7 +486,8 @@ class TabulatorGrid extends FormField
         }
 
         // Sortable ?
-        if ($singl->hasField('Sort')) {
+        $sortable = $opts['sortable'] ?? $singl->hasField('Sort');
+        if ($sortable) {
             $this->wizardMoveable();
         }
 
@@ -485,18 +499,28 @@ class TabulatorGrid extends FormField
         // - Core actions, handled by TabulatorGrid
         $itemUrl = $this->TempLink('item/{ID}', false);
         if ($singl->canEdit()) {
-            $this->addButton("ui_edit", $itemUrl, "edit", "Edit");
+            $this->addButton("ui_edit", $itemUrl, "edit", _t('TabulatorGrid.Edit', 'Edit'));
             $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit", false);
         } elseif ($singl->canView()) {
-            $this->addButton("ui_view", $itemUrl, "visibility", "View");
+            $this->addButton("ui_view", $itemUrl, "visibility", _t('TabulatorGrid.View', 'View'));
+        }
+
+        $showRowDelete = $opts['rowDelete'] ?? self::config()->show_row_delete;
+        if ($singl->canDelete() && $showRowDelete) {
+            $deleteBtn = $this->makeButton($this->TempLink('item/{ID}/delete', false), "delete", _t('TabulatorGrid.Delete', 'Delete'));
+            $deleteBtn["formatterParams"]["classes"] = 'btn btn-danger';
+            $this->addButtonFromArray("ui_delete", $deleteBtn);
         }
 
         // - Tools
         $this->tools = [];
-        if ($singl->canCreate()) {
+
+        $addNew = $opts['addNew'] ?? true;
+        if ($singl->canCreate() && $addNew) {
             $this->addTool(self::POS_START, new TabulatorAddNewButton($this), 'add_new');
         }
-        if (class_exists(\LeKoala\ExcelImportExport\ExcelImportExport::class)) {
+        $export = $opts['export'] ?? true;
+        if (class_exists(\LeKoala\ExcelImportExport\ExcelImportExport::class) && $export) {
             $this->addTool(self::POS_END, new TabulatorExportButton($this), 'export');
         }
 
@@ -1919,6 +1943,9 @@ class TabulatorGrid extends FormField
         }
     }
 
+    /**
+     * @link https://github.com/lekoala/formidable-elements/blob/master/src/classes/tabulator/Format/formatters/button.js
+     */
     public function makeButton(string $urlOrAction, string $icon, string $title): array
     {
         $opts = [
@@ -1932,7 +1959,8 @@ class TabulatorGrid extends FormField
                 "url" => $this->TempLink($urlOrAction), // On the controller by default
             ],
             "cellClick" => ["__fn" => "SSTabulator.buttonHandler"],
-            "width" => 70,
+            // We need to force its size otherwise Tabulator will assign too much space
+            "width" => 36 + strlen($title) * 12,
             "hozAlign" => "center",
             "headerSort" => false,
         ];

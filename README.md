@@ -232,6 +232,22 @@ $grid->setQuickFilters([
     ]);
 ```
 
+## Model options
+
+If you add a `tabulatorOptions` method, you can configure how the model will be autoconfigured by Tabulator.
+
+It can provide the followings keys:
+
+- summaryFields: use summaryFields() by default if not provided
+- searchableFields: use searchableFields by default if not provided
+- sortable: is sortable? (true by default if Sort field is present)
+- rowDelete: delete at row level (false by default)
+- addNew: show add new if allowed (true by default)
+- export: show export if configured (true by default)
+
+For custom columns, please use `tabulatorColumns`.
+For custom actions, please use `tabulatorRowActions`.
+
 ## Migrating from GridFields
 
 If you are in a project currently using GridFields, there are a couple of ways you can slowly migrate to Tabulator.
