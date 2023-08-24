@@ -1,6 +1,6 @@
 $ShowTools
 <% if getGlobalSearch %>
-<div class="input-group" id="$ID-search">
+<div class="input-group mb-1" id="$ID-search">
     <span class="input-group-text">
         <svg
             width="16"

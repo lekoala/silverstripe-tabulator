@@ -471,7 +471,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             }
         }
         $cannotCreate = !$record->ID && !$record->canCreate(null, $this->getCreateContext());
-        if ($cannotCreate) {
+        if ($cannotCreate || $this->tabulatorGrid->isViewOnly()) {
             // Restrict creation of new records
             $form->makeReadonly();
         }

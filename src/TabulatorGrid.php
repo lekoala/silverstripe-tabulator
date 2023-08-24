@@ -359,6 +359,23 @@ class TabulatorGrid extends FormField
         return $tabulatorGrid;
     }
 
+    /**
+     * A shortcut to convert editable records to view only
+     * Disables adding new records as well
+     */
+    public function setViewOnly(): void
+    {
+        $itemUrl = $this->TempLink('item/{ID}', false);
+        $this->removeButton('ui_edit');
+        $this->addButton("ui_view", $itemUrl, "visibility", "View");
+        $this->removeTool(TabulatorAddNewButton::class);
+    }
+
+    public function isViewOnly(): bool
+    {
+        return !$this->hasButton("ui_edit");
+    }
+
     public function configureFromDataObject($className = null): void
     {
         $this->columns = [];
@@ -919,6 +936,7 @@ class TabulatorGrid extends FormField
                 'titleFormatter' => 'rowSelection',
                 'width' => 40,
                 'maxWidth' => 40,
+                "headerSort" => false,
             ]
         ], $this->columns);
         $this->setBulkActions($actions);
@@ -1974,10 +1992,15 @@ class TabulatorGrid extends FormField
 
     public function removeButton(string $action): self
     {
-        if (isset($this->columns["action_$action"])) {
+        if ($this->hasButton($action)) {
             unset($this->columns["action_$action"]);
         }
         return $this;
+    }
+
+    public function hasButton(string $action): bool
+    {
+        return isset($this->columns["action_$action"]);
     }
 
     /**
@@ -2242,19 +2265,19 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
-    public function removeTool($tool): self
+    public function removeTool($toolName): self
     {
-        if (is_object($tool)) {
-            $tool = get_class($tool);
+        if (is_object($toolName)) {
+            $toolName = get_class($toolName);
         }
-        if (!is_string($tool)) {
+        if (!is_string($toolName)) {
             throw new InvalidArgumentException('Tool must be an object or a class name');
         }
         foreach ($this->tools as $idx => $tool) {
-            if ($tool['name'] === $tool) {
+            if ($tool['name'] === $toolName) {
                 unset($this->tools[$idx]);
             }
-            if ($tool['tool'] instanceof $tool) {
+            if (class_exists($toolName) && $tool['tool'] instanceof $toolName) {
                 unset($this->tools[$idx]);
             }
         }
