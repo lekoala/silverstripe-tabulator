@@ -786,8 +786,11 @@ class TabulatorGrid extends FormField
      * @param Controller $controller
      * @return CompatLayerInterface
      */
-    public function getCompatLayer(Controller $controller)
+    public function getCompatLayer(Controller $controller = null)
     {
+        if ($controller === null) {
+            $controller = Controller::curr();
+        }
         if (is_subclass_of($controller, \SilverStripe\Admin\LeftAndMain::class)) {
             return new SilverstripeAdminCompat();
         }

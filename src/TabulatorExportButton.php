@@ -42,6 +42,8 @@ class TabulatorExportButton extends AbstractTabulatorTool
 
         $data = new ArrayData([
             'ButtonName' => $this->buttonName,
+            'ButtonClasses' => 'btn-secondary font-icon-export',
+            'Icon' => $this->isAdmini() ? 'list_alt' : '',
         ]);
         return $this->renderWith($this->getViewerTemplates(), $data);
     }

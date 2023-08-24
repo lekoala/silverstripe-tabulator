@@ -13,6 +13,8 @@ class AbstractTabulatorTool extends RequestHandler
 
     protected string $name;
 
+    protected string $link = '';
+
     /**
      * Get the value of tabulatorGrid
      */
@@ -41,8 +43,16 @@ class AbstractTabulatorTool extends RequestHandler
         return $this;
     }
 
-    public function Link($action = null)
+    public function Link($action = null): string
     {
-        return $this->tabulatorGrid->Link('tool/' . $this->name);
+        if (!$this->link) {
+            return $this->tabulatorGrid->Link('tool/' . $this->name);
+        }
+        return $this->link;
+    }
+
+    public function isAdmini()
+    {
+        return $this->tabulatorGrid->getCompatLayer() instanceof AdminiCompat;
     }
 }

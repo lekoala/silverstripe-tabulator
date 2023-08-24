@@ -36,6 +36,8 @@ class TabulatorAddNewButton extends AbstractTabulatorTool
         $data = new ArrayData([
             'NewLink' => $grid->getCreateLink(),
             'ButtonName' => $this->buttonName,
+            'ButtonClasses' => 'btn-primary font-icon-plus-circled new new-link',
+            'Icon' => $this->isAdmini() ? 'add' : '',
         ]);
         return $this->renderWith($this->getViewerTemplates(), $data);
     }
