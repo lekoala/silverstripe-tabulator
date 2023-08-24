@@ -41,6 +41,15 @@ class TabulatorGrid extends FormField
     const POS_START = 'start';
     const POS_END = 'end';
 
+    const UI_ADD = "ui_add";
+    const UI_EDIT = "ui_edit";
+    const UI_DELETE = "ui_delete";
+    const UI_VIEW = "ui_view";
+    const UI_SORT = "ui_sort";
+
+    const TOOL_ADD_NEW = "add_new";
+    const TOOL_EXPORT = "export";
+
     // @link http://www.tabulator.info/examples/5.5?#fittodata
     const LAYOUT_FIT_DATA = "fitData";
     const LAYOUT_FIT_DATA_FILL = "fitDataFill";
@@ -371,15 +380,15 @@ class TabulatorGrid extends FormField
     public function setViewOnly(): void
     {
         $itemUrl = $this->TempLink('item/{ID}', false);
-        $this->removeButton('ui_edit');
-        $this->removeButton('ui_delete');
-        $this->addButton("ui_view", $itemUrl, "visibility", "View");
+        $this->removeButton(self::UI_EDIT);
+        $this->removeButton(self::UI_DELETE);
+        $this->addButton(self::UI_VIEW, $itemUrl, "visibility", "View");
         $this->removeTool(TabulatorAddNewButton::class);
     }
 
     public function isViewOnly(): bool
     {
-        return !$this->hasButton("ui_edit");
+        return !$this->hasButton(self::UI_EDIT);
     }
 
     public function configureFromDataObject($className = null): void
@@ -499,10 +508,10 @@ class TabulatorGrid extends FormField
         // - Core actions, handled by TabulatorGrid
         $itemUrl = $this->TempLink('item/{ID}', false);
         if ($singl->canEdit()) {
-            $this->addButton("ui_edit", $itemUrl, "edit", _t('TabulatorGrid.Edit', 'Edit'));
+            $this->addButton(self::UI_EDIT, $itemUrl, "edit", _t('TabulatorGrid.Edit', 'Edit'));
             $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit", false);
         } elseif ($singl->canView()) {
-            $this->addButton("ui_view", $itemUrl, "visibility", _t('TabulatorGrid.View', 'View'));
+            $this->addButton(self::UI_VIEW, $itemUrl, "visibility", _t('TabulatorGrid.View', 'View'));
         }
 
         $showRowDelete = $opts['rowDelete'] ?? self::config()->show_row_delete;
@@ -517,11 +526,11 @@ class TabulatorGrid extends FormField
 
         $addNew = $opts['addNew'] ?? true;
         if ($singl->canCreate() && $addNew) {
-            $this->addTool(self::POS_START, new TabulatorAddNewButton($this), 'add_new');
+            $this->addTool(self::POS_START, new TabulatorAddNewButton($this), self::TOOL_ADD_NEW);
         }
         $export = $opts['export'] ?? true;
         if (class_exists(\LeKoala\ExcelImportExport\ExcelImportExport::class) && $export) {
-            $this->addTool(self::POS_END, new TabulatorExportButton($this), 'export');
+            $this->addTool(self::POS_END, new TabulatorExportButton($this), self::TOOL_EXPORT);
         }
 
         // - Custom actions are forwarded to the model itself
@@ -987,7 +996,7 @@ class TabulatorGrid extends FormField
                 'maxWidth' => 40,
             ],
             // We need a hidden sort column
-            'ui_sort' => [
+            self::UI_SORT => [
                 "field" => $field,
                 'visible' => false,
             ],
@@ -1568,8 +1577,8 @@ class TabulatorGrid extends FormField
             }
         } else {
             // If we have a sort column
-            if (isset($this->columns['ui_sort'])) {
-                $sortSql[] = $this->columns['ui_sort']['field'] . ' ASC';
+            if (isset($this->columns[self::UI_SORT])) {
+                $sortSql[] = $this->columns[self::UI_SORT]['field'] . ' ASC';
             }
         }
         if (!empty($sortSql)) {
