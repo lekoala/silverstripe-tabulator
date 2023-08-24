@@ -166,6 +166,21 @@ $grid->wizardSelectable([
 
 See /src/BulkActions for a full list of actions. These are roughly the equivalent of those you can find in the BulkManager module.
 
+### Generic bulk action
+
+Because creating a class for every simple action is tedious, you can do the following
+
+```php
+$grid->wizardSelectable([
+    new GenericBulkAction('bulk_cancel', 'Cancel', function (MyRecord $record, $grid) {
+        return $record->doCancel();
+    }),
+    new GenericBulkAction('bulk_approve', 'Approve', function (MyRecord $record, $grid) {
+        return $record->doApprove();
+    }),
+]);
+```
+
 ## Listen to events
 
 You can add custom listeners that should exist in the global namespace.
