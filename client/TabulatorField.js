@@ -388,7 +388,9 @@
                 collectFilters(globalSearchInput, quickFilterSelect)
             );
         });
-        globalSearchInput.addEventListener("input", debouncedSearchFunc);
+        if (globalSearchInput) {
+            globalSearchInput.addEventListener("input", debouncedSearchFunc);
+        }
 
         if (quickFilterSelect) {
             quickFilterSelect.addEventListener("change", () => {

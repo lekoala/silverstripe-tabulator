@@ -1,6 +1,7 @@
 $ShowTools
-<% if getGlobalSearch %>
+<% if getGlobalSearch || QuickFiltersList.count > 0 %>
 <div class="input-group mb-1" id="$ID-search">
+    <% if getGlobalSearch %>
     <span class="input-group-text">
         <svg
             width="16"
@@ -18,6 +19,7 @@ $ShowTools
           </svg>
     </span>
     <input type="search" name="$ID_wildcardsearch" class="form-control" placeholder="Search anything" value="$StateValue(filter,__wildcard)" />
+    <% end_if %>
     <% if QuickFiltersList.count > 0 %>
     <span class="input-group-text">
       Quick filter

@@ -2664,7 +2664,16 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * Set the value of quickFilters
+     * Pass an array with as a key, the name of the filter
+     * and as a value, an array with two keys: label and callback
+     *
+     * For example:
+     * 'myquickfilter' => [
+     *   'label' => 'My Quick Filter',
+     *   'callback' => function (&$list) {
+     *     ...
+     *   }
+     * ]
      *
      * @param array $quickFilters
      */
