@@ -322,15 +322,19 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             ]
         );
 
-        $this->sessionMessage($message, "good");
-
         //when an item is deleted, redirect to the parent controller
         $controller = $this->getToplevelController();
 
         if ($this->isSilverStripeAdmin($controller)) {
             $controller->getRequest()->addHeader('X-Pjax', 'Content');
         }
-        return $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
+
+        //redirect back to admin section
+        $response = $controller->redirect($this->getBackLink(), 302);
+
+        $this->sessionMessage($message, "good");
+
+        return $response;
     }
 
     /**
@@ -415,10 +419,12 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $response;
         }
 
+        $url = $this->getDefaultBackLink();
+        $response = $this->redirect($url);
+
         $this->sessionMessage($result, $error ? "error" : "good", "html");
 
-        $url = $this->getDefaultBackLink();
-        return $this->redirect($url);
+        return $response;
     }
 
     public function sessionMessage($message, $type = ValidationResult::TYPE_ERROR, $cast = ValidationResult::CAST_TEXT)
@@ -632,30 +638,35 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         // Save from form data
         $error = false;
-        try {
-            $this->saveFormIntoRecord($data, $form);
 
-            $title = $this->record->Title ?? '';
-            $link = '<a href="' . $this->Link('edit') . '">"'
-                . htmlspecialchars($title, ENT_QUOTES)
-                . '"</a>';
-            $message = _t(
-                'SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Saved',
-                'Saved {name} {link}',
-                [
-                    'name' => $this->record->i18n_singular_name(),
-                    'link' => $link
-                ]
-            );
-        } catch (Exception $e) {
-            $message = $e->getMessage();
-            $error = true;
-        }
+        // Leave it to FormRequestHandler::getAjaxErrorResponse so that we don't lose our data on error
+        // try {
+        $this->saveFormIntoRecord($data, $form);
 
-        $this->sessionMessage($message, $error ? "error" : "good", 'html');
+        $title = $this->record->Title ?? '';
+        $link = '<a href="' . $this->Link('edit') . '">"'
+            . htmlspecialchars($title, ENT_QUOTES)
+            . '"</a>';
+        $message = _t(
+            'SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Saved',
+            'Saved {name} {link}',
+            [
+                'name' => $this->record->i18n_singular_name(),
+                'link' => $link
+            ]
+        );
+        // } catch (Exception $e) {
+        //     $message = $e->getMessage();
+        //     $error = true;
+        // }
 
         // Redirect after save
-        return $this->redirectAfterSave($isNewRecord);
+        $response = $this->redirectAfterSave($isNewRecord);
+
+        // Session message may add stuff to the response, so create the redirect before
+        $this->sessionMessage($message, $error ? "error" : "good", 'html');
+
+        return $response;
     }
 
     /**
@@ -763,7 +774,9 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         if ($hash) {
             $url .= $hash;
         }
-        $response = parent::redirect($url, $code);
+
+        $controller = $this->getToplevelController();
+        $response = $controller->redirect($url, $code);
 
         // if ($hash) {
         // We also pass it as a hash
@@ -850,15 +863,16 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         if ($this->isSilverStripeAdmin($toplevelController)) {
             $backForm = $toplevelController->getEditForm();
         }
-        $this->sessionMessage($message, "good");
-
         //when an item is deleted, redirect to the parent controller
         $controller = $this->getToplevelController();
 
         if ($this->isSilverStripeAdmin($toplevelController)) {
             $controller->getRequest()->addHeader('X-Pjax', 'Content');
         }
-        return $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
+        $response = $controller->redirect($this->getBackLink(), 302); //redirect back to admin section
+        $this->sessionMessage($message, "good");
+
+        return $response;
     }
 
     public function isSilverStripeAdmin($controller)

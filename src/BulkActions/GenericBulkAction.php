@@ -36,13 +36,31 @@ class GenericBulkAction extends AbstractBulkAction
     {
         $records = $this->getRecords() ?? [];
         $i = 0;
+        $success = 0;
+        $errors = 0;
+        if (!$this->callable) {
+            return "Callbable function not defined";
+        }
+
         foreach ($records as $record) {
-            if ($this->callable) {
-                $this->callable($record, $this->tabulatorGrid);
+            try {
+                $result = $this->callable($record, $this->tabulatorGrid);
+                if ($result) {
+                    $success++;
+                } elseif ($result === false) {
+                    $errors++;
+                }
+            } catch (\Throwable $th) {
+                $errors++;
             }
             $i++;
         }
-        $result = _t(__CLASS__ . ".RECORDSPROCSSED", "{count} records processed", ["count" => $i]);
+        if ($errors) {
+            $result = _t(__CLASS__ . ".RECORDSPROCESSEDWITHERR", "{err} errors and {count} records processed", ["err", $errors, "count" => $i]);
+        } else {
+            $result = _t(__CLASS__ . ".RECORDSPROCESSED", "{count} records processed", ["count" => $i]);
+        }
+
         return $result;
     }
 
