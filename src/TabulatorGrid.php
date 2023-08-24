@@ -1655,10 +1655,14 @@ class TabulatorGrid extends FormField
 
             $nested = [];
             foreach ($this->columns as $col) {
+                // UI field are skipped
                 if (empty($col['field'])) {
                     continue;
                 }
+
                 $field = $col['field'];
+
+                // Explode relations or formatters
                 if (strpos($field, '.') !== false) {
                     $parts = explode('.', $field);
                     $classOrField = $parts[0];
@@ -1678,10 +1682,19 @@ class TabulatorGrid extends FormField
                         }
                     }
                 }
+
+                // Do not override already set fields
                 if (!isset($item[$field])) {
-                    if ($record->hasMethod($field)) {
+                    $getField = 'get' . ucfirst($field);
+
+                    if ($record->hasMethod($getField)) {
+                        // Prioritize getXyz method
+                        $item[$field] = $record->$getField();
+                    } elseif ($record->hasMethod($field)) {
+                        // Regular xyz method method
                         $item[$field] = $record->$field();
                     } else {
+                        // Field
                         $item[$field] = $record->getField($field);
                     }
                 }
