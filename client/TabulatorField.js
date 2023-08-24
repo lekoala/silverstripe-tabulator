@@ -99,6 +99,9 @@
      * @param {Tabulator} table
      */
     function notify(msg, type, table = null) {
+        if (!type) {
+            type = "info";
+        }
         if (typeof SSTabulator.notify !== "undefined") {
             SSTabulator.notify(msg, type);
         } else if (
@@ -115,15 +118,10 @@
                 },
             });
         } else if (
-            typeof window.admini.Toasts !== "undefined" ||
-            typeof window.Toasts !== "undefined"
-        ) {
-            const Toasts = window.admini.Toasts || window.Toasts;
-            Toasts.warning(msg);
-        } else if (
             typeof window.admini.toaster !== "undefined" ||
             typeof window.toaster !== "undefined"
         ) {
+            type = type == "bad" ? "danger" : type;
             const toaster = window.admini.toaster || window.toaster;
             toaster({
                 body: msg,
