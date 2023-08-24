@@ -55,8 +55,9 @@ class GenericBulkAction extends AbstractBulkAction
             }
             $i++;
         }
-        if ($errors) {
-            $result = _t(__CLASS__ . ".RECORDSPROCESSEDWITHERR", "{err} errors and {count} records processed", ["err", $errors, "count" => $i]);
+
+        if ($errors > 0) {
+            $result = _t(__CLASS__ . ".RECORDSPROCESSEDWITHERR", "{err} errors and {count} records processed", ["err" => $errors, "count" => $i]);
         } else {
             $result = _t(__CLASS__ . ".RECORDSPROCESSED", "{count} records processed", ["count" => $i]);
         }
