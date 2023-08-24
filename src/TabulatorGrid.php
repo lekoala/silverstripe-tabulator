@@ -7,6 +7,7 @@ use RuntimeException;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Forms\Form;
 use InvalidArgumentException;
+use LeKoala\Tabulator\BulkActions\BulkDeleteAction;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Core\Convert;
 use SilverStripe\ORM\DataList;
@@ -660,7 +661,7 @@ class TabulatorGrid extends FormField
         if (!empty($this->bulkActions)) {
             $selectLabel = _t(__CLASS__ . ".BULKSELECT", "Select a bulk action");
             $confirmLabel = _t(__CLASS__ . ".BULKCONFIRM", "Go");
-            $html .= "<select class=\"tabulator-bulk-select\">";
+            $html .= "<select class=\"tabulator-bulk-select ms-3 ml-3\">";
             $html .= "<option>" . $selectLabel . "</option>";
             foreach ($this->bulkActions as $bulkAction) {
                 $v = $bulkAction->getName();
@@ -962,6 +963,10 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+    /**
+     * @param array $actions An array of bulk actions, that can extend the abstract one or use the generic with callbable
+     * @return self
+     */
     public function wizardSelectable(array $actions = []): self
     {
         $this->columns = array_merge([
@@ -2378,6 +2383,13 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+    /**
+     * If you didn't before, you probably want to call wizardSelectable
+     * to get the actual selection checkbox too
+     *
+     * @param AbstractBulkAction $handler
+     * @return self
+     */
     public function addBulkAction(AbstractBulkAction $handler): self
     {
         $handler->setTabulatorGrid($this);

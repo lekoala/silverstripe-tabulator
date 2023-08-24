@@ -43,7 +43,7 @@ class AbstractTabulatorTool extends RequestHandler
         return $this;
     }
 
-    public function Link($action = null): string
+    public function Link($action = null)
     {
         if (!$this->link) {
             return $this->tabulatorGrid->Link('tool/' . $this->name);

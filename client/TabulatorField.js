@@ -115,6 +115,12 @@
                 },
             });
         } else if (
+            typeof window.admini.Toasts !== "undefined" ||
+            typeof window.Toasts !== "undefined"
+        ) {
+            const Toasts = window.admini.Toasts || window.Toasts;
+            Toasts.warning(msg);
+        } else if (
             typeof window.admini.toaster !== "undefined" ||
             typeof window.toaster !== "undefined"
         ) {
@@ -412,6 +418,8 @@
             return;
         }
         confirm.addEventListener("click", function (e) {
+            e.preventDefault();
+
             var selectedData = tabulator.getSelectedData();
             var bulkEndpoint = customEl.dataset.bulkUrl;
             var select = this.parentElement.querySelector(
@@ -446,6 +454,7 @@
             formData.append("SecurityID", getSecurityID());
             formData.append("records[]", records);
 
+            bulkEndpoint = bulkEndpoint.replace(/\/$/, "") + "/";
             var endpoint = bulkEndpoint + selectedAction.getAttribute("value");
             if (xhr) {
                 handleAction(confirm, endpoint, formData, (json) => {
