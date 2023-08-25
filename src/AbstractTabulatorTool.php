@@ -6,13 +6,13 @@ use SilverStripe\Control\RequestHandler;
 
 /**
  * This is the base class for tools (see TabulatorAddNewButton for sample usage)
+ * For tools handling requests, implement index method (see TabulatorExportButton)
  */
 class AbstractTabulatorTool extends RequestHandler
 {
     protected TabulatorGrid $tabulatorGrid;
 
-    protected string $name;
-
+    protected string $name = '';
     protected string $link = '';
 
     /**
@@ -39,7 +39,10 @@ class AbstractTabulatorTool extends RequestHandler
 
     public function setName($name): self
     {
-        $this->name = $name;
+        // Don't overwrite given name
+        if ($name) {
+            $this->name = $name;
+        }
         return $this;
     }
 

@@ -13,11 +13,12 @@ This module is used in [my alternative admin module](https://github.com/lekoala/
 This means that I will have probably faced most of the issues you might have in your own projects :-)
 
 It supports many features out of the boxes:
-- Inline editing
-- Bulk actions
-- Custom action on the table or in the edit form
-- Moveable rows by drag and drop
-- Filtering, sorting, pagination...
+
+-   Inline editing
+-   Bulk actions
+-   Custom action on the table or in the edit form
+-   Moveable rows by drag and drop
+-   Filtering, sorting, pagination...
 
 ## Configuring detail fields
 
@@ -58,7 +59,7 @@ You can configure any of the [available options](http://tabulator.info/docs/5.5/
 ### Dynamic callbacks
 
 For dynamic callbacks, you can specify a function available in the global namespace using a namespaced function to avoid scope pollution.
-These callbacks are the same as the one of [formidable elements](https://formidable-elements.vercel.app/) meaning they have a form of {"__fn" : "app.callback"}
+These callbacks are the same as the one of [formidable elements](https://formidable-elements.vercel.app/) meaning they have a form of {"\_\_fn" : "app.callback"}
 
 Some defaults callback are available under SSTabulator.
 
@@ -114,13 +115,13 @@ $grid->addButtonFromArray("MyBtn", $btn);
 You custom handler just look like this and return a promise
 
 ```js
- var handleAjax = function (e, cell, btn, formData) {
-     // do something here
-     // return promise
- }
- ```
+var handleAjax = function (e, cell, btn, formData) {
+    // do something here
+    // return promise
+};
+```
 
- Buttons are not responsive by default. Simply unset the responsive key if needed
+Buttons are not responsive by default. Simply unset the responsive key if needed
 
 ```php
 unset($btn['responsive']);
@@ -153,6 +154,16 @@ Tabulator supports "tools" that can be added above the grid. This is how, for ex
 All tools inherit from the `AbstractTabulatorTool` class.
 
 Tools can handle action by calling /tools/$ID on the TabulatorGrid field.
+
+### Generic tools
+
+Because creating a class for every tool is tedious, you can do the following
+
+```php
+$grid->addToolEnd(new GenericTabulatorTool('my_unique_action', 'Do something unique', function () {
+    return $this->doSomethingUnique();
+}));
+```
 
 ## Bulk actions
 
@@ -208,8 +219,8 @@ Simply replace your instances of `HasOneButtonField` with `HasOneTabulatorField`
 
 ## Additionnal formaters and helpers
 
-- SSTabulator.boolGroupHeader: useful to group by boolean values
-- SSTabulator.isCellEditable: convention based callback to check if the row is editable
+-   SSTabulator.boolGroupHeader: useful to group by boolean values
+-   SSTabulator.isCellEditable: convention based callback to check if the row is editable
 
 ## Global search
 
@@ -224,10 +235,10 @@ This is really easy, just do this. It will create a top search bar where you can
 By default, it will make a PartialMatch against the string. For large tables, you might not want to do that to use your indexes properly.
 You can also use shortcut syntax for filters:
 
-- s:
-- e:
-- =:
-- %:
+-   s:
+-   e:
+-   =:
+-   %:
 
 You can set the search fields using `setWildcardFields`. Otherwise it will default to `searchableFields`.
 
@@ -253,12 +264,12 @@ If you add a `tabulatorOptions` method, you can configure how the model will be 
 
 It can provide the followings keys:
 
-- summaryFields: use summaryFields() by default if not provided
-- searchableFields: use searchableFields by default if not provided
-- sortable: is sortable? (true by default if Sort field is present)
-- rowDelete: delete at row level (false by default)
-- addNew: show add new if allowed (true by default)
-- export: show export if configured (true by default)
+-   summaryFields: use summaryFields() by default if not provided
+-   searchableFields: use searchableFields by default if not provided
+-   sortable: is sortable? (true by default if Sort field is present)
+-   rowDelete: delete at row level (false by default)
+-   addNew: show add new if allowed (true by default)
+-   export: show export if configured (true by default)
 
 For custom columns, please use `tabulatorColumns`.
 For custom actions, please use `tabulatorRowActions`.
@@ -274,8 +285,8 @@ an appropriate and configured TabulatorGrid.
 
 ## Optional Dependencies
 
-- [Last Icon](https://github.com/lekoala/last-icon): for nice icons
-- [Luxon](https://moment.github.io/luxon/#/): for formatting dates
+-   [Last Icon](https://github.com/lekoala/last-icon): for nice icons
+-   [Luxon](https://moment.github.io/luxon/#/): for formatting dates
 
 ## Compatibility
 

@@ -661,7 +661,7 @@ class TabulatorGrid extends FormField
         if (!empty($this->bulkActions)) {
             $selectLabel = _t(__CLASS__ . ".BULKSELECT", "Select a bulk action");
             $confirmLabel = _t(__CLASS__ . ".BULKCONFIRM", "Go");
-            $html .= "<select class=\"tabulator-bulk-select ms-3 ml-3\">";
+            $html .= "<select class=\"tabulator-bulk-select\">";
             $html .= "<option>" . $selectLabel . "</option>";
             foreach ($this->bulkActions as $bulkAction) {
                 $v = $bulkAction->getName();
@@ -2310,9 +2310,18 @@ class TabulatorGrid extends FormField
         return null;
     }
 
+    /**
+     * @param string $pos start|end
+     * @param AbstractTabulatorTool $tool
+     * @param string $name
+     * @return self
+     */
     public function addTool(string $pos, AbstractTabulatorTool $tool, string $name = ''): self
     {
         $tool->setTabulatorGrid($this);
+        if ($tool->getName() && !$name) {
+            $name = $tool->getName();
+        }
         $tool->setName($name);
 
         $this->tools[] = [
@@ -2321,6 +2330,16 @@ class TabulatorGrid extends FormField
             'name' => $name,
         ];
         return $this;
+    }
+
+    public function addToolStart(AbstractTabulatorTool $tool, string $name = ''): self
+    {
+        return $this->addTool(self::POS_START, $tool, $name);
+    }
+
+    public function addToolEnd(AbstractTabulatorTool $tool, string $name = ''): self
+    {
+        return $this->addTool(self::POS_END, $tool, $name);
     }
 
     public function removeTool($toolName): self

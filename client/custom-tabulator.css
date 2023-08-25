@@ -5,6 +5,11 @@
     margin-bottom: 1.2308rem;
 }
 
+.tabulator-tools .btn {
+    margin-inline: 0.5rem;
+}
+
+
 .tabulator-tools-start {
     display: flex;
     justify-content: flex-start;
@@ -21,6 +26,7 @@
 
 select.tabulator-bulk-select {
     width: auto !important;
+    margin-inline-start: 0.5rem;
 }
 
 .cms .tabulatorgrid {
