@@ -270,6 +270,7 @@ It can provide the followings keys:
 -   rowDelete: delete at row level (false by default)
 -   addNew: show add new if allowed (true by default)
 -   export: show export if configured (true by default)
+-   searchAliases: alias a search field to a displayed column (eg: SearchTitle when displaying Title)
 
 For custom columns, please use `tabulatorColumns`.
 For custom actions, please use `tabulatorRowActions`.

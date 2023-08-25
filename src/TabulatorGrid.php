@@ -392,6 +392,15 @@ class TabulatorGrid extends FormField
         return !$this->hasButton(self::UI_EDIT);
     }
 
+    protected function getTabulatorOptions(DataObject $singl)
+    {
+        $opts = [];
+        if ($singl->hasMethod('tabulatorOptions')) {
+            $opts = $singl->tabulatorOptions();
+        }
+        return $opts;
+    }
+
     public function configureFromDataObject($className = null): void
     {
         $this->columns = [];
@@ -406,11 +415,7 @@ class TabulatorGrid extends FormField
 
         /** @var DataObject $singl */
         $singl = singleton($className);
-
-        $opts = [];
-        if ($singl->hasMethod('tabulatorOptions')) {
-            $opts = $singl->tabulatorOptions();
-        }
+        $opts = $this->getTabulatorOptions($singl);
 
         // Mock some base columns using SilverStripe built-in methods
         $columns = [];
@@ -438,8 +443,11 @@ class TabulatorGrid extends FormField
                 }
             }
         }
-        $summaryFields = $opts['searchableFields'] ?? $singl->searchableFields();
-        foreach ($singl->searchableFields() as $key => $searchOptions) {
+        $searchableFields = $opts['searchableFields'] ?? $singl->searchableFields();
+        $searchAliases = $opts['searchAliases'] ?? [];
+        foreach ($searchableFields as $key => $searchOptions) {
+            $key = $searchAliases[$key] ?? $key;
+
             /*
             "filter" => "NameOfTheFilter"
             "field" => "SilverStripe\Forms\FormField"
@@ -1543,6 +1551,7 @@ class TabulatorGrid extends FormField
 
         /** @var DataObject $singleton */
         $singleton = singleton($dataClass);
+        $opts = $this->getTabulatorOptions($singleton);
         $resolutionMap = [];
 
         $sortSql = [];
@@ -1594,12 +1603,15 @@ class TabulatorGrid extends FormField
         $where = [];
         $anyWhere = [];
         if ($filter) {
+            $searchAliases = $opts['searchAliases'] ?? [];
+            $searchAliases = array_flip($searchAliases);
             foreach ($filter as $filterValues) {
                 $cols = array_keys($this->columns);
                 $field = $filterValues['field'];
                 if (strpos($field, '__') !== 0 && !in_array($field, $cols)) {
                     throw new Exception("Invalid filter field: $field");
                 }
+                $field = $searchAliases[$field] ?? $field;
                 $value = $filterValues['value'];
                 $type = $filterValues['type'];
 
