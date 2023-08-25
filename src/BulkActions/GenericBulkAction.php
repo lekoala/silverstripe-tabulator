@@ -21,10 +21,7 @@ class GenericBulkAction extends AbstractBulkAction
 
         $this->name = $name;
         $this->label = $label;
-
-        if ($callable) {
-            $this->callable = $callable;
-        }
+        $this->callable = $callable;
     }
 
     public function getI18nLabel(): string

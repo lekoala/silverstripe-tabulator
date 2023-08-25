@@ -14,6 +14,7 @@ class AbstractTabulatorTool extends RequestHandler
 
     protected string $name = '';
     protected string $link = '';
+    protected bool $newWindow = false;
 
     /**
      * Get the value of tabulatorGrid
@@ -57,5 +58,24 @@ class AbstractTabulatorTool extends RequestHandler
     public function isAdmini()
     {
         return $this->tabulatorGrid->getCompatLayer() instanceof AdminiCompat;
+    }
+
+    /**
+     * Get the value of newWindow
+     */
+    public function getNewWindow(): bool
+    {
+        return $this->newWindow;
+    }
+
+    /**
+     * Set the value of newWindow
+     *
+     * @param bool $newWindow
+     */
+    public function setNewWindow($newWindow): self
+    {
+        $this->newWindow = $newWindow;
+        return $this;
     }
 }
