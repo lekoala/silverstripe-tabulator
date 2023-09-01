@@ -93,6 +93,15 @@ You can make any column editable. Simply call `makeColumnEditable` and pass alon
 
 Upon blur, it will trigger a ajaxEdit request on the editUrl endpoint if set.
 
+## View only
+
+By default, the grid expects records to be editable. You can use `setViewOnly` to disable the add and edit buttons
+and make the detail form readonly.
+
+## Relations
+
+By default, the grid does not edit relations (no link/unlink).
+
 ## Buttons
 
 ### Row buttons
@@ -283,6 +292,12 @@ As a convenience, Tabulator define a getConfig method that returns a blank GridF
 
 Another way is to use the TabulatorGrid::replaceGridfield method that tries its best to replace your GridField instance with
 an appropriate and configured TabulatorGrid.
+
+### No GridFieldConfig
+
+TabulatorGrid doesn't use the concept of a config object. These tend to make the architecture more complex and it's not always
+easy to deal with various components playing nicely together.
+Instead, TabulatorGrid has an opiniated config system which is still very flexible, but only works for intended use cases.
 
 ## Optional Dependencies
 

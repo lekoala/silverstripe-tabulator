@@ -42,7 +42,6 @@ class TabulatorGrid extends FormField
     const POS_START = 'start';
     const POS_END = 'end';
 
-    const UI_ADD = "ui_add";
     const UI_EDIT = "ui_edit";
     const UI_DELETE = "ui_delete";
     const UI_VIEW = "ui_view";
@@ -50,6 +49,7 @@ class TabulatorGrid extends FormField
 
     const TOOL_ADD_NEW = "add_new";
     const TOOL_EXPORT = "export";
+    const TOOL_ADD_EXISTING = "add_existing";
 
     // @link http://www.tabulator.info/examples/5.5?#fittodata
     const LAYOUT_FIT_DATA = "fitData";
@@ -104,7 +104,7 @@ class TabulatorGrid extends FormField
 
     private static $url_handlers = [
         'item/$ID' => 'handleItem',
-        'tool/$ID' => 'handleTool',
+        'tool/$ID//$OtherID' => 'handleTool',
         'bulkAction/$ID' => 'handleBulkAction',
     ];
 
@@ -527,7 +527,7 @@ class TabulatorGrid extends FormField
         if ($singl->canDelete() && $showRowDelete) {
             $deleteBtn = $this->makeButton($this->TempLink('item/{ID}/delete', false), "delete", _t('TabulatorGrid.Delete', 'Delete'));
             $deleteBtn["formatterParams"]["classes"] = 'btn btn-danger';
-            $this->addButtonFromArray("ui_delete", $deleteBtn);
+            $this->addButtonFromArray(self::UI_DELETE, $deleteBtn);
         }
 
         // - Tools

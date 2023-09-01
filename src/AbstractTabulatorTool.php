@@ -12,6 +12,7 @@ class AbstractTabulatorTool extends RequestHandler
 {
     protected TabulatorGrid $tabulatorGrid;
 
+    protected string $buttonName = '';
     protected string $name = '';
     protected string $link = '';
     protected bool $newWindow = false;
@@ -40,7 +41,7 @@ class AbstractTabulatorTool extends RequestHandler
 
     public function setName($name): self
     {
-        // Don't overwrite given name
+        // Don't overwrite given name with empty val
         if ($name) {
             $this->name = $name;
         }
@@ -76,6 +77,25 @@ class AbstractTabulatorTool extends RequestHandler
     public function setNewWindow($newWindow): self
     {
         $this->newWindow = $newWindow;
+        return $this;
+    }
+
+    /**
+     * Get the value of buttonName
+     */
+    public function getButtonName(): string
+    {
+        return $this->buttonName;
+    }
+
+    /**
+     * Set the value of buttonName
+     *
+     * @param string $buttonName
+     */
+    public function setButtonName($buttonName): self
+    {
+        $this->buttonName = $buttonName;
         return $this;
     }
 }
