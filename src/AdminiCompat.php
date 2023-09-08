@@ -26,6 +26,7 @@ class AdminiCompat implements CompatLayerInterface
         if ($form->Fields()->hasTabSet()) {
             $form->Fields()->findOrMakeTab('Root')->setTemplate('SilverStripe\\Forms\\CMSTabSet');
         }
+        $form->addExtraClass('needs-validation'); // client side form validation
         $form->Backlink = $itemRequest->getBackLink();
     }
 

@@ -53,7 +53,7 @@ class TabulatorAddExistingAutocompleter extends AbstractTabulatorTool
             'ButtonName' => $this->buttonName,
             'ButtonClasses' => 'btn-outline-secondary font-icon-link',
             'Icon' => $this->isAdmini() ? 'link' : '',
-            'AutocompletField' => $this->getAutocompleteField(),
+            'AutocompleteField' => $this->getAutocompleteField(),
         ]);
         return $this->renderWith($this->getViewerTemplates(), $data);
     }
@@ -98,15 +98,13 @@ class TabulatorAddExistingAutocompleter extends AbstractTabulatorTool
 
     public function autocomplete(HTTPRequest $request): HTTPResponse
     {
-        $response = new HTTPResponse();
+        // delegate to field
+        $acField = $this->getAutocompleteField();
 
         try {
-            $body = json_encode([
-                'success' => true,
-            ]);
-            $response->setBody($body);
-            $response->addHeader('Content-Type', 'application/json');
+            $response = $acField->autocomplete($request);
         } catch (Exception $ex) {
+            $response = new HTTPResponse();
             $response->setStatusCode(500);
             $response->setBody($ex->getMessage());
         }
