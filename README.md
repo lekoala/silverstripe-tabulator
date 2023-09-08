@@ -308,6 +308,10 @@ Instead, TabulatorGrid has an opiniated config system which is still very flexib
 
 4.10+
 
+## TODO
+
+- translation
+
 ## Maintainer
 
 LeKoala - thomas@lekoala.be

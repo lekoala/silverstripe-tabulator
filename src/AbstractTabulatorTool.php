@@ -2,6 +2,7 @@
 
 namespace LeKoala\Tabulator;
 
+use SilverStripe\Control\Controller;
 use SilverStripe\Control\RequestHandler;
 
 /**
@@ -51,7 +52,7 @@ class AbstractTabulatorTool extends RequestHandler
     public function Link($action = null)
     {
         if (!$this->link) {
-            return $this->tabulatorGrid->Link('tool/' . $this->name);
+            return Controller::join_links($this->tabulatorGrid->Link('tool/' . $this->name), $action);
         }
         return $this->link;
     }

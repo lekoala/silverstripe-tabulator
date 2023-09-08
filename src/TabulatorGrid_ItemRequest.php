@@ -224,6 +224,26 @@ class TabulatorGrid_ItemRequest extends RequestHandler
             return $this->httpError(400, "Field must not be empty");
         }
 
+        $grid = $this->tabulatorGrid;
+
+        $list = $grid->getDataList();
+
+        if ($list instanceof ManyManyList) {
+            $extraData = $list->getExtraData($grid->getName(), $this->record->ID);
+
+            // Is it a many many field
+            // This is a bit basic but it works
+            if (isset($extraData[$Column])) {
+                $extra = [
+                    $Column => $Value
+                ];
+                $list->add($this->record, $extra);
+                return $Value;
+            }
+        }
+
+
+        // Its on the object itself
         $this->record->$field = $Value;
         $this->record->write();
         $updatedValue = $this->record->$field;

@@ -517,8 +517,7 @@ class TabulatorGrid extends FormField
         // - Core actions, handled by TabulatorGrid
         $itemUrl = $this->TempLink('item/{ID}', false);
         if ($singl->canEdit()) {
-            $this->addButton(self::UI_EDIT, $itemUrl, "edit", _t('TabulatorGrid.Edit', 'Edit'));
-            $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit", false);
+            $this->addEditButton();
         } elseif ($singl->canView()) {
             $this->addButton(self::UI_VIEW, $itemUrl, "visibility", _t('TabulatorGrid.View', 'View'));
         }
@@ -2022,6 +2021,13 @@ class TabulatorGrid extends FormField
         return $this;
     }
 
+    public function addEditButton()
+    {
+        $itemUrl = $this->TempLink('item/{ID}', false);
+        $this->addButton(self::UI_EDIT, $itemUrl, "edit", _t('TabulatorGrid.Edit', 'Edit'));
+        $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit", false);
+    }
+
     public function shiftButton(string $action, string $url, string $icon, string $title): self
     {
         // Find first action
@@ -2229,6 +2235,17 @@ class TabulatorGrid extends FormField
         unset($this->columns[$key]);
     }
 
+    /**
+     * Remove a column
+     *
+     * @param array $keys
+     */
+    public function removeColumns(array $keys): void
+    {
+        foreach ($keys as $key) {
+            $this->removeColumn($key);
+        }
+    }
 
     /**
      * Get the value of columns
@@ -2282,6 +2299,9 @@ class TabulatorGrid extends FormField
         $actions = array_keys($this->getActions());
         $before = $actions[0] ?? null;
         foreach ($arr as $k => $v) {
+            if (!$k || !$v) {
+                continue;
+            }
             $this->addColumnFromArray([
                 'field' => $k,
                 'title' => $v,

@@ -239,7 +239,7 @@
         var value = cell.getValue();
         var column = cell.getColumn().getField();
         var data = cell.getRow().getData();
-        var editUrl = cell.getTable().element.dataset.editUrl;
+        var editUrl = cell.getTable().element.parentElement.dataset.editUrl;
         if (!editUrl) {
             return;
         }
@@ -464,6 +464,36 @@
         });
     }
 
+    function addExisting(tools, tabulator) {
+        let btn = tools.querySelector(".tabulator-add-existing");
+        if (!btn) {
+            return;
+        }
+        let ac = btn.parentElement.querySelector("bs-autocomplete");
+        btn.addEventListener("click", (ev) => {
+            let input = ac.querySelector('input[type="hidden"]');
+            if (!input.value) {
+                notify(btn.dataset.emptyMessage, "bad");
+                return;
+            }
+
+            const endpoint = btn.dataset.endpoint;
+            const formData = new FormData();
+            formData.append("RecordID", input.value);
+            fetchWrapper(endpoint, {
+                method: "POST",
+                body: formData,
+            })
+                .then((json) => {
+                    notify(json.message, json.status || "success");
+                    tabulator.setData();
+                })
+                .catch((message) => {
+                    notify(message, "bad");
+                });
+        });
+    }
+
     var configCallback = function (config) {
         // Helps to get per tab server side session
         // const tabId = getTabID();
@@ -473,11 +503,14 @@
 
     var initCallback = function (tabulator, customEl) {
         var el = tabulator.element;
+        var holder = customEl.parentElement;
+        var tools = holder.querySelector(".tabulator-tools");
 
         tabulator.on("cellEdited", cellEditedCallback);
 
         globalSearch(el, tabulator, customEl);
         bulkSupport(el, tabulator, customEl);
+        addExisting(tools, tabulator);
 
         // Deal with state
         el.parentElement.addEventListener("click", function () {
