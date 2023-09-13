@@ -487,6 +487,7 @@
                 .then((json) => {
                     notify(json.message, json.status || "success");
                     tabulator.setData();
+                    ac.lib.clear();
                 })
                 .catch((message) => {
                     notify(message, "bad");
