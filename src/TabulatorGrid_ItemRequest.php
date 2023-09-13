@@ -37,6 +37,7 @@ class TabulatorGrid_ItemRequest extends RequestHandler
         'ajaxMove',
         'view',
         'delete',
+        'unlink',
         'customAction',
         'ItemEditForm',
     ];
@@ -344,6 +345,51 @@ class TabulatorGrid_ItemRequest extends RequestHandler
 
         //when an item is deleted, redirect to the parent controller
         $controller = $this->getToplevelController();
+
+        if ($this->isSilverStripeAdmin($controller)) {
+            $controller->getRequest()->addHeader('X-Pjax', 'Content');
+        }
+
+        //redirect back to admin section
+        $response = $controller->redirect($this->getBackLink(), 302);
+
+        $this->sessionMessage($message, "good");
+
+        return $response;
+    }
+
+    /**
+     * Unlink from the row level
+     *
+     * @param HTTPRequest $request
+     * @return void
+     */
+    public function unlink(HTTPRequest $request)
+    {
+        //TODO: isn't that too strict??
+        if (!$this->record->canDelete()) {
+            return $this->httpError(403, _t(
+                __CLASS__ . '.UnlinkPermissionsFailure',
+                'It seems you don\'t have the necessary permissions to unlink "{ObjectTitle}"',
+                ['ObjectTitle' => $this->record->singular_name()]
+            ));
+        }
+
+        $title = $this->record->getTitle();
+        $this->tabulatorGrid->getDataList()->remove($this->record);
+
+        $message = _t(
+            'SilverStripe\\Forms\\GridField\\GridFieldDetailForm.Deleted',
+            'Unlinked {type} {name}',
+            [
+                'type' => $this->record->i18n_singular_name(),
+                'name' => htmlspecialchars($title, ENT_QUOTES)
+            ]
+        );
+
+        //when an item is deleted, redirect to the parent controller
+        $controller = $this->getToplevelController();
+        d($controller);
 
         if ($this->isSilverStripeAdmin($controller)) {
             $controller->getRequest()->addHeader('X-Pjax', 'Content');

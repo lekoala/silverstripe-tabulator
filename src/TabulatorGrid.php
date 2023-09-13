@@ -44,6 +44,7 @@ class TabulatorGrid extends FormField
 
     const UI_EDIT = "ui_edit";
     const UI_DELETE = "ui_delete";
+    const UI_UNLINK = "ui_unlink";
     const UI_VIEW = "ui_view";
     const UI_SORT = "ui_sort";
 
@@ -383,6 +384,7 @@ class TabulatorGrid extends FormField
         $itemUrl = $this->TempLink('item/{ID}', false);
         $this->removeButton(self::UI_EDIT);
         $this->removeButton(self::UI_DELETE);
+        $this->removeButton(self::UI_UNLINK);
         $this->addButton(self::UI_VIEW, $itemUrl, "visibility", "View");
         $this->removeTool(TabulatorAddNewButton::class);
     }
@@ -390,6 +392,21 @@ class TabulatorGrid extends FormField
     public function isViewOnly(): bool
     {
         return !$this->hasButton(self::UI_EDIT);
+    }
+
+    public function setManageRelations(): array
+    {
+        $this->addToolEnd($AddExistingAutocompleter = new TabulatorAddExistingAutocompleter());
+
+        $unlinkBtn = $this->makeButton($this->TempLink('item/{ID}/unlink', false), "link_off", _t('TabulatorGrid.Unlink', 'Unlink'));
+        $unlinkBtn["formatterParams"]["classes"] = 'btn btn-danger';
+        $unlinkBtn['formatterParams']['ajax'] = true;
+        $this->addButtonFromArray(self::UI_UNLINK, $unlinkBtn);
+
+        return [
+            $AddExistingAutocompleter,
+            $unlinkBtn
+        ];
     }
 
     protected function getTabulatorOptions(DataObject $singl)
@@ -2026,6 +2043,26 @@ class TabulatorGrid extends FormField
         $itemUrl = $this->TempLink('item/{ID}', false);
         $this->addButton(self::UI_EDIT, $itemUrl, "edit", _t('TabulatorGrid.Edit', 'Edit'));
         $this->editUrl = $this->TempLink("item/{ID}/ajaxEdit", false);
+    }
+
+    public function moveButton(string $action, $pos = self::POS_END): self
+    {
+        $keep = null;
+        foreach ($this->columns as $k => $v) {
+            if ($k == "action_$action") {
+                $keep = $this->columns[$k];
+                unset($this->columns[$k]);
+            }
+        }
+        if ($keep) {
+            if ($pos == self::POS_END) {
+                $this->columns["action_$action"] = $keep;
+            }
+            if ($pos == self::POS_START) {
+                $this->columns = ["action_$action" => $keep] + $this->columns;
+            }
+        }
+        return $this;
     }
 
     public function shiftButton(string $action, string $url, string $icon, string $title): self
