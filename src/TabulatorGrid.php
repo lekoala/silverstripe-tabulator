@@ -465,6 +465,11 @@ class TabulatorGrid extends FormField
         foreach ($searchableFields as $key => $searchOptions) {
             $key = $searchAliases[$key] ?? $key;
 
+            // Allow "nice"
+            if (isset($columns[$key . ".Nice"])) {
+                $key = $key . ".Nice";
+            }
+
             /*
             "filter" => "NameOfTheFilter"
             "field" => "SilverStripe\Forms\FormField"
@@ -1627,6 +1632,9 @@ class TabulatorGrid extends FormField
                 if (strpos($field, '__') !== 0 && !in_array($field, $cols)) {
                     throw new Exception("Invalid filter field: $field");
                 }
+                // If .Nice was used
+                $field = str_replace('.Nice', '', $field);
+
                 $field = $searchAliases[$field] ?? $field;
                 $value = $filterValues['value'];
                 $type = $filterValues['type'];
