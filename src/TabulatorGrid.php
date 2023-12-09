@@ -1641,6 +1641,13 @@ class TabulatorGrid extends FormField
                 $value = $filterValues['value'];
                 $type = $filterValues['type'];
 
+                // Some types of fields need custom sql expressions (eg uuids)
+                $fieldInstance = $singleton->dbObject($field);
+                if ($fieldInstance->hasMethod('filterExpression')) {
+                    $where[] = $fieldInstance->filterExpression($type, $value);
+                    continue;
+                }
+
                 $rawValue = $value;
 
                 // Strict value
