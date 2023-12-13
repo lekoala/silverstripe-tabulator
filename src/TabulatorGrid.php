@@ -465,6 +465,11 @@ class TabulatorGrid extends FormField
         foreach ($searchableFields as $key => $searchOptions) {
             $key = $searchAliases[$key] ?? $key;
 
+            // Allow "nice"
+            if (isset($columns[$key . ".Nice"])) {
+                $key = $key . ".Nice";
+            }
+
             /*
             "filter" => "NameOfTheFilter"
             "field" => "SilverStripe\Forms\FormField"
@@ -1629,6 +1634,8 @@ class TabulatorGrid extends FormField
         }
 
         // Filtering is an array of field/type/value arrays
+        $filters = [];
+        $anyFilters = [];
         $where = [];
         $anyWhere = [];
         if ($filter) {
@@ -1640,9 +1647,19 @@ class TabulatorGrid extends FormField
                 if (strpos($field, '__') !== 0 && !in_array($field, $cols)) {
                     throw new Exception("Invalid filter field: $field");
                 }
+                // If .Nice was used
+                $field = str_replace('.Nice', '', $field);
+
                 $field = $searchAliases[$field] ?? $field;
                 $value = $filterValues['value'];
                 $type = $filterValues['type'];
+
+                // Some types of fields need custom sql expressions (eg uuids)
+                $fieldInstance = $singleton->dbObject($field);
+                if ($fieldInstance->hasMethod('filterExpression')) {
+                    $where[] = $fieldInstance->filterExpression($type, $value);
+                    continue;
+                }
 
                 $rawValue = $value;
 
@@ -1657,57 +1674,63 @@ class TabulatorGrid extends FormField
                     case "=":
                         if ($field === "__wildcard") {
                             // It's a wildcard search
-                            $anyWhere = $this->createWildcardFilters($rawValue);
+                            $anyFilters = $this->createWildcardFilters($rawValue);
                         } elseif ($field === "__quickfilter") {
                             // It's a quickfilter search
                             $this->createQuickFilter($rawValue, $dataList);
                         } else {
-                            $where["$field"] = $value;
+                            $filters["$field"] = $value;
                         }
                         break;
                     case "!=":
-                        $where["$field:not"] = $value;
+                        $filters["$field:not"] = $value;
                         break;
                     case "like":
-                        $where["$field:PartialMatch:nocase"] = $value;
+                        $filters["$field:PartialMatch:nocase"] = $value;
                         break;
                     case "keywords":
-                        $where["$field:PartialMatch:nocase"] = str_replace(" ", "%", $value);
+                        $filters["$field:PartialMatch:nocase"] = str_replace(" ", "%", $value);
                         break;
                     case "starts":
-                        $where["$field:StartsWith:nocase"] = $value;
+                        $filters["$field:StartsWith:nocase"] = $value;
                         break;
                     case "ends":
-                        $where["$field:EndsWith:nocase"] = $value;
+                        $filters["$field:EndsWith:nocase"] = $value;
                         break;
                     case "<":
-                        $where["$field:LessThan:nocase"] = $value;
+                        $filters["$field:LessThan:nocase"] = $value;
                         break;
                     case "<=":
-                        $where["$field:LessThanOrEqual:nocase"] = $value;
+                        $filters["$field:LessThanOrEqual:nocase"] = $value;
                         break;
                     case ">":
-                        $where["$field:GreaterThan:nocase"] = $value;
+                        $filters["$field:GreaterThan:nocase"] = $value;
                         break;
                     case ">=":
-                        $where["$field:GreaterThanOrEqual:nocase"] = $value;
+                        $filters["$field:GreaterThanOrEqual:nocase"] = $value;
                         break;
                     case "in":
-                        $where["$field"] = $value;
+                        $filters["$field"] = $value;
                         break;
                     case "regex":
-                        $dataList = $dataList->where('REGEXP ' . Convert::raw2sql($value));
+                        $dataList = $dataList->filters('REGEXP ' . Convert::raw2sql($value));
                         break;
                     default:
                         throw new Exception("Invalid sort dir: $dir");
                 }
             }
         }
+        if (!empty($filters)) {
+            $dataList = $dataList->filter($filters);
+        }
+        if (!empty($anyFilters)) {
+            $dataList = $dataList->filterAny($anyFilters);
+        }
         if (!empty($where)) {
-            $dataList = $dataList->filter($where);
+            $dataList = $dataList->where(implode(' AND ', $where));
         }
         if (!empty($anyWhere)) {
-            $dataList = $dataList->filterAny($anyWhere);
+            $dataList = $dataList->where(implode(' OR ', $anyWhere));
         }
 
         $lastRow = $dataList->count();
