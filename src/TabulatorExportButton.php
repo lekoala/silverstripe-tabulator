@@ -17,6 +17,7 @@ class TabulatorExportButton extends AbstractTabulatorTool
     {
         parent::__construct();
         $this->btn = new ExcelGridFieldExportButton();
+        $this->btn->setIsLimited(false);
     }
 
     public function forTemplate()
