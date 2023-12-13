@@ -1057,7 +1057,12 @@ class TabulatorGrid extends FormField
         // Our getController could either give us a true Controller, if this is the top-level GridField.
         // It could also give us a RequestHandler in the form of (GridFieldDetailForm_ItemRequest, TabulatorGrid...)
         $requestHandler = $this->getForm()->getController();
-        $record = $this->getRecordFromRequest($request);
+        try {
+            $record = $this->getRecordFromRequest($request);
+        } catch (Exception $e) {
+            return $requestHandler->httpError(404, $e->getMessage());
+        }
+
         if (!$record) {
             return $requestHandler->httpError(404, 'That record was not found');
         }
@@ -1427,11 +1432,19 @@ class TabulatorGrid extends FormField
      */
     protected function getRecordFromRequest(HTTPRequest $request): ?DataObject
     {
+        $id = $request->param('ID');
         /** @var DataObject $record */
-        if (is_numeric($request->param('ID'))) {
+        if (is_numeric($id)) {
             /** @var Filterable $dataList */
             $dataList = $this->getList();
-            $record = $dataList->byID($request->param('ID'));
+            $record = $dataList->byID($id);
+
+            if (!$record) {
+                $record = DataObject::get_by_id($this->getModelClass(), $id);
+                if ($record) {
+                    throw new RuntimeException('This record is not accessible from the list');
+                }
+            }
         } else {
             $record = Injector::inst()->create($this->getModelClass());
         }
