@@ -13,6 +13,8 @@ use SilverStripe\View\ArrayData;
  */
 class TabulatorExportButton extends AbstractTabulatorTool
 {
+    protected $btn;
+
     public function __construct()
     {
         parent::__construct();
