@@ -13,6 +13,8 @@ use SilverStripe\View\ArrayData;
  */
 class TabulatorExportButton extends AbstractTabulatorTool
 {
+    protected $exportFormat = 'xlsx';
+
     public function __construct()
     {
         parent::__construct();
@@ -57,5 +59,24 @@ class TabulatorExportButton extends AbstractTabulatorTool
     public function index()
     {
         return $this->btn->handleExport($this->tabulatorGrid);
+    }
+
+    /**
+     * Get the value of exportFormat
+     */
+    public function getExportFormat(): mixed
+    {
+        return $this->exportFormat;
+    }
+
+    /**
+     * Set the value of exportFormat
+     *
+     * @param mixed $exportFormat
+     */
+    public function setExportFormat($exportFormat): self
+    {
+        $this->exportFormat = $exportFormat;
+        return $this;
     }
 }
