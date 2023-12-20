@@ -14,6 +14,7 @@ use SilverStripe\View\ArrayData;
 class TabulatorExportButton extends AbstractTabulatorTool
 {
     protected $exportFormat = 'xlsx';
+    protected $btn;
 
     public function __construct()
     {
