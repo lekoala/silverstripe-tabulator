@@ -2,6 +2,7 @@
 
 namespace LeKoala\Tabulator;
 
+use InvalidArgumentException;
 use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\RelationList;
@@ -20,7 +21,6 @@ class TabulatorExportButton extends AbstractTabulatorTool
     {
         parent::__construct();
         $this->btn = new ExcelGridFieldExportButton();
-        $this->btn->setIsLimited(false);
     }
 
     public function forTemplate()
@@ -41,7 +41,7 @@ class TabulatorExportButton extends AbstractTabulatorTool
 
         if (!$this->buttonName) {
             // provide a default button name, can be changed by calling {@link setButtonName()} on this component
-            $this->buttonName = _t('Tabulator.ExportRecords', 'Export');
+            $this->buttonName = _t('Tabulator.ExportRecordsIn', 'Export in {format}', ['format' => $this->exportFormat]);
         }
 
         $data = new ArrayData([
@@ -59,6 +59,9 @@ class TabulatorExportButton extends AbstractTabulatorTool
 
     public function index()
     {
+        $this->btn->setIsLimited(false);
+        $this->btn->setExportType($this->exportFormat);
+
         return $this->btn->handleExport($this->tabulatorGrid);
     }
 
@@ -73,10 +76,13 @@ class TabulatorExportButton extends AbstractTabulatorTool
     /**
      * Set the value of exportFormat
      *
-     * @param mixed $exportFormat
+     * @param mixed $exportFormat csv,xlsx
      */
     public function setExportFormat($exportFormat): self
     {
+        if (!in_array($exportFormat, ['csv', 'xslx'])) {
+            throw new InvalidArgumentException("Format must be csv or xlsx");
+        }
         $this->exportFormat = $exportFormat;
         return $this;
     }

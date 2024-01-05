@@ -49,7 +49,8 @@ class TabulatorGrid extends FormField
     const UI_SORT = "ui_sort";
 
     const TOOL_ADD_NEW = "add_new";
-    const TOOL_EXPORT = "export";
+    const TOOL_EXPORT = "export"; // xlsx
+    const TOOL_EXPORT_CSV = "export_csv";
     const TOOL_ADD_EXISTING = "add_existing";
 
     // @link http://www.tabulator.info/examples/5.5?#fittodata
@@ -560,7 +561,11 @@ class TabulatorGrid extends FormField
         }
         $export = $opts['export'] ?? true;
         if (class_exists(\LeKoala\ExcelImportExport\ExcelImportExport::class) && $export) {
-            $this->addTool(self::POS_END, new TabulatorExportButton($this), self::TOOL_EXPORT);
+            $xlsxExportButton = new TabulatorExportButton($this);
+            $this->addTool(self::POS_END, $xlsxExportButton, self::TOOL_EXPORT);
+            $csvExportButton = new TabulatorExportButton($this);
+            $csvExportButton->setExportFormat('csv');
+            $this->addTool(self::POS_END, $csvExportButton, self::TOOL_EXPORT_CSV);
         }
 
         // - Custom actions are forwarded to the model itself
