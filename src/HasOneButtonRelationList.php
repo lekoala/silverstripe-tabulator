@@ -41,6 +41,11 @@ class HasOneButtonRelationList extends ArrayList
         parent::__construct([$record]);
     }
 
+    public function forTemplate()
+    {
+        return $this->relationName;
+    }
+
     public function add($item)
     {
         $parent = $this->parent;
