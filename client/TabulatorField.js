@@ -465,6 +465,9 @@
     }
 
     function addExisting(tools, tabulator) {
+        if (!tools) {
+            return;
+        }
         let btn = tools.querySelector(".tabulator-add-existing");
         if (!btn) {
             return;
