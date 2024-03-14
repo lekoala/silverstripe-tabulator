@@ -4,6 +4,17 @@
     const loader =
         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" xml:space="preserve"><circle fill="currentColor" cx="4" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.1"/></circle><circle fill="currentColor" cx="12" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.2"/></circle><circle fill="currentColor" cx="20" cy="12" r="3"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.3"/></circle></svg>';
 
+    // admin helper
+
+    if (jQuery && jQuery.entwine) {
+        jQuery(".tabulatorgrid-holder .no-ajax").entwine({
+            onclick: function (e) {
+                e.stopPropagation();
+                return;
+            },
+        });
+    }
+
     // helper functions
 
     /**
