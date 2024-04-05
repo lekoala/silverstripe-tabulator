@@ -139,6 +139,11 @@ class TabulatorGrid extends FormField
     /**
      * @config
      */
+    private static bool $use_v5 = false;
+
+    /**
+     * @config
+     */
     private static bool $enable_luxon = false;
 
     /**
@@ -618,13 +623,23 @@ class TabulatorGrid extends FormField
             Requirements::javascript("https://cdn.jsdelivr.net/npm/last-icon@$last_icon_version/last-icon.min.js");
         }
 
+        $use_v5 = self::config()->use_v5;
+
         Requirements::javascript('lekoala/silverstripe-tabulator:client/TabulatorField.js', $jsOpts);
         if ($load_styles) {
             Requirements::css('lekoala/silverstripe-tabulator:client/custom-tabulator.css');
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.min.js', $jsOpts);
+            if ($use_v5) {
+                Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.5.5.min.js', $jsOpts);
+            } else {
+                Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.min.js', $jsOpts);
+            }
         } else {
-            // you must load th css yourself based on your preferences
-            Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.raw.min.js', $jsOpts);
+            // you must load the css yourself based on your preferences
+            if ($use_v5) {
+                Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.5.5.raw.min.js', $jsOpts);
+            } else {
+                Requirements::javascript('lekoala/silverstripe-tabulator:client/tabulator-grid.raw.min.js', $jsOpts);
+            }
         }
     }
 
