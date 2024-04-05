@@ -53,7 +53,7 @@ class TabulatorGrid extends FormField
     const TOOL_EXPORT_CSV = "export_csv";
     const TOOL_ADD_EXISTING = "add_existing";
 
-    // @link http://www.tabulator.info/examples/5.5?#fittodata
+    // @link http://www.tabulator.info/examples/6.2?#fittodata
     const LAYOUT_FIT_DATA = "fitData";
     const LAYOUT_FIT_DATA_FILL = "fitDataFill";
     const LAYOUT_FIT_DATA_STRETCH = "fitDataStretch";
@@ -63,7 +63,7 @@ class TabulatorGrid extends FormField
     const RESPONSIVE_LAYOUT_HIDE = "hide";
     const RESPONSIVE_LAYOUT_COLLAPSE = "collapse";
 
-    // @link http://www.tabulator.info/docs/5.5/format
+    // @link http://www.tabulator.info/docs/6.2/format
     const FORMATTER_PLAINTEXT = 'plaintext';
     const FORMATTER_TEXTAREA = 'textarea';
     const FORMATTER_HTML = 'html';
@@ -82,7 +82,7 @@ class TabulatorGrid extends FormField
     const FORMATTER_BUTTON_CROSS = 'buttonCross';
     const FORMATTER_ROWNUM = 'rownum';
     const FORMATTER_HANDLE = 'handle';
-    // @link http://www.tabulator.info/docs/5.5/format#format-module
+    // @link http://www.tabulator.info/docs/6.2/format#format-module
     const FORMATTER_ROW_SELECTION = 'rowSelection';
     const FORMATTER_RESPONSIVE_COLLAPSE = 'responsiveCollapse';
 
@@ -157,18 +157,18 @@ class TabulatorGrid extends FormField
     private static bool $enable_js_modules = true;
 
     /**
-     * @link http://www.tabulator.info/docs/5.5/options
+     * @link http://www.tabulator.info/docs/6.2/options
      * @config
      */
     private static array $default_options = [
-        'index' => "ID", // http://tabulator.info/docs/5.5/data#row-index
-        'layout' => 'fitColumns', // http://www.tabulator.info/docs/5.5/layout#layout
-        'height' => '100%', // http://www.tabulator.info/docs/5.5/layout#height-fixed
-        'responsiveLayout' => "hide", // http://www.tabulator.info/docs/5.5/layout#responsive
+        'index' => "ID", // http://tabulator.info/docs/6.2/data#row-index
+        'layout' => 'fitColumns', // http://www.tabulator.info/docs/6.2/layout#layout
+        'height' => '100%', // http://www.tabulator.info/docs/6.2/layout#height-fixed
+        'responsiveLayout' => "hide", // http://www.tabulator.info/docs/6.2/layout#responsive
     ];
 
     /**
-     * @link http://tabulator.info/docs/5.5/columns#defaults
+     * @link http://tabulator.info/docs/6.2/columns#defaults
      * @config
      */
     private static array $default_column_options = [
@@ -193,17 +193,17 @@ class TabulatorGrid extends FormField
     protected ?SS_List $list;
 
     /**
-     * @link http://www.tabulator.info/docs/5.5/columns
+     * @link http://www.tabulator.info/docs/6.2/columns
      */
     protected array $columns = [];
 
     /**
-     * @link http://tabulator.info/docs/5.5/columns#defaults
+     * @link http://tabulator.info/docs/6.2/columns#defaults
      */
     protected array $columnDefaults = [];
 
     /**
-     * @link http://www.tabulator.info/docs/5.5/options
+     * @link http://www.tabulator.info/docs/6.2/options
      */
     protected array $options = [];
 
@@ -452,6 +452,7 @@ class TabulatorGrid extends FormField
             $columns[$field] = [
                 'field' => $field,
                 'title' => $title,
+                'headerSort' => false,
             ];
 
             $dbObject = $singl->dbObject($field);
@@ -467,8 +468,9 @@ class TabulatorGrid extends FormField
             $key = $searchAliases[$key] ?? $key;
 
             // Allow "nice"
-            if (isset($columns[$key . ".Nice"])) {
-                $key = $key . ".Nice";
+            $niceKey = $key . ".Nice";
+            if (isset($columns[$niceKey])) {
+                $key =   $niceKey;
             }
 
             /*
@@ -480,6 +482,7 @@ class TabulatorGrid extends FormField
                 continue;
             }
             $columns[$key]['headerFilter'] = true;
+            $columns[$key]['headerSort'] = true;
             // $columns[$key]['headerFilterPlaceholder'] = $searchOptions['title'];
             //TODO: implement filter mapping
             switch ($searchOptions['filter']) {
@@ -785,7 +788,7 @@ class TabulatorGrid extends FormField
         $state = $this->getState();
         if ($state) {
             if (!empty($state['filter'])) {
-                // @link https://tabulator.info/docs/5.5/filter#initial
+                // @link https://tabulator.info/docs/6.2/filter#initial
                 // We need to split between global filters and header filters
                 $allFilters = $state['filter'] ?? [];
                 $globalFilters = [];
@@ -801,7 +804,7 @@ class TabulatorGrid extends FormField
                 $opts['initialHeaderFilter'] = $headerFilters;
             }
             if (!empty($state['sort'])) {
-                // @link https://tabulator.info/docs/5.5/sort#initial
+                // @link https://tabulator.info/docs/6.2/sort#initial
                 $opts['initialSort'] = $state['sort'];
             }
 
@@ -870,7 +873,7 @@ class TabulatorGrid extends FormField
 
     /**
      * Prevent row height automatic computation
-     * @link https://tabulator.info/docs/5.5/layout#height-row
+     * @link https://tabulator.info/docs/6.2/layout#height-row
      */
     public function setRowHeight(int $v): self
     {
@@ -900,7 +903,7 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.5/page#remote
+     * @link http://www.tabulator.info/docs/6.2/page#remote
      * @param string $url
      * @param array $params
      * @param integer $pageSize
@@ -918,15 +921,15 @@ class TabulatorGrid extends FormField
         }
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);
-        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.5/page#counter
+        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/6.2/page#counter
         return $this;
     }
 
     public function wizardRemotePagination(int $pageSize = 0, int $initialPage = 1, array $params = []): self
     {
         $this->setRemotePagination($this->TempLink('load', false), $params, $pageSize, $initialPage);
-        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.5/sort#ajax-sort
-        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.5/filter#ajax-filter
+        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/6.2/sort#ajax-sort
+        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/6.2/filter#ajax-filter
         return $this;
     }
 
@@ -947,7 +950,7 @@ class TabulatorGrid extends FormField
         }
         $this->setOption("paginationSize", $pageSize);
         $this->setOption("paginationInitialPage", $initialPage);
-        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/5.5/page#counter
+        $this->setOption("paginationCounter", 'rows'); // http://www.tabulator.info/docs/6.2/page#counter
         return $this;
     }
 
@@ -957,13 +960,13 @@ class TabulatorGrid extends FormField
             'SecurityID' => SecurityToken::getSecurityID()
         ], $extraParams);
         $this->setProgressiveLoad($this->TempLink('load', false), $params, $pageSize, $initialPage, $mode, $scrollMargin);
-        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/5.5/sort#ajax-sort
-        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/5.5/filter#ajax-filter
+        $this->setOption("sortMode", "remote"); // http://www.tabulator.info/docs/6.2/sort#ajax-sort
+        $this->setOption("filterMode", "remote"); // http://www.tabulator.info/docs/6.2/filter#ajax-filter
         return $this;
     }
 
     /**
-     * @link https://tabulator.info/docs/5.5/layout#responsive
+     * @link https://tabulator.info/docs/6.2/layout#responsive
      * @param boolean $startOpen
      * @param string $mode collapse|hide|flexCollapse
      * @return self
@@ -1393,7 +1396,7 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.5/page#remote-response
+     * @link http://www.tabulator.info/docs/6.2/page#remote-response
      * @param HTTPRequest $request
      * @return HTTPResponse
      */
@@ -1995,6 +1998,15 @@ class TabulatorGrid extends FormField
         }
         // It's a temporary link on the form
         if (strpos($url, 'form:') === 0) {
+            if (!$this->form) {
+                $controller = Controller::curr();
+                if ($controller->hasMethod('getForm')) {
+                    $form = $controller->getForm();
+                    $this->form = $form;
+                } else {
+                    return $url;
+                }
+            }
             return $this->Link(preg_replace('/^form:/', '', $url));
         }
         // It's a temporary link on the controller
@@ -2170,7 +2182,7 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.5/columns#definition
+     * @link http://www.tabulator.info/docs/6.2/columns#definition
      * @param string $field (Required) this is the key for this column in the data array
      * @param string $title (Required) This is the title that will be displayed in the header for this column
      * @param array $opts Other options to merge in
@@ -2196,7 +2208,7 @@ class TabulatorGrid extends FormField
     }
 
     /**
-     * @link http://www.tabulator.info/docs/5.5/columns#definition
+     * @link http://www.tabulator.info/docs/6.2/columns#definition
      * @param array $opts Other options to merge in
      * @param ?string $before
      * @return $this
@@ -2385,6 +2397,7 @@ class TabulatorGrid extends FormField
      */
     public function setDisplayFields(array $arr): void
     {
+        $currentCols = $this->columns;
         $this->clearColumns();
         $actions = array_keys($this->getActions());
         $before = $actions[0] ?? null;
@@ -2392,10 +2405,13 @@ class TabulatorGrid extends FormField
             if (!$k || !$v) {
                 continue;
             }
-            $this->addColumnFromArray([
+            $currentCol = $currentCols[$k] ?? [
+                'headerSort' => false,
+            ];
+            $this->addColumnFromArray(array_merge($currentCol, [
                 'field' => $k,
                 'title' => $v,
-            ], $before);
+            ]), $before);
         }
     }
 
