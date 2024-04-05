@@ -1598,6 +1598,8 @@ class TabulatorGrid extends FormField
             foreach ($sort as $sortValues) {
                 $cols = array_keys($this->columns);
                 $field = $sortValues['field'];
+                $sortField = $field;
+                $sortClass = $dataClass;
                 if (!in_array($field, $cols)) {
                     throw new Exception("Invalid sort field: $field");
                 }
@@ -1625,13 +1627,18 @@ class TabulatorGrid extends FormField
                         $field = $parts[0];
                         continue;
                     }
-                    $relatedObjectClass = get_class($resolvedObject);
-                    $tableName = $schema->tableForField($relatedObjectClass, $parts[1]);
+                    $sortClass = get_class($resolvedObject);
+                    $sortField = $parts[1];
+                    $tableName = $schema->tableForField($sortClass, $sortField);
                     $baseIDColumn = $schema->sqlColumnForField($dataClass, 'ID');
                     $dataList = $dataList->leftJoin($tableName, "\"{$relationName}\".\"ID\" = {$baseIDColumn}", $relationName);
                 }
 
-                $sortSql[] = $field . ' ' . $dir;
+                // Is it an actual field or an expression ?
+                $sortedField = $schema->tableForField($sortClass, $sortField);
+                if ($sortedField) {
+                    $sortSql[] = $field . ' ' . $dir;
+                }
             }
         } else {
             // If we have a sort column
