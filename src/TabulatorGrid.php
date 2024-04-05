@@ -1607,23 +1607,28 @@ class TabulatorGrid extends FormField
                 }
 
                 // Nested sort
-                if (strpos($field, '.') !== false) {
+                if (str_contains($field, '.')) {
                     $parts = explode(".", $field);
+                    $relationName = $parts[0];
 
                     // Resolve relation only once in case of multiples similar keys
-                    if (!isset($resolutionMap[$parts[0]])) {
-                        $resolutionMap[$parts[0]] = $singleton->relObject($parts[0]);
+                    if (!isset($resolutionMap[$relationName])) {
+                        $resolutionMap[$relationName] = $singleton->relObject($relationName);
                     }
                     // Not matching anything (maybe a formatting .Nice ?)
-                    if (!$resolutionMap[$parts[0]] || !($resolutionMap[$parts[0]] instanceof DataList)) {
+                    $resolvedObject = $resolutionMap[$relationName] ?? null;
+                    if (!$resolvedObject) {
+                        continue;
+                    }
+                    // Maybe it's an helper method like .Nice and it's not sortable in the query
+                    if (!($resolvedObject instanceof DataList) && !($resolvedObject instanceof DataObject)) {
                         $field = $parts[0];
                         continue;
                     }
-                    $relatedObject = get_class($resolutionMap[$parts[0]]);
-                    $tableName = $schema->tableForField($relatedObject, $parts[1]);
+                    $relatedObjectClass = get_class($resolvedObject);
+                    $tableName = $schema->tableForField($relatedObjectClass, $parts[1]);
                     $baseIDColumn = $schema->sqlColumnForField($dataClass, 'ID');
-                    $tableAlias = $parts[0];
-                    $dataList = $dataList->leftJoin($tableName, "\"{$tableAlias}\".\"ID\" = {$baseIDColumn}", $tableAlias);
+                    $dataList = $dataList->leftJoin($tableName, "\"{$relationName}\".\"ID\" = {$baseIDColumn}", $relationName);
                 }
 
                 $sortSql[] = $field . ' ' . $dir;
@@ -1721,7 +1726,7 @@ class TabulatorGrid extends FormField
                         $dataList = $dataList->filters('REGEXP ' . Convert::raw2sql($value));
                         break;
                     default:
-                        throw new Exception("Invalid sort dir: $dir");
+                        throw new Exception("Invalid filter type: $type");
                 }
             }
         }
