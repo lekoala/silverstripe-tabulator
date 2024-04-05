@@ -1676,7 +1676,7 @@ class TabulatorGrid extends FormField
 
                 // Some types of fields need custom sql expressions (eg uuids)
                 $fieldInstance = $singleton->dbObject($field);
-                if ($fieldInstance->hasMethod('filterExpression')) {
+                if ($fieldInstance && $fieldInstance->hasMethod('filterExpression')) {
                     $where[] = $fieldInstance->filterExpression($type, $value);
                     continue;
                 }
