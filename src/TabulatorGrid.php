@@ -997,6 +997,7 @@ class TabulatorGrid extends FormField
                     'formatter' => 'responsiveCollapse',
                     'headerSort' => false,
                     'width' => 40,
+                    'responsive' => 0,
                 ]
             ], $this->columns);
         }
