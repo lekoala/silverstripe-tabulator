@@ -57,6 +57,11 @@ class HasOneTabulatorField extends TabulatorGrid
         return parent::setValue($value, $data);
     }
 
+    public function isViewOnly(): bool
+    {
+        return !$this->record->canEdit();
+    }
+
     /**
      */
     public function getRecord(): DataObject
