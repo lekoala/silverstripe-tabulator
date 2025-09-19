@@ -1203,7 +1203,7 @@ class TabulatorGrid extends FormField
 
     /**
      * @param HTTPRequest|null $request
-     * @return array{'page': int, 'limit': int, 'sort': array, 'filter': array}
+     * @return array{page:int,limit:int,sort:array,filter:array}
      */
     public function getState(HTTPRequest $request = null)
     {
