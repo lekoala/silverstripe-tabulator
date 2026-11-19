@@ -5,7 +5,7 @@ namespace LeKoala\Tabulator;
 use Exception;
 use SilverStripe\ORM\DB;
 use SilverStripe\Forms\Form;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\View\SSViewer;
 use SilverStripe\Control\Cookie;
 use SilverStripe\ORM\DataObject;
@@ -20,7 +20,7 @@ use SilverStripe\Control\HTTPResponse;
 use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Control\RequestHandler;
 use SilverStripe\Security\SecurityToken;
-use SilverStripe\ORM\ValidationException;
+use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
 
 /**

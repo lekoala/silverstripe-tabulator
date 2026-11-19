@@ -30,7 +30,7 @@ class TabulatorAddExistingAutocompleter extends AbstractTabulatorTool
     protected array $searchFilters = [];
     protected ?BsAutocompleteField $autocompleteField = null;
 
-    public function forTemplate()
+    public function forTemplate(): string
     {
         $grid = $this->tabulatorGrid;
         $singleton = singleton($grid->getModelClass());

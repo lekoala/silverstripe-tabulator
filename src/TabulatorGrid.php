@@ -11,7 +11,7 @@ use LeKoala\Tabulator\BulkActions\BulkDeleteAction;
 use SilverStripe\ORM\SS_List;
 use SilverStripe\Core\Convert;
 use SilverStripe\ORM\DataList;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\ArrayData;

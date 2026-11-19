@@ -25,7 +25,7 @@ class GenericTabulatorTool extends AbstractTabulatorTool
         $this->callable = $callable;
     }
 
-    public function forTemplate()
+    public function forTemplate(): string
     {
         $fontIcon = '';
         if ($this->icon) {

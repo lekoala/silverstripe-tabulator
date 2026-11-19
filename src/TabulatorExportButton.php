@@ -23,7 +23,7 @@ class TabulatorExportButton extends AbstractTabulatorTool
         $this->btn = new ExcelGridFieldExportButton();
     }
 
-    public function forTemplate()
+    public function forTemplate(): string
     {
         $grid = $this->tabulatorGrid;
         $singleton = singleton($grid->getModelClass());

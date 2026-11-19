@@ -11,7 +11,7 @@ use SilverStripe\View\ArrayData;
  */
 class TabulatorAddNewButton extends AbstractTabulatorTool
 {
-    public function forTemplate()
+    public function forTemplate(): string
     {
         $grid = $this->tabulatorGrid;
         $singleton = singleton($grid->getModelClass());

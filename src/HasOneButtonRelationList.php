@@ -2,7 +2,7 @@
 
 namespace LeKoala\Tabulator;
 
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
 
 /**
@@ -41,12 +41,12 @@ class HasOneButtonRelationList extends ArrayList
         parent::__construct([$record]);
     }
 
-    public function forTemplate()
+    public function forTemplate(): string
     {
         return $this->relationName;
     }
 
-    public function add($item)
+    public function add(mixed $item): void
     {
         $parent = $this->parent;
         // Get the relationship type (has_one or belongs_to)
@@ -68,7 +68,7 @@ class HasOneButtonRelationList extends ArrayList
         $this->items = [$item];
     }
 
-    public function remove($item)
+    public function remove(mixed $item): void
     {
         $parent = $this->parent;
         $relationName = $this->relationName;
