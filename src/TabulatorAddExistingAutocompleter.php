@@ -4,7 +4,7 @@ namespace LeKoala\Tabulator;
 
 use Exception;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 use SilverStripe\ORM\RelationList;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;

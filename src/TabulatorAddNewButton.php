@@ -4,7 +4,7 @@ namespace LeKoala\Tabulator;
 
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\RelationList;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 
 /**
  * This component provides a button for opening the add new form

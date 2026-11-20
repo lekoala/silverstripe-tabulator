@@ -2,7 +2,7 @@
 
 namespace LeKoala\Tabulator;
 
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 
 /**
  * Generic tool with a callable

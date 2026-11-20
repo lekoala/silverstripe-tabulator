@@ -6,7 +6,7 @@ use InvalidArgumentException;
 use LeKoala\ExcelImportExport\ExcelGridFieldExportButton;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\RelationList;
-use SilverStripe\View\ArrayData;
+use SilverStripe\Model\ArrayData;
 
 /**
  * This component provides a button for exporting data
